@@ -1,0 +1,133 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "Bash",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch",
+      "Task",
+      "mcp__github"
+    ],
+    "deny": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file_path=$(jq -r '.tool_input.file_path // .tool_input.path // empty'); if [ -n \"$file_path\" ] && echo \"$file_path\" | grep -qE '\\.(ts|tsx|js|jsx|json|md)$'; then npx prettier --write \"$file_path\" 2>/dev/null || true; fi",
+            "timeout": 30
+          },
+          {
+            "type": "command", 
+            "command": "file_path=$(jq -r '.tool_input.file_path // .tool_input.path // empty'); if [ -n \"$file_path\" ] && echo \"$file_path\" | grep -qE '\\.(ts|tsx|js|jsx)$'; then npx eslint --fix \"$file_path\" 2>/dev/null || true; fi",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(git commit:*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx tsc --noEmit 2>&1 | head -20 || true",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "bun test --passWithNoTests 2>&1 | tail -20 || true",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "if git diff --cached --name-only | grep -qE '(auth|api|action|middleware|webhook)'; then echo '⚠️  SECURITY-SENSITIVE FILES IN COMMIT - verify: auth checks, input validation, no secrets'; fi",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(bun add:*)|Bash(npm install:*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$(date '+%Y-%m-%d %H:%M') - Dependency installed: $CLAUDE_TOOL_INPUT\" >> progress/build-log.md",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "echo '🔒 Running security audit...' && (bun audit 2>/dev/null || npm audit --audit-level=high 2>/dev/null || echo 'Audit not available')",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash(git commit:*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if git diff --cached | grep -qiE '(api[_-]?key|secret[_-]?key|password|token|credential)\\s*[=:]\\s*[\"'\\'][^\"'\\' ]{8,}'; then echo '❌ BLOCKED: Potential secret detected in commit. Remove hardcoded credentials.' && exit 1; fi || true",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(git push*prod*)|Bash(git push*origin*prod*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '❌ BLOCKED: Cannot push to prod branch. Production deploys are human-only.' && exit 1"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(git merge*prod*)|Bash(git checkout prod)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '❌ BLOCKED: Cannot merge to or checkout prod branch. Production is human-only.' && exit 1"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(rm -rf*)|Bash(rm -r /)*",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "⚠️ DESTRUCTIVE OPERATION DETECTED. Confirm this is intentional and necessary. If deleting project files, ensure they are backed up or in git."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(*DROP TABLE*)|Bash(*DELETE FROM*WHERE*)|Bash(*TRUNCATE*)",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "⚠️ DESTRUCTIVE DATABASE OPERATION. This will delete data. Confirm this is intentional and you have a backup or this is a development database."
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Permission requested - check Claude Code session'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "model": "sonnet",
+  "customInstructions": "You are building a CAIO incubator project. Follow the conventions in CLAUDE.md. Work through tickets in specs/TICKETS.md continuously. Use TDD. Never merge to prod. Surface decisions via /decision command. Commit after each completed ticket."
+}
