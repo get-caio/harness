@@ -214,19 +214,20 @@ _Modify per project as specified in SPEC.md_
 
 Reference these before implementing related features:
 
-| Skill               | Use For                                              |
-| ------------------- | ---------------------------------------------------- |
-| `nextjs-bun-prisma` | Project structure, API routes, database              |
-| `auth`              | Authentication, sessions, OAuth                      |
-| `trpc`              | Type-safe API, routers, client setup                 |
-| `ai-integration`    | Claude API, prompts, tool use, streaming             |
-| `react-native`      | Mobile app, Expo, offline, notifications             |
-| `payments`          | Stripe, subscriptions, webhooks                      |
-| `testing`           | Vitest, unit tests, component tests, MSW mocking     |
-| `e2e-testing`       | Playwright, browser tests, visual regression, a11y   |
-| `security`          | Input validation, auth checks, secrets               |
-| `code-quality`      | Complexity limits, refactoring                       |
-| `code-audit`        | Security scanning, dependency audit, codebase health |
+| Skill                  | Use For                                                 |
+| ---------------------- | ------------------------------------------------------- |
+| `nextjs-bun-prisma`    | Project structure, API routes, database                 |
+| `react-best-practices` | React/Next.js performance patterns, bundle optimization |
+| `auth`                 | Authentication, sessions, OAuth                         |
+| `trpc`                 | Type-safe API, routers, client setup                    |
+| `ai-integration`       | Claude API, prompts, tool use, streaming                |
+| `react-native`         | Mobile app, Expo, offline, notifications                |
+| `payments`             | Stripe, subscriptions, webhooks                         |
+| `testing`              | Vitest, unit tests, component tests, MSW mocking        |
+| `e2e-testing`          | Playwright, browser tests, visual regression, a11y      |
+| `security`             | Input validation, auth checks, secrets                  |
+| `code-quality`         | Complexity limits, refactoring                          |
+| `code-audit`           | Security scanning, dependency audit, codebase health    |
 
 ---
 
