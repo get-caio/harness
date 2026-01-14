@@ -6,17 +6,17 @@ You are an autonomous development agent working on a CAIO incubator project. Thi
 
 ## Project State
 
-| Purpose | Location |
-|---------|----------|
-| Master Spec | `specs/SPEC.md` (read-only reference) |
-| Design System | `specs/design/DESIGN.md` (colors, typography, components) |
-| Design Assets | `specs/design/assets/` (logo, icons, brand files) |
-| Figma Links | `specs/design/FIGMA.md` (design file references) |
-| Current Phase | `specs/CURRENT_PHASE` (contains phase number) |
-| Phase Tickets | `specs/phases/PHASE-N-name.md` |
-| Spec Decisions | `specs/decisions/*.md` (ambiguities in spec) |
-| Arch Decisions | `docs/decisions/*.md` (implementation choices) |
-| Progress Log | `progress/build-log.md` |
+| Purpose        | Location                                                  |
+| -------------- | --------------------------------------------------------- |
+| Master Spec    | `specs/SPEC.md` (read-only reference)                     |
+| Design System  | `specs/design/DESIGN.md` (colors, typography, components) |
+| Design Assets  | `specs/design/assets/` (logo, icons, brand files)         |
+| Figma Links    | `specs/design/FIGMA.md` (design file references)          |
+| Current Phase  | `specs/CURRENT_PHASE` (contains phase number)             |
+| Phase Tickets  | `specs/phases/PHASE-N-name.md`                            |
+| Spec Decisions | `specs/decisions/*.md` (ambiguities in spec)              |
+| Arch Decisions | `docs/decisions/*.md` (implementation choices)            |
+| Progress Log   | `progress/build-log.md`                                   |
 
 ---
 
@@ -89,6 +89,7 @@ Repeat until phase complete or all blocked
 **What:** Ambiguities or gaps in the product specification that need human clarification BEFORE building.
 
 **When to create:**
+
 - Spec contradicts itself
 - Technology choice not specified (which auth provider? which database?)
 - Business logic unclear
@@ -97,6 +98,7 @@ Repeat until phase complete or all blocked
 - Scope is ambiguous
 
 **Format:**
+
 ```markdown
 # [NNN] Decision Title
 
@@ -115,10 +117,12 @@ Why this matters. What does the spec say (or not say)?
 ## Options
 
 ### Option A: [Name]
+
 - Pros: ...
 - Cons: ...
 
 ### Option B: [Name]
+
 - Pros: ...
 - Cons: ...
 
@@ -136,6 +140,7 @@ Why this matters. What does the spec say (or not say)?
 **What:** Implementation choices during development where multiple valid approaches exist.
 
 **When to create:**
+
 - Multiple implementation patterns could work
 - Performance vs simplicity tradeoff
 - Breaking change to established pattern
@@ -161,13 +166,13 @@ Before executing tickets in a new phase, run `/check-decisions` which:
 
 ## Ticket Statuses
 
-| Status | Meaning |
-|--------|---------|
-| `TODO` | Ready to work |
-| `IN_PROGRESS` | Currently being worked on |
-| `BLOCKED` | Waiting on decision (spec or arch) |
-| `DONE` | Complete and committed |
-| `SKIPPED` | Explicitly skipped (with reason) |
+| Status        | Meaning                            |
+| ------------- | ---------------------------------- |
+| `TODO`        | Ready to work                      |
+| `IN_PROGRESS` | Currently being worked on          |
+| `BLOCKED`     | Waiting on decision (spec or arch) |
+| `DONE`        | Complete and committed             |
+| `SKIPPED`     | Explicitly skipped (with reason)   |
 
 ---
 
@@ -179,6 +184,7 @@ Format: `[PN-TXXX] Brief description`
 - `P3-T015` = Phase 3, Ticket 015
 
 Examples:
+
 - `[P1-T001] Add user authentication with BetterAuth`
 - `[P2-T008] Implement training plan creation form`
 - `[P3-T015] Add Claude API workout generation`
@@ -187,20 +193,20 @@ Examples:
 
 ## Tech Stack (Standard CAIO Stack)
 
-| Layer | Technology |
-|-------|------------|
-| Framework | Next.js 14+ (App Router) |
-| Runtime | Bun |
-| Database | PostgreSQL |
-| ORM | Prisma |
-| API | tRPC |
-| Auth | BetterAuth (or as specified) |
-| Payments | Stripe |
-| Styling | Tailwind CSS + shadcn/ui |
-| Testing | Vitest + Playwright |
-| Deployment | Vercel |
+| Layer      | Technology                   |
+| ---------- | ---------------------------- |
+| Framework  | Next.js 14+ (App Router)     |
+| Runtime    | Bun                          |
+| Database   | PostgreSQL                   |
+| ORM        | Prisma                       |
+| API        | tRPC                         |
+| Auth       | BetterAuth (or as specified) |
+| Payments   | Stripe                       |
+| Styling    | Tailwind CSS + shadcn/ui     |
+| Testing    | Vitest + Playwright          |
+| Deployment | Vercel                       |
 
-*Modify per project as specified in SPEC.md*
+_Modify per project as specified in SPEC.md_
 
 ---
 
@@ -208,49 +214,51 @@ Examples:
 
 Reference these before implementing related features:
 
-| Skill | Use For |
-|-------|---------|
-| `nextjs-bun-prisma` | Project structure, API routes, database |
-| `auth` | Authentication, sessions, OAuth |
-| `trpc` | Type-safe API, routers, client setup |
-| `ai-integration` | Claude API, prompts, tool use, streaming |
-| `react-native` | Mobile app, Expo, offline, notifications |
-| `payments` | Stripe, subscriptions, webhooks |
-| `testing` | Vitest, unit tests, component tests, MSW mocking |
-| `e2e-testing` | Playwright, browser tests, visual regression, a11y |
-| `security` | Input validation, auth checks, secrets |
-| `code-quality` | Complexity limits, refactoring |
-| `code-audit` | Security scanning, dependency audit, codebase health |
+| Skill               | Use For                                              |
+| ------------------- | ---------------------------------------------------- |
+| `nextjs-bun-prisma` | Project structure, API routes, database              |
+| `auth`              | Authentication, sessions, OAuth                      |
+| `trpc`              | Type-safe API, routers, client setup                 |
+| `ai-integration`    | Claude API, prompts, tool use, streaming             |
+| `react-native`      | Mobile app, Expo, offline, notifications             |
+| `payments`          | Stripe, subscriptions, webhooks                      |
+| `testing`           | Vitest, unit tests, component tests, MSW mocking     |
+| `e2e-testing`       | Playwright, browser tests, visual regression, a11y   |
+| `security`          | Input validation, auth checks, secrets               |
+| `code-quality`      | Complexity limits, refactoring                       |
+| `code-audit`        | Security scanning, dependency audit, codebase health |
 
 ---
 
 ## Approval Levels
 
-| Action | Approval Required |
-|--------|-------------------|
-| Write/edit code | None |
-| Create new files | None |
-| Run tests/lint | None |
-| Install dependencies | None (logged) |
-| Commit to feature branch | None |
-| Create PR | Agent can create |
-| Merge to `main` | Human |
-| Merge to `prod` | **NEVER** (human only) |
-| Payment/auth changes | Human review |
-| Schema migrations | Human review |
-| Environment variables | Human approval |
+| Action                   | Approval Required      |
+| ------------------------ | ---------------------- |
+| Write/edit code          | None                   |
+| Create new files         | None                   |
+| Run tests/lint           | None                   |
+| Install dependencies     | None (logged)          |
+| Commit to feature branch | None                   |
+| Create PR                | Agent can create       |
+| Merge to `main`          | Human                  |
+| Merge to `prod`          | **NEVER** (human only) |
+| Payment/auth changes     | Human review           |
+| Schema migrations        | Human review           |
+| Environment variables    | Human approval         |
 
 ---
 
 ## Feature Subagents
 
 For substantial features (3+ hours or multi-file changes):
+
 - Spawn a dedicated feature subagent via Task tool
 - Keeps context focused and clean
 - Subagent works until feature complete
 - Returns control to main loop after commit
 
 For small tickets (1-2 hours, few files):
+
 - Work directly in main loop
 - No subagent overhead needed
 
@@ -281,8 +289,9 @@ open_arch_decisions: 0
 4. **Don't guess** — if spec is unclear, create a spec decision
 5. **Stay in phase** — don't work on tickets outside current phase
 6. **Frontend-first** — Build UI with dummy data; reveals what APIs actually need
-7. **Write tests first** (TDD) for all new functionality
+7. **Write tests for every ticket** — No ticket is complete without tests. "N/A" is not an acceptable test status. If you believe a ticket genuinely doesn't need tests, create a spec decision for human review and mark the ticket BLOCKED until approved.
 8. **Commit after each ticket** — this is the check-in point
 9. **Update ticket status** as you progress
 10. **Never touch prod** — humans handle production deployments
 11. **Read relevant skills** before implementing features
+12. **Run /audit after Phase 1 and 2** — catch issues early, not at the end

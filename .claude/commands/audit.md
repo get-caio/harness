@@ -25,11 +25,11 @@ Read .claude/skills/code-audit/SKILL.md
 
 ### 2. Determine Mode
 
-| Argument | Mode | When to Use |
-|----------|------|-------------|
-| (none) | Quick | After completing a phase |
-| `full` | Full | Before shipping, pre-PR |
-| `cold` | Cold | First look at new/acquired codebase |
+| Argument | Mode  | When to Use                         |
+| -------- | ----- | ----------------------------------- |
+| (none)   | Quick | After completing a phase            |
+| `full`   | Full  | Before shipping, pre-PR             |
+| `cold`   | Cold  | First look at new/acquired codebase |
 
 ### 3. Execute Phases
 
@@ -44,38 +44,48 @@ Execute the bash commands from each phase in the skill file. Collect output.
 ### 5. Generate Report
 
 **Quick Scan Output:**
+
 ```markdown
 # Quick Audit: [Project Name]
+
 Date: [timestamp]
 Mode: Quick Scan
 
 ## Status: [PASS / FAIL]
 
 ### Blockers (must fix)
+
 - [list or "None"]
 
 ### Warnings (should fix)
+
 - [list or "None"]
 ```
 
 **Full Audit Output:**
+
 ```markdown
 # Full Audit Report: [Project Name]
+
 Date: [timestamp]
 
 ## Executive Summary
+
 - Overall Health: [1-10]
 - Security Posture: [Strong/Adequate/Weak/Critical]
 - Code Quality: [High/Medium/Low]
 - Recommendation: [Ship/Fix then ship/Major rework needed]
 
 ## Critical Issues
+
 [table of issues]
 
 ## High Priority Issues
+
 [table of issues]
 
 ## Metrics Summary
+
 [metrics table]
 ```
 
@@ -85,18 +95,35 @@ Save report to `progress/audit-[date].md`
 
 ### 7. Decision Gate
 
-| Result | Action |
-|--------|--------|
-| Critical issues found | Block. Do not proceed. |
-| High issues found | Flag for human review before proceeding. |
-| Medium/Low only | Log and continue. |
+| Result                | Action                                   |
+| --------------------- | ---------------------------------------- |
+| Critical issues found | Block. Do not proceed.                   |
+| High issues found     | Flag for human review before proceeding. |
+| Medium/Low only       | Log and continue.                        |
 
 ## Integration with Phases
 
 This command is automatically suggested:
+
 - After `/init-phase` completes all tickets
 - Before creating a PR for human review
 - When running `/work` and completing final ticket in a phase
+
+**⚠️ CRITICAL: Run `/audit` after Phase 1 and Phase 2, not just at the end.**
+
+Issues caught early are 10x cheaper to fix. Waiting until Phase 4 to audit allows problems to compound:
+
+- Test gaps become normalized ("we didn't test the other phases either")
+- Bad patterns get copied to new code
+- Technical debt accumulates
+- Refactoring scope grows
+
+| Phase             | Audit Requirement                                   |
+| ----------------- | --------------------------------------------------- |
+| Phase 1 complete  | Run `/audit` — catches setup issues, missing tests  |
+| Phase 2 complete  | Run `/audit` — catches pattern drift, security gaps |
+| Phase 3+ complete | Run `/audit` — standard end-of-phase check          |
+| Before PR         | Run `/audit full` — comprehensive pre-merge check   |
 
 ## Example Output
 

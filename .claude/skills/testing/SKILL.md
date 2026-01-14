@@ -23,49 +23,49 @@ bun add -d vitest @vitejs/plugin-react @testing-library/react @testing-library/j
 
 ```typescript
 // vitest.config.ts
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: 'jsdom',
+    environment: "jsdom",
     globals: true,
-    setupFiles: ['./tests/setup.ts'],
-    include: ['**/*.test.{ts,tsx}'],
+    setupFiles: ["./tests/setup.ts"],
+    include: ["**/*.test.{ts,tsx}"],
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'tests/'],
+      provider: "v8",
+      reporter: ["text", "json", "html"],
+      exclude: ["node_modules/", "tests/"],
     },
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
-})
+});
 ```
 
 ### 3. Test Setup File
 
 ```typescript
 // tests/setup.ts
-import '@testing-library/jest-dom/vitest'
-import { cleanup } from '@testing-library/react'
-import { afterEach, beforeAll, afterAll } from 'vitest'
-import { server } from './mocks/server'
+import "@testing-library/jest-dom/vitest";
+import { cleanup } from "@testing-library/react";
+import { afterEach, beforeAll, afterAll } from "vitest";
+import { server } from "./mocks/server";
 
 // Clean up after each test
 afterEach(() => {
-  cleanup()
-})
+  cleanup();
+});
 
 // MSW setup
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
+beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 ```
 
 ### 4. Package.json Scripts
@@ -116,44 +116,44 @@ For E2E test structure, see `.claude/skills/e2e-testing/SKILL.md`.
 
 ```typescript
 // lib/utils.test.ts
-import { describe, it, expect } from 'vitest'
-import { cn, formatDuration, calculateProgress } from './utils'
+import { describe, it, expect } from "vitest";
+import { cn, formatDuration, calculateProgress } from "./utils";
 
-describe('cn', () => {
-  it('merges class names', () => {
-    expect(cn('foo', 'bar')).toBe('foo bar')
-  })
+describe("cn", () => {
+  it("merges class names", () => {
+    expect(cn("foo", "bar")).toBe("foo bar");
+  });
 
-  it('handles conditional classes', () => {
-    expect(cn('base', false && 'hidden', 'end')).toBe('base end')
-  })
+  it("handles conditional classes", () => {
+    expect(cn("base", false && "hidden", "end")).toBe("base end");
+  });
 
-  it('merges tailwind classes correctly', () => {
-    expect(cn('p-4', 'p-2')).toBe('p-2')
-  })
-})
+  it("merges tailwind classes correctly", () => {
+    expect(cn("p-4", "p-2")).toBe("p-2");
+  });
+});
 
-describe('formatDuration', () => {
-  it('formats minutes to readable string', () => {
-    expect(formatDuration(90)).toBe('1h 30m')
-    expect(formatDuration(45)).toBe('45m')
-    expect(formatDuration(120)).toBe('2h')
-  })
-})
+describe("formatDuration", () => {
+  it("formats minutes to readable string", () => {
+    expect(formatDuration(90)).toBe("1h 30m");
+    expect(formatDuration(45)).toBe("45m");
+    expect(formatDuration(120)).toBe("2h");
+  });
+});
 
-describe('calculateProgress', () => {
-  it('returns percentage of completed workouts', () => {
-    expect(calculateProgress(5, 10)).toBe(50)
-  })
+describe("calculateProgress", () => {
+  it("returns percentage of completed workouts", () => {
+    expect(calculateProgress(5, 10)).toBe(50);
+  });
 
-  it('handles zero total', () => {
-    expect(calculateProgress(0, 0)).toBe(0)
-  })
+  it("handles zero total", () => {
+    expect(calculateProgress(0, 0)).toBe(0);
+  });
 
-  it('caps at 100%', () => {
-    expect(calculateProgress(15, 10)).toBe(100)
-  })
-})
+  it("caps at 100%", () => {
+    expect(calculateProgress(15, 10)).toBe(100);
+  });
+});
 ```
 
 ### Component Test: Rendering
@@ -168,27 +168,27 @@ import { createTestPlan } from '@/tests/factories'
 describe('PlanCard', () => {
   it('renders plan name and goal', () => {
     const plan = createTestPlan({ name: 'Marathon Training', goal: 'marathon' })
-    
+
     render(<PlanCard plan={plan} />)
-    
+
     expect(screen.getByText('Marathon Training')).toBeInTheDocument()
     expect(screen.getByText('marathon')).toBeInTheDocument()
   })
 
   it('shows progress bar when provided', () => {
     const plan = createTestPlan({ progress: 75 })
-    
+
     render(<PlanCard plan={plan} />)
-    
+
     const progressBar = screen.getByRole('progressbar')
     expect(progressBar).toHaveAttribute('aria-valuenow', '75')
   })
 
   it('displays "No workouts" for empty plan', () => {
     const plan = createTestPlan({ weeks: [] })
-    
+
     render(<PlanCard plan={plan} />)
-    
+
     expect(screen.getByText('No workouts scheduled')).toBeInTheDocument()
   })
 })
@@ -209,17 +209,17 @@ describe('PlanEditor', () => {
     const user = userEvent.setup()
     const onSave = vi.fn()
     const plan = createTestPlan({ name: 'Original Name' })
-    
+
     render(<PlanEditor plan={plan} onSave={onSave} />)
-    
+
     // Change the name
     const nameInput = screen.getByLabelText('Plan Name')
     await user.clear(nameInput)
     await user.type(nameInput, 'Updated Name')
-    
+
     // Submit
     await user.click(screen.getByRole('button', { name: 'Save' }))
-    
+
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Updated Name' })
     )
@@ -227,24 +227,24 @@ describe('PlanEditor', () => {
 
   it('shows validation error for empty name', async () => {
     const user = userEvent.setup()
-    
+
     render(<PlanEditor plan={createTestPlan()} onSave={vi.fn()} />)
-    
+
     const nameInput = screen.getByLabelText('Plan Name')
     await user.clear(nameInput)
     await user.click(screen.getByRole('button', { name: 'Save' }))
-    
+
     expect(screen.getByText('Name is required')).toBeInTheDocument()
   })
 
   it('disables submit while saving', async () => {
     const user = userEvent.setup()
     const onSave = vi.fn(() => new Promise(resolve => setTimeout(resolve, 100)))
-    
+
     render(<PlanEditor plan={createTestPlan()} onSave={onSave} />)
-    
+
     await user.click(screen.getByRole('button', { name: 'Save' }))
-    
+
     expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled()
   })
 })
@@ -254,37 +254,37 @@ describe('PlanEditor', () => {
 
 ```typescript
 // tests/factories/plan.ts
-import { faker } from '@faker-js/faker'
+import { faker } from "@faker-js/faker";
 
 interface TestPlan {
-  id: string
-  name: string
-  goal: string
-  weeks: TestWeek[]
-  progress?: number
-  createdAt: Date
-  userId: string
+  id: string;
+  name: string;
+  goal: string;
+  weeks: TestWeek[];
+  progress?: number;
+  createdAt: Date;
+  userId: string;
 }
 
 interface CreateTestPlanOptions {
-  id?: string
-  name?: string
-  goal?: string
-  weeks?: TestWeek[]
-  progress?: number
-  userId?: string
+  id?: string;
+  name?: string;
+  goal?: string;
+  weeks?: TestWeek[];
+  progress?: number;
+  userId?: string;
 }
 
 export function createTestPlan(options: CreateTestPlanOptions = {}): TestPlan {
   return {
     id: options.id ?? faker.string.uuid(),
     name: options.name ?? faker.lorem.words(3),
-    goal: options.goal ?? faker.helpers.arrayElement(['marathon', '5k', '10k']),
+    goal: options.goal ?? faker.helpers.arrayElement(["marathon", "5k", "10k"]),
     weeks: options.weeks ?? [createTestWeek(), createTestWeek({ number: 2 })],
     progress: options.progress,
     createdAt: new Date(),
     userId: options.userId ?? faker.string.uuid(),
-  }
+  };
 }
 
 export function createTestWeek(options: Partial<TestWeek> = {}): TestWeek {
@@ -292,16 +292,20 @@ export function createTestWeek(options: Partial<TestWeek> = {}): TestWeek {
     id: options.id ?? faker.string.uuid(),
     number: options.number ?? 1,
     workouts: options.workouts ?? [createTestWorkout()],
-  }
+  };
 }
 
-export function createTestWorkout(options: Partial<TestWorkout> = {}): TestWorkout {
+export function createTestWorkout(
+  options: Partial<TestWorkout> = {},
+): TestWorkout {
   return {
     id: options.id ?? faker.string.uuid(),
-    type: options.type ?? faker.helpers.arrayElement(['run', 'rest', 'cross-train']),
+    type:
+      options.type ??
+      faker.helpers.arrayElement(["run", "rest", "cross-train"]),
     duration: options.duration ?? faker.number.int({ min: 20, max: 90 }),
     description: options.description ?? faker.lorem.sentence(),
-  }
+  };
 }
 ```
 
@@ -311,27 +315,27 @@ Build UI before backend by mocking API responses:
 
 ```typescript
 // src/mocks/handlers.ts — Define expected API shape
-import { http, HttpResponse } from 'msw'
+import { http, HttpResponse } from "msw";
 
 export const handlers = [
   // Define what the API WILL return (before it exists)
-  http.get('/api/workouts', () => {
+  http.get("/api/workouts", () => {
     return HttpResponse.json([
-      { id: '1', title: 'Easy Run', duration: 30, status: 'scheduled' },
-      { id: '2', title: 'Intervals', duration: 45, status: 'completed' },
-    ])
+      { id: "1", title: "Easy Run", duration: 30, status: "scheduled" },
+      { id: "2", title: "Intervals", duration: 45, status: "completed" },
+    ]);
   }),
-]
+];
 
 // src/mocks/browser.ts — For development
-import { setupWorker } from 'msw/browser'
-import { handlers } from './handlers'
+import { setupWorker } from "msw/browser";
+import { handlers } from "./handlers";
 
-export const worker = setupWorker(...handlers)
+export const worker = setupWorker(...handlers);
 
 // Start in development (e.g., in app entry point)
-if (process.env.NODE_ENV === 'development') {
-  worker.start()
+if (process.env.NODE_ENV === "development") {
+  worker.start();
 }
 ```
 
@@ -351,89 +355,94 @@ This reveals what APIs actually need before building them. The mock handlers bec
 
 ```typescript
 // tests/mocks/handlers.ts
-import { http, HttpResponse } from 'msw'
+import { http, HttpResponse } from "msw";
 
 export const handlers = [
-  http.get('/api/plans', () => {
+  http.get("/api/plans", () => {
     return HttpResponse.json([
-      { id: '1', name: 'Plan 1', goal: 'marathon' },
-      { id: '2', name: 'Plan 2', goal: '5k' },
-    ])
+      { id: "1", name: "Plan 1", goal: "marathon" },
+      { id: "2", name: "Plan 2", goal: "5k" },
+    ]);
   }),
 
-  http.post('/api/plans', async ({ request }) => {
-    const body = await request.json()
-    return HttpResponse.json({ id: '3', ...body }, { status: 201 })
+  http.post("/api/plans", async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json({ id: "3", ...body }, { status: 201 });
   }),
 
-  http.delete('/api/plans/:id', ({ params }) => {
-    return HttpResponse.json({ success: true })
+  http.delete("/api/plans/:id", ({ params }) => {
+    return HttpResponse.json({ success: true });
   }),
-]
+];
 
 // tests/mocks/server.ts
-import { setupServer } from 'msw/node'
-import { handlers } from './handlers'
+import { setupServer } from "msw/node";
+import { handlers } from "./handlers";
 
-export const server = setupServer(...handlers)
+export const server = setupServer(...handlers);
 ```
 
 ### Integration Tests
 
 ```typescript
 // tests/integration/plan-creation.test.ts
-import { describe, it, expect, beforeEach } from 'vitest'
-import { db } from '@/lib/db'
-import { createTestUser } from '../factories'
+import { describe, it, expect, beforeEach } from "vitest";
+import { db } from "@/lib/db";
+import { createTestUser } from "../factories";
 
-describe('Plan Creation Flow', () => {
+describe("Plan Creation Flow", () => {
   beforeEach(async () => {
     // Clean database
-    await db.workout.deleteMany()
-    await db.week.deleteMany()
-    await db.trainingPlan.deleteMany()
-    await db.user.deleteMany()
-  })
+    await db.workout.deleteMany();
+    await db.week.deleteMany();
+    await db.trainingPlan.deleteMany();
+    await db.user.deleteMany();
+  });
 
-  it('creates plan with all weeks and workouts', async () => {
-    const user = await createTestUser()
-    
+  it("creates plan with all weeks and workouts", async () => {
+    const user = await createTestUser();
+
     const result = await createPlanWithWorkouts({
       userId: user.id,
-      name: 'Test Plan',
-      goal: 'marathon',
+      name: "Test Plan",
+      goal: "marathon",
       weeks: 16,
-    })
-    
+    });
+
     // Verify plan
-    expect(result.plan.name).toBe('Test Plan')
-    expect(result.plan.userId).toBe(user.id)
-    
+    expect(result.plan.name).toBe("Test Plan");
+    expect(result.plan.userId).toBe(user.id);
+
     // Verify weeks
     const plan = await db.trainingPlan.findUnique({
       where: { id: result.plan.id },
       include: { weeks: { include: { workouts: true } } },
-    })
-    
-    expect(plan?.weeks).toHaveLength(16)
-    expect(plan?.weeks.every(w => w.workouts.length > 0)).toBe(true)
-  })
+    });
 
-  it('rolls back on failure', async () => {
-    const user = await createTestUser()
-    
+    expect(plan?.weeks).toHaveLength(16);
+    expect(plan?.weeks.every((w) => w.workouts.length > 0)).toBe(true);
+  });
+
+  it("rolls back on failure", async () => {
+    const user = await createTestUser();
+
     // Force failure
-    vi.spyOn(db.week, 'create').mockRejectedValueOnce(new Error('DB error'))
-    
+    vi.spyOn(db.week, "create").mockRejectedValueOnce(new Error("DB error"));
+
     await expect(
-      createPlanWithWorkouts({ userId: user.id, name: 'Test', goal: 'marathon', weeks: 4 })
-    ).rejects.toThrow()
-    
+      createPlanWithWorkouts({
+        userId: user.id,
+        name: "Test",
+        goal: "marathon",
+        weeks: 4,
+      }),
+    ).rejects.toThrow();
+
     // Nothing should be saved
-    const plans = await db.trainingPlan.count()
-    expect(plans).toBe(0)
-  })
-})
+    const plans = await db.trainingPlan.count();
+    expect(plans).toBe(0);
+  });
+});
 ```
 
 ## Commands
@@ -458,6 +467,28 @@ bun test:coverage
 bun test:ui
 ```
 
+## Test Requirements (MANDATORY)
+
+**⚠️ Every ticket MUST have tests. No exceptions without human approval.**
+
+| Requirement                    | Minimum                               |
+| ------------------------------ | ------------------------------------- |
+| Test files per ticket          | At least 1 test file created/modified |
+| Tests per acceptance criterion | At least 1 test                       |
+| Test:source ratio              | >0.3 (1 test file per 3 source files) |
+| Coverage                       | Should not decrease                   |
+
+**If you believe a ticket doesn't need tests:**
+
+1. STOP — do not commit without tests
+2. Create a spec decision in `specs/decisions/` explaining why
+3. Mark the ticket BLOCKED
+4. Wait for human approval
+
+"I'll add tests later" is never acceptable. Tests are part of the implementation.
+
+---
+
 ## Best Practices
 
 ### ✅ Do
@@ -477,3 +508,5 @@ bun test:ui
 - Use magic numbers/strings
 - Leave console.logs in tests
 - Skip error cases
+- Skip tests "to save time" — tests ARE the work
+- Commit code without corresponding tests

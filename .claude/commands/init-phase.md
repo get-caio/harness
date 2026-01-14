@@ -28,6 +28,7 @@ echo "N" > specs/CURRENT_PHASE
 ### 2. Read Phase Scope
 
 Reference the approved phase proposal or SPEC.md section to understand:
+
 - What features are in this phase
 - What the dependencies are
 - What the acceptance criteria are
@@ -50,11 +51,13 @@ Create `specs/phases/PHASE-N-name.md`:
 ## Scope
 
 ### In Scope
+
 - Feature A
 - Feature B
 - Feature C
 
 ### Out of Scope (Later Phases)
+
 - Feature X (Phase N+1)
 - Feature Y (Phase N+2)
 
@@ -69,24 +72,24 @@ Create `specs/phases/PHASE-N-name.md`:
 
 ### Scaffolding
 
-| ID | Title | Status | Est | Blocked By |
-|----|-------|--------|-----|------------|
-| P{N}-T001 | [Title] | TODO | S/M/L | - |
-| P{N}-T002 | [Title] | TODO | S/M/L | T001 |
+| ID        | Title   | Status | Est   | Blocked By |
+| --------- | ------- | ------ | ----- | ---------- |
+| P{N}-T001 | [Title] | TODO   | S/M/L | -          |
+| P{N}-T002 | [Title] | TODO   | S/M/L | T001       |
 
 ### [Feature Area 1]
 
-| ID | Title | Status | Est | Blocked By |
-|----|-------|--------|-----|------------|
-| P{N}-T003 | [Title] | TODO | S/M/L | T002 |
-| P{N}-T004 | [Title] | TODO | S/M/L | T003 |
+| ID        | Title   | Status | Est   | Blocked By |
+| --------- | ------- | ------ | ----- | ---------- |
+| P{N}-T003 | [Title] | TODO   | S/M/L | T002       |
+| P{N}-T004 | [Title] | TODO   | S/M/L | T003       |
 
 ### [Feature Area 2]
 
-| ID | Title | Status | Est | Blocked By |
-|----|-------|--------|-----|------------|
-| P{N}-T005 | [Title] | TODO | S/M/L | - |
-| P{N}-T006 | [Title] | TODO | S/M/L | T005 |
+| ID        | Title   | Status | Est   | Blocked By |
+| --------- | ------- | ------ | ----- | ---------- |
+| P{N}-T005 | [Title] | TODO   | S/M/L | -          |
+| P{N}-T006 | [Title] | TODO   | S/M/L | T005       |
 
 ---
 
@@ -102,11 +105,21 @@ Create `specs/phases/PHASE-N-name.md`:
 [What needs to be built]
 
 **Acceptance Criteria:**
+
 - [ ] Criterion 1
 - [ ] Criterion 2
-- [ ] Tests pass
+- [ ] All tests pass
+
+**Required Tests:** [MANDATORY - specify what tests are needed]
+
+- [ ] Unit test: [describe test case]
+- [ ] Unit test: [describe test case]
+- [ ] Integration test: [if applicable]
+
+⚠️ If "Required Tests" is empty or says "N/A", a spec decision is required for human approval before this ticket can be marked DONE.
 
 **Technical Notes:**
+
 - [Any implementation hints]
 - [Relevant skill: .claude/skills/xyz/SKILL.md]
 
@@ -121,6 +134,7 @@ Create `specs/phases/PHASE-N-name.md`:
 ## Completion Criteria
 
 Phase is complete when:
+
 - [ ] All tickets DONE or explicitly SKIPPED
 - [ ] All tests passing
 - [ ] No PENDING spec decisions for this phase
@@ -129,12 +143,12 @@ Phase is complete when:
 
 ### 4. Estimate Sizing
 
-| Size | Hours | Typical Scope |
-|------|-------|---------------|
-| S | 1-2 | Single file, simple logic |
-| M | 2-4 | Few files, moderate complexity |
-| L | 4-8 | Multi-file feature, tests included |
-| XL | 8+ | Should be split into multiple tickets |
+| Size | Hours | Typical Scope                         |
+| ---- | ----- | ------------------------------------- |
+| S    | 1-2   | Single file, simple logic             |
+| M    | 2-4   | Few files, moderate complexity        |
+| L    | 4-8   | Multi-file feature, tests included    |
+| XL   | 8+    | Should be split into multiple tickets |
 
 ### 5. Ticket Ordering
 
@@ -147,6 +161,7 @@ Phase is complete when:
 5. Tests throughout (TDD still applies per component)
 
 This approach:
+
 - Reveals what APIs actually need before building them
 - Minimizes rework from mismatched contracts
 - Gets something demoable faster
@@ -160,7 +175,9 @@ Add to `progress/build-log.md`:
 
 ```markdown
 ---
+
 ## Phase N Initialized
+
 **Date:** YYYY-MM-DD HH:MM
 **Tickets:** X
 **Estimated:** S=X, M=X, L=X
@@ -186,6 +203,19 @@ Add to `progress/build-log.md`:
 
 ---
 
+## Required Phase 1 Tickets
+
+**MANDATORY:** Phase 1 MUST include these testing infrastructure tickets early in the scaffolding section:
+
+| ID      | Title                                 | Status | Est | Blocked By |
+| ------- | ------------------------------------- | ------ | --- | ---------- |
+| P1-T00X | Configure Vitest and write first test | TODO   | S   | T001       |
+| P1-T00Y | Configure test coverage reporting     | TODO   | S   | T00X       |
+
+These tickets ensure testing infrastructure exists from day one. Agents are more likely to skip writing tests if setup doesn't exist than to skip using existing tooling.
+
+---
+
 ## Example: Phase 1 Foundation Tickets
 
 ```markdown
@@ -195,31 +225,34 @@ Add to `progress/build-log.md`:
 
 ### Scaffolding
 
-| ID | Title | Status | Est | Blocked By |
-|----|-------|--------|-----|------------|
-| P1-T001 | Initialize Next.js project with Bun | TODO | S | - |
-| P1-T002 | Configure Prisma with PostgreSQL | TODO | S | T001 |
-| P1-T003 | Set up project structure | TODO | S | T001 |
-| P1-T004 | Configure ESLint, Prettier, TypeScript | TODO | S | T001 |
-| P1-T005 | Set up Vitest for testing | TODO | S | T004 |
+| ID      | Title                                  | Status | Est | Blocked By |
+| ------- | -------------------------------------- | ------ | --- | ---------- |
+| P1-T001 | Initialize Next.js project with Bun    | TODO   | S   | -          |
+| P1-T002 | Configure Prisma with PostgreSQL       | TODO   | S   | T001       |
+| P1-T003 | Set up project structure               | TODO   | S   | T001       |
+| P1-T004 | Configure ESLint, Prettier, TypeScript | TODO   | S   | T001       |
+| P1-T005 | Configure Vitest and write first test  | TODO   | S   | T004       |
+| P1-T006 | Configure test coverage reporting      | TODO   | S   | T005       |
 
 ### Authentication
 
-| ID | Title | Status | Est | Blocked By |
-|----|-------|--------|-----|------------|
-| P1-T006 | Implement BetterAuth setup | TODO | M | T002 |
-| P1-T007 | Add email/password authentication | TODO | M | T006 |
-| P1-T008 | Add Google OAuth | TODO | M | T006 |
-| P1-T009 | Add Apple Sign In | TODO | M | T006 |
-| P1-T010 | Create auth middleware | TODO | S | T006 |
+| ID      | Title                             | Status | Est | Blocked By |
+| ------- | --------------------------------- | ------ | --- | ---------- |
+| P1-T007 | Implement BetterAuth setup        | TODO   | M   | T002, T005 |
+| P1-T008 | Add email/password authentication | TODO   | M   | T007       |
+| P1-T009 | Add Google OAuth                  | TODO   | M   | T007       |
+| P1-T010 | Add Apple Sign In                 | TODO   | M   | T007       |
+| P1-T011 | Create auth middleware            | TODO   | S   | T007       |
 
 ### Core Schema
 
-| ID | Title | Status | Est | Blocked By |
-|----|-------|--------|-----|------------|
-| P1-T011 | Define User model | TODO | S | T002 |
-| P1-T012 | Define AthleteProfile model | TODO | S | T011 |
-| P1-T013 | Define TrainingPlan model | TODO | M | T011 |
-| P1-T014 | Define Workout model | TODO | M | T013 |
-| P1-T015 | Run initial migration | TODO | S | T014 |
+| ID      | Title                       | Status | Est | Blocked By |
+| ------- | --------------------------- | ------ | --- | ---------- |
+| P1-T012 | Define User model           | TODO   | S   | T002       |
+| P1-T013 | Define AthleteProfile model | TODO   | S   | T012       |
+| P1-T014 | Define TrainingPlan model   | TODO   | M   | T012       |
+| P1-T015 | Define Workout model        | TODO   | M   | T014       |
+| P1-T016 | Run initial migration       | TODO   | S   | T015       |
 ```
+
+**Note:** Authentication tickets now depend on T005 (Vitest setup) to enforce that tests can be written from the start.

@@ -19,17 +19,18 @@ Display the current state of the project including phase progress, tickets, and 
 
 ### Progress
 
-| Status | Count |
-|--------|-------|
-| DONE | X |
-| IN_PROGRESS | X |
-| BLOCKED | X |
-| TODO | X |
-| **Total** | **X** |
+| Status      | Count |
+| ----------- | ----- |
+| DONE        | X     |
+| IN_PROGRESS | X     |
+| BLOCKED     | X     |
+| TODO        | X     |
+| **Total**   | **X** |
 
 ### Current Ticket
 
 [PN-TXXX] [Title]
+
 - Status: IN_PROGRESS
 - Started: YYYY-MM-DD HH:MM
 - Blocked by: None
@@ -44,15 +45,15 @@ Display the current state of the project including phase progress, tickets, and 
 
 ### Spec Decisions (specs/decisions/)
 
-| ID | Title | Status | Blocks |
-|----|-------|--------|--------|
-| SD-001 | Auth provider | PENDING | P1-T006 |
-| SD-002 | Vector database | DECIDED | - |
+| ID     | Title           | Status  | Blocks  |
+| ------ | --------------- | ------- | ------- |
+| SD-001 | Auth provider   | PENDING | P1-T006 |
+| SD-002 | Vector database | DECIDED | -       |
 
 ### Architecture Decisions (docs/decisions/)
 
-| ID | Title | Status | Blocks |
-|----|-------|--------|--------|
+| ID     | Title            | Status  | Blocks  |
+| ------ | ---------------- | ------- | ------- |
 | AD-001 | Caching strategy | PENDING | P2-T015 |
 
 ---
@@ -84,12 +85,25 @@ From progress/build-log.md:
 
 ## Health Check
 
-| Check | Status |
-|-------|--------|
-| Tests passing | ✅ |
-| Lint clean | ✅ |
-| Type check | ✅ |
-| No console.log | ✅ |
+| Check             | Status  |
+| ----------------- | ------- |
+| Tests passing     | ✅      |
+| Test coverage     | ✅ [X]% |
+| Test:source ratio | ✅ 0.X  |
+| Lint clean        | ✅      |
+| Type check        | ✅      |
+| No console.log    | ✅      |
+
+### Test Health (Critical)
+
+| Metric            | Value  | Threshold | Status |
+| ----------------- | ------ | --------- | ------ |
+| Test files        | X      | >0        | ✅/❌  |
+| Test:source ratio | 0.X    | >0.3      | ✅/❌  |
+| Coverage          | X%     | >60%      | ✅/❌  |
+| Vitest configured | Yes/No | Yes       | ✅/❌  |
+
+⚠️ **Zero tests is a critical blocker.** If test count is 0 after Phase 1, work should stop until tests are added.
 
 ---
 
@@ -104,13 +118,13 @@ From progress/build-log.md:
 
 ## Data Sources
 
-| Data | Source |
-|------|--------|
-| Phase number | `specs/CURRENT_PHASE` |
-| Phase details | `specs/phases/PHASE-N-*.md` |
-| Spec decisions | `specs/decisions/*.md` |
-| Arch decisions | `docs/decisions/*.md` |
-| Activity log | `progress/build-log.md` |
+| Data            | Source                              |
+| --------------- | ----------------------------------- |
+| Phase number    | `specs/CURRENT_PHASE`               |
+| Phase details   | `specs/phases/PHASE-N-*.md`         |
+| Spec decisions  | `specs/decisions/*.md`              |
+| Arch decisions  | `docs/decisions/*.md`               |
+| Activity log    | `progress/build-log.md`             |
 | CLAUDE.md state | `CLAUDE.md` (Current State section) |
 
 ---

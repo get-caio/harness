@@ -80,21 +80,25 @@ Find and read `specs/phases/PHASE-{N}-*.md`
 ### 3. Find Next Ticket
 
 Select the next TODO ticket that:
+
 - Has status `TODO`
 - Has no unresolved dependencies (blocked-by tickets are DONE)
 - Has no PENDING spec decisions
 
 If multiple eligible, pick the one with:
+
 1. Lowest ticket number (maintains order)
 2. Fewest dependencies (simpler first)
 
 ### 4. Check Decision Gate
 
 Before starting a ticket, verify:
+
 - No PENDING spec decisions in `specs/decisions/` block this ticket
 - No PENDING arch decisions in `docs/decisions/` block this ticket
 
 If blocked:
+
 ```markdown
 | PN-TXXX | Title | BLOCKED | M | - | SD-001 |
 ```
@@ -102,10 +106,13 @@ If blocked:
 ### 5. Update Status
 
 In the phase file, change:
+
 ```markdown
 | PN-TXXX | Title | TODO | M | - |
 ```
+
 to:
+
 ```markdown
 | PN-TXXX | Title | IN_PROGRESS | M | - |
 ```
@@ -114,17 +121,17 @@ to:
 
 Based on ticket content, read applicable skills:
 
-| Ticket involves... | Read... |
-|-------------------|---------|
-| **Any UI work** | `specs/design/DESIGN.md` first |
-| Database/Prisma | `skills/nextjs-bun-prisma` |
-| Authentication | `skills/auth` |
-| API routes/tRPC | `skills/trpc` |
-| Claude API | `skills/ai-integration` |
-| React Native | `skills/react-native` |
-| Stripe/payments | `skills/payments` |
-| Tests | `skills/testing` |
-| User input/auth | `skills/security` |
+| Ticket involves... | Read...                        |
+| ------------------ | ------------------------------ |
+| **Any UI work**    | `specs/design/DESIGN.md` first |
+| Database/Prisma    | `skills/nextjs-bun-prisma`     |
+| Authentication     | `skills/auth`                  |
+| API routes/tRPC    | `skills/trpc`                  |
+| Claude API         | `skills/ai-integration`        |
+| React Native       | `skills/react-native`          |
+| Stripe/payments    | `skills/payments`              |
+| Tests              | `skills/testing`               |
+| User input/auth    | `skills/security`              |
 
 **For UI tickets:** Always check `specs/design/DESIGN.md` for colors, typography, spacing, and component patterns before implementing. Reference `specs/design/assets/` for logo and icon paths.
 
@@ -133,6 +140,7 @@ Based on ticket content, read applicable skills:
 **Frontend-First Approach:**
 
 For feature tickets, build in this order:
+
 1. Define types/schema (shared contract)
 2. Build UI components with dummy data
 3. Use MSW to mock API responses
@@ -142,17 +150,19 @@ For feature tickets, build in this order:
 This reveals what APIs actually need before building them.
 
 **Test First:**
+
 ```typescript
 // __tests__/feature.test.ts
-describe('Feature', () => {
-  it('should do the thing', () => {
+describe("Feature", () => {
+  it("should do the thing", () => {
     // Write test for expected behavior
-    expect(result).toBe(expected)
-  })
-})
+    expect(result).toBe(expected);
+  });
+});
 ```
 
 **Then Implement:**
+
 ```typescript
 // src/feature.ts
 export function feature() {
@@ -163,6 +173,7 @@ export function feature() {
 **For Large Tickets (L or XL):**
 
 Consider spawning a feature subagent:
+
 ```
 Task: Implement [ticket title]
 Context: [ticket details, relevant code, SPEC section]
@@ -175,18 +186,38 @@ Before committing, run:
 
 ```bash
 bun test           # All tests pass
-bun lint           # No lint errors  
+bun lint           # No lint errors
 bun typecheck      # No type errors
 bun audit          # No high/critical vulnerabilities
 ```
 
+**⚠️ MANDATORY TEST GATE:**
+
+Every ticket MUST have tests. Before committing, verify:
+
+| Check           | Requirement                                |
+| --------------- | ------------------------------------------ |
+| New test files? | At least one test file created or modified |
+| Test count      | At least 1 test per acceptance criterion   |
+| Tests pass      | `bun test` exits with 0                    |
+| Coverage        | Does not decrease from previous commit     |
+
+**If no tests:** Do NOT commit. Either:
+
+1. Write the tests now (preferred)
+2. Create a spec decision explaining why tests are N/A for this ticket, mark ticket BLOCKED, and move to next ticket
+
+"I'll add tests later" is NOT acceptable. "This ticket doesn't need tests" requires human approval via spec decision.
+
 **Security checklist** (for auth/API/data tickets):
+
 - [ ] Input validated with Zod
 - [ ] Auth check at start of protected actions
 - [ ] Resource ownership verified
 - [ ] No secrets in code
 
 **Complexity check:**
+
 - [ ] Functions < 40 lines
 - [ ] Nesting < 3 levels
 - [ ] No magic numbers
@@ -201,6 +232,7 @@ git commit -m "[PN-TXXX] Brief description"
 ```
 
 Examples:
+
 - `[P1-T001] Initialize Next.js project with Bun`
 - `[P2-T008] Add training plan creation form`
 - `[P3-T015] Implement Claude workout generation`
@@ -208,10 +240,13 @@ Examples:
 ### 10. Update Status
 
 In phase file, change:
+
 ```markdown
 | PN-TXXX | Title | IN_PROGRESS | M | - |
 ```
+
 to:
+
 ```markdown
 | PN-TXXX | Title | DONE | M | - |
 ```
@@ -222,6 +257,7 @@ Add to `progress/build-log.md`:
 
 ```markdown
 ### PN-TXXX: [Title]
+
 **Completed:** YYYY-MM-DD HH:MM
 **Files changed:** X
 **Tests added:** Y
@@ -255,15 +291,20 @@ If you discover an ambiguity while working:
 ## Phase Completion
 
 Phase is complete when:
+
 - All tickets are DONE or SKIPPED
 - No IN_PROGRESS tickets remain
 - All tests passing
 - Human sign-off received
 
 Then:
+
 1. Update phase file status to COMPLETE
 2. Log phase completion to build-log.md
-3. Run `/init-phase N+1` for next phase
+3. **Run `/audit` to catch issues early** (especially after Phase 1 and 2)
+4. Run `/init-phase N+1` for next phase
+
+**⚠️ AUDIT GATE:** Run `/audit` after completing Phase 1, Phase 2, and before any PR. Catching issues early prevents drift that compounds across phases.
 
 ---
 
@@ -277,6 +318,7 @@ Stop the work loop when:
 4. **Error threshold** — Too many consecutive failures
 
 On exit, report:
+
 - Tickets completed this session
 - Tickets remaining
 - Blocking decisions (if any)

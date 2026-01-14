@@ -4,7 +4,7 @@ Progress tracking for phased development.
 
 ---
 
-<!-- 
+<!--
 Template for phase initialization:
 
 ## YYYY-MM-DD HH:MM — Phase N Initialized
@@ -31,7 +31,7 @@ Template for session start:
 ---
 -->
 
-<!-- 
+<!--
 Template for ticket completion:
 
 ### YYYY-MM-DD HH:MM — PN-TXXX: [Title]
@@ -40,9 +40,14 @@ Template for ticket completion:
 **Files Changed:**
 - src/... (new)
 - src/... (modified)
-**Tests:** X added, all passing
+**Tests:** [REQUIRED - list test files added/modified, or link to spec decision justifying skip]
+- tests/... (X tests added)
+- src/...test.ts (Y tests added)
+**Test Coverage:** X% → Y% (or N/A if coverage not configured yet)
 **Commit:** abc123f
 **Notes:** [Any relevant notes]
+
+⚠️ GATE: If "Tests:" field is empty or says "N/A" without a linked spec decision, this ticket is NOT complete.
 
 ---
 -->

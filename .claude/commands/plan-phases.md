@@ -23,10 +23,11 @@ Read `specs/SPEC.md` completely. Identify:
 
 Group features by:
 
-1. **Foundation** — Auth, database schema, project scaffold
+1. **Foundation** — Auth, database schema, project scaffold, **test infrastructure**
    - Always Phase 1
    - No user-facing features yet
    - Gets the codebase buildable and testable
+   - **MUST include Vitest setup and first test** (non-negotiable)
 
 2. **Core Value** — The main thing the product does
    - Usually Phase 2
@@ -63,28 +64,36 @@ Create a summary for human review:
 Based on SPEC.md analysis, I propose N phases:
 
 ## Phase 1: Foundation (Est. X tickets)
-**Goal:** Scaffold project, auth, and core data models
+
+**Goal:** Scaffold project, auth, core data models, and test infrastructure
 **Scope:**
+
 - Project setup with Next.js + Bun + Prisma
+- **Configure Vitest and write first test** (MANDATORY)
+- **Configure test coverage reporting** (MANDATORY)
 - User authentication (method TBD — see decisions)
 - Core database schema
 - Basic layout and navigation shell
 
 **Spec Decisions Needed:**
+
 - [ ] Auth provider (BetterAuth vs NextAuth)
 - [ ] Database hosting (Supabase vs Railway)
 
 ---
 
 ## Phase 2: [Name] (Est. X tickets)
+
 **Goal:** [One sentence]
 **Scope:**
+
 - Feature A
 - Feature B
 - Feature C
 
 **Depends on:** Phase 1
 **Spec Decisions Needed:**
+
 - [ ] [Any clarifications needed]
 
 ---
@@ -111,6 +120,7 @@ Based on SPEC.md analysis, I propose N phases:
 ### 4. Wait for Approval
 
 Output the proposal and wait for human to:
+
 - Approve phases as proposed
 - Adjust scope or ordering
 - Add/remove phases
@@ -124,14 +134,14 @@ Do not proceed to `/init-phase` until human approves.
 
 For a typical SaaS with AI features:
 
-| Phase | Name | Tickets | Focus |
-|-------|------|---------|-------|
-| 1 | Foundation | 8-12 | Auth, DB, scaffold |
-| 2 | Core Web | 12-20 | Main user flows |
-| 3 | AI Engine | 8-15 | AI/ML features |
-| 4 | Mobile | 15-25 | React Native app |
-| 5 | Integrations | 8-12 | Third-party APIs |
-| 6 | Polish | 10-15 | Admin, analytics |
+| Phase | Name         | Tickets | Focus              |
+| ----- | ------------ | ------- | ------------------ |
+| 1     | Foundation   | 8-12    | Auth, DB, scaffold |
+| 2     | Core Web     | 12-20   | Main user flows    |
+| 3     | AI Engine    | 8-15    | AI/ML features     |
+| 4     | Mobile       | 15-25   | React Native app   |
+| 5     | Integrations | 8-12    | Third-party APIs   |
+| 6     | Polish       | 10-15   | Admin, analytics   |
 
 ---
 

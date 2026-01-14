@@ -13,6 +13,7 @@ triggers:
 ## Purpose
 
 Surface security vulnerabilities, code quality issues, and tech debt before external eyes see them. Functions as:
+
 - Post-phase validation during builds
 - Final QA before shipping
 - Cold assessment of acquired/inherited codebases
@@ -21,21 +22,27 @@ Surface security vulnerabilities, code quality issues, and tech debt before exte
 ## Execution Modes
 
 ### Quick Scan (5-10 min)
+
 Run after phases. Catches obvious issues fast.
+
 ```
 Phases: 1, 2, 3 (partial)
 Output: PASS / FAIL with blockers only
 ```
 
 ### Full Audit (30-60 min)
+
 Run at build completion or on new codebases.
+
 ```
 Phases: All
 Output: Full report with severity ratings
 ```
 
 ### Cold Assessment (60-90 min)
+
 First look at unknown codebase. Includes architecture understanding.
+
 ```
 Phases: All + architecture mapping
 Output: Full report + codebase overview + risk assessment
@@ -72,12 +79,12 @@ ls -la package*.json yarn.lock pnpm-lock.yaml bun.lockb 2>/dev/null
 
 ### Flags
 
-| Signal | Severity | Meaning |
-|--------|----------|---------|
-| < 10 commits in 6 months | ⚠️ Medium | Stale or abandoned |
-| 1 contributor > 90% commits | ⚠️ Medium | Bus factor = 1 |
-| No lock file | 🔴 High | Non-reproducible builds |
-| Multiple lock files | ⚠️ Medium | Tooling confusion |
+| Signal                      | Severity  | Meaning                 |
+| --------------------------- | --------- | ----------------------- |
+| < 10 commits in 6 months    | ⚠️ Medium | Stale or abandoned      |
+| 1 contributor > 90% commits | ⚠️ Medium | Bus factor = 1          |
+| No lock file                | 🔴 High   | Non-reproducible builds |
+| Multiple lock files         | ⚠️ Medium | Tooling confusion       |
 
 ### Output
 
@@ -125,13 +132,13 @@ pip list --outdated --format=json 2>/dev/null
 
 ### Flags
 
-| Signal | Severity | Meaning |
-|--------|----------|---------|
-| Critical vulns > 0 | 🔴 Critical | Immediate fix required |
-| High vulns > 5 | 🔴 High | Fix before shipping |
-| Dependencies 2+ major versions behind | ⚠️ Medium | Update debt |
-| Unused deps > 10 | ⚡ Low | Bloat, cleanup needed |
-| `moment.js` present | ⚡ Low | Use date-fns or dayjs |
+| Signal                                | Severity    | Meaning                |
+| ------------------------------------- | ----------- | ---------------------- |
+| Critical vulns > 0                    | 🔴 Critical | Immediate fix required |
+| High vulns > 5                        | 🔴 High     | Fix before shipping    |
+| Dependencies 2+ major versions behind | ⚠️ Medium   | Update debt            |
+| Unused deps > 10                      | ⚡ Low      | Bloat, cleanup needed  |
+| `moment.js` present                   | ⚡ Low      | Use date-fns or dayjs  |
 
 ### Output
 
@@ -256,16 +263,16 @@ grep -rn --include="*.ts" \
 
 ### Flags
 
-| Signal | Severity | Action |
-|--------|----------|--------|
-| Secrets in git history | 🔴 Critical | Rotate ALL exposed credentials immediately |
-| Hardcoded secrets in code | 🔴 Critical | Move to env vars, add to .gitignore |
-| Raw SQL with interpolation | 🔴 Critical | Parameterize all queries |
-| dangerouslySetInnerHTML | 🔴 High | Audit each usage, sanitize input |
-| API routes without auth check | 🔴 High | Add auth middleware |
-| CORS set to `*` | ⚠️ Medium | Restrict to known origins |
-| No input validation library | ⚠️ Medium | Add zod/yup validation |
-| Password stored without hashing | 🔴 Critical | Never store plaintext passwords |
+| Signal                          | Severity    | Action                                     |
+| ------------------------------- | ----------- | ------------------------------------------ |
+| Secrets in git history          | 🔴 Critical | Rotate ALL exposed credentials immediately |
+| Hardcoded secrets in code       | 🔴 Critical | Move to env vars, add to .gitignore        |
+| Raw SQL with interpolation      | 🔴 Critical | Parameterize all queries                   |
+| dangerouslySetInnerHTML         | 🔴 High     | Audit each usage, sanitize input           |
+| API routes without auth check   | 🔴 High     | Add auth middleware                        |
+| CORS set to `*`                 | ⚠️ Medium   | Restrict to known origins                  |
+| No input validation library     | ⚠️ Medium   | Add zod/yup validation                     |
+| Password stored without hashing | 🔴 Critical | Never store plaintext passwords            |
 
 ### Output
 
@@ -361,13 +368,32 @@ grep -rn --include="*.ts" --include="*.tsx" \
 echo "=== Test Health ==="
 # Test file count
 echo "Test files:"
-find . -name "*.test.ts" -o -name "*.spec.ts" -o -name "*.test.tsx" -o -name "*.spec.tsx" 2>/dev/null | \
-  grep -v node_modules | wc -l
+TEST_COUNT=$(find . -name "*.test.ts" -o -name "*.spec.ts" -o -name "*.test.tsx" -o -name "*.spec.tsx" 2>/dev/null | \
+  grep -v node_modules | wc -l)
+echo "$TEST_COUNT"
 
-# Source to test ratio
+# Source files (excluding tests)
 echo "Source files:"
-find . -name "*.ts" -o -name "*.tsx" 2>/dev/null | \
-  grep -v node_modules | grep -v ".test\|.spec" | wc -l
+SOURCE_COUNT=$(find . -name "*.ts" -o -name "*.tsx" 2>/dev/null | \
+  grep -v node_modules | grep -v ".test\|.spec" | wc -l)
+echo "$SOURCE_COUNT"
+
+# Test to source ratio
+if [ "$SOURCE_COUNT" -gt 0 ]; then
+  RATIO=$(echo "scale=2; $TEST_COUNT / $SOURCE_COUNT" | bc 2>/dev/null || echo "N/A")
+  echo "Test:Source ratio: $RATIO"
+fi
+
+# Check for Vitest config
+echo "=== Test Infrastructure ==="
+ls vitest.config.ts vitest.config.js 2>/dev/null || echo "⚠️ No vitest config found"
+
+# Check for test setup file
+ls tests/setup.ts test/setup.ts 2>/dev/null || echo "⚠️ No test setup file found"
+
+# Check for test scripts in package.json
+echo "Test scripts in package.json:"
+grep -E '"test":|"test:' package.json 2>/dev/null | head -5 || echo "⚠️ No test scripts found"
 
 # Run coverage if available
 npm run test:coverage --if-present 2>/dev/null || npm run coverage --if-present 2>/dev/null
@@ -375,16 +401,19 @@ npm run test:coverage --if-present 2>/dev/null || npm run coverage --if-present 
 
 ### Flags
 
-| Signal | Severity | Meaning |
-|--------|----------|---------|
-| `any` count > 50 | ⚠️ Medium | Types are lying, bugs hiding |
-| `any` count > 200 | 🔴 High | Type system effectively disabled |
-| strict mode off | ⚠️ Medium | Missing type safety guarantees |
-| Empty catches > 10 | ⚠️ Medium | Silent failures, hard to debug |
-| Files > 500 lines > 5 | ⚠️ Medium | God objects, needs refactoring |
-| Circular dependencies | 🔴 High | Architecture rot |
-| Test:source ratio < 0.3 | ⚠️ Medium | Under-tested |
-| Zero tests | 🔴 High | No safety net |
+| Signal                  | Severity    | Meaning                             |
+| ----------------------- | ----------- | ----------------------------------- |
+| `any` count > 50        | ⚠️ Medium   | Types are lying, bugs hiding        |
+| `any` count > 200       | 🔴 High     | Type system effectively disabled    |
+| strict mode off         | ⚠️ Medium   | Missing type safety guarantees      |
+| Empty catches > 10      | ⚠️ Medium   | Silent failures, hard to debug      |
+| Files > 500 lines > 5   | ⚠️ Medium   | God objects, needs refactoring      |
+| Circular dependencies   | 🔴 High     | Architecture rot                    |
+| Test:source ratio < 0.3 | ⚠️ Medium   | Under-tested                        |
+| Test:source ratio < 0.1 | 🔴 High     | Severely under-tested               |
+| Zero tests              | 🔴 Critical | No safety net — **blocks shipping** |
+| No vitest config        | 🔴 High     | Test infrastructure missing         |
+| No test scripts         | 🔴 High     | Tests cannot be run                 |
 
 ### Output
 
@@ -440,12 +469,12 @@ grep -rn --include="*.ts" \
 
 ### Flags
 
-| Signal | Severity | Meaning |
-|--------|----------|---------|
-| No indexes on foreign keys | ⚠️ Medium | Performance issues at scale |
-| Update/delete without where | 🔴 Critical | Data loss risk |
-| No timestamps on tables | ⚡ Low | Audit trail missing |
-| Inconsistent soft delete | ⚠️ Medium | Data integrity issues |
+| Signal                      | Severity    | Meaning                     |
+| --------------------------- | ----------- | --------------------------- |
+| No indexes on foreign keys  | ⚠️ Medium   | Performance issues at scale |
+| Update/delete without where | 🔴 Critical | Data loss risk              |
+| No timestamps on tables     | ⚡ Low      | Audit trail missing         |
+| Inconsistent soft delete    | ⚠️ Medium   | Data integrity issues       |
 
 ---
 
@@ -475,12 +504,12 @@ cat Dockerfile 2>/dev/null | head -20
 
 ### Flags
 
-| Signal | Severity | Meaning |
-|--------|----------|---------|
-| No CI/CD | ⚠️ Medium | Manual deployment risk |
-| CI has no tests | ⚠️ Medium | False confidence |
-| No .env.example | ⚡ Low | Onboarding friction |
-| Secrets in docker-compose | 🔴 High | Exposed credentials |
+| Signal                    | Severity  | Meaning                |
+| ------------------------- | --------- | ---------------------- |
+| No CI/CD                  | ⚠️ Medium | Manual deployment risk |
+| CI has no tests           | ⚠️ Medium | False confidence       |
+| No .env.example           | ⚡ Low    | Onboarding friction    |
+| Secrets in docker-compose | 🔴 High   | Exposed credentials    |
 
 ---
 
@@ -490,18 +519,22 @@ cat Dockerfile 2>/dev/null | head -20
 
 ```markdown
 # Quick Audit: [Project Name]
+
 Date: [timestamp]
 Mode: Quick Scan
 
 ## Status: [PASS / FAIL]
 
 ### Blockers (must fix)
+
 - [list or "None"]
 
 ### Warnings (should fix)
+
 - [list or "None"]
 
 ### Next Steps
+
 - [specific actions]
 ```
 
@@ -509,11 +542,13 @@ Mode: Quick Scan
 
 ```markdown
 # Full Audit Report: [Project Name]
+
 Date: [timestamp]
 Mode: Full Audit
 Duration: [X] minutes
 
 ## Executive Summary
+
 - Overall Health: [1-10 score]
 - Security Posture: [Strong/Adequate/Weak/Critical]
 - Code Quality: [High/Medium/Low]
@@ -521,36 +556,43 @@ Duration: [X] minutes
 - Recommendation: [Ship/Fix then ship/Major rework needed]
 
 ## Critical Issues (Fix Immediately)
-| Issue | Location | Severity | Remediation |
-|-------|----------|----------|-------------|
-| [issue] | [file:line] | 🔴 Critical | [action] |
+
+| Issue   | Location    | Severity    | Remediation |
+| ------- | ----------- | ----------- | ----------- |
+| [issue] | [file:line] | 🔴 Critical | [action]    |
 
 ## High Priority Issues (Fix Before Shipping)
+
 | Issue | Location | Severity | Remediation |
-|-------|----------|----------|-------------|
+| ----- | -------- | -------- | ----------- |
 
 ## Medium Priority (Plan to Fix)
+
 | Issue | Location | Severity | Remediation |
-|-------|----------|----------|-------------|
+| ----- | -------- | -------- | ----------- |
 
 ## Low Priority (Tech Debt Backlog)
+
 | Issue | Location | Severity | Remediation |
-|-------|----------|----------|-------------|
+| ----- | -------- | -------- | ----------- |
 
 ## Metrics Summary
-| Metric | Value | Benchmark | Status |
-|--------|-------|-----------|--------|
-| Vulnerabilities (critical) | [N] | 0 | [✅/❌] |
-| Vulnerabilities (high) | [N] | <3 | [✅/❌] |
-| any usage | [N] | <50 | [✅/❌] |
-| Test coverage | [N]% | >60% | [✅/❌] |
-| Empty catches | [N] | <5 | [✅/❌] |
-| Files >500 LOC | [N] | <5 | [✅/❌] |
+
+| Metric                     | Value | Benchmark | Status  |
+| -------------------------- | ----- | --------- | ------- |
+| Vulnerabilities (critical) | [N]   | 0         | [✅/❌] |
+| Vulnerabilities (high)     | [N]   | <3        | [✅/❌] |
+| any usage                  | [N]   | <50       | [✅/❌] |
+| Test coverage              | [N]%  | >60%      | [✅/❌] |
+| Empty catches              | [N]   | <5        | [✅/❌] |
+| Files >500 LOC             | [N]   | <5        | [✅/❌] |
 
 ## Positive Findings
+
 - [things done well]
 
 ## Detailed Findings
+
 [Phase-by-phase details]
 ```
 
@@ -649,6 +691,7 @@ Add to `.audit-config.json`:
 ## Maintenance
 
 Update this skill when:
+
 - New vulnerability patterns emerge
 - Framework-specific checks needed (add to relevant phase)
 - New tools become available (add as alternatives)
