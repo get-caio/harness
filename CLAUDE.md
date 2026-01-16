@@ -228,6 +228,7 @@ Reference these before implementing related features:
 | `security`             | Input validation, auth checks, secrets                  |
 | `code-quality`         | Complexity limits, refactoring                          |
 | `code-audit`           | Security scanning, dependency audit, codebase health    |
+| `red-team`             | Adversarial testing against running app, OWASP coverage |
 
 ---
 
@@ -296,3 +297,4 @@ open_arch_decisions: 0
 10. **Never touch prod** — humans handle production deployments
 11. **Read relevant skills** before implementing features
 12. **Run /audit after Phase 1 and 2** — catch issues early, not at the end
+13. **Run /red-team after Phase 1** — validate auth controls actually work (requires running app)
