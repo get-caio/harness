@@ -229,6 +229,9 @@ Reference these before implementing related features:
 | `code-quality`         | Complexity limits, refactoring                          |
 | `code-audit`           | Security scanning, dependency audit, codebase health    |
 | `red-team`             | Adversarial testing against running app, OWASP coverage |
+| `observability`        | Logging, monitoring, health checks, debugging           |
+| `incident-response`    | Production incidents, rollback, post-mortems            |
+| `data-protection`      | GDPR, CCPA, privacy, data handling compliance           |
 
 ---
 
@@ -298,3 +301,22 @@ open_arch_decisions: 0
 11. **Read relevant skills** before implementing features
 12. **Run /audit after Phase 1 and 2** — catch issues early, not at the end
 13. **Run /red-team after Phase 1** — validate auth controls actually work (requires running app)
+14. **Run /pre-ship before production** — final checklist to prevent career-ending failures
+15. **Add observability in Phase 1** — health checks, structured logging, error tracking from day one
+
+---
+
+## Career-Critical Failures to Prevent
+
+These failures can end careers. The harness is designed to prevent them:
+
+| Failure Mode                  | Prevention                                       | Gate                 |
+| ----------------------------- | ------------------------------------------------ | -------------------- |
+| **Data breach**               | Secrets detection hook, /red-team, /audit        | Pre-commit + Phase 1 |
+| **Production outage**         | /pre-ship rollback plan, incident-response skill | Pre-deploy           |
+| **GDPR/compliance violation** | data-protection skill, /pre-ship checklist       | Phase 1 + Pre-deploy |
+| **Major bug in production**   | Mandatory tests, /audit, /red-team               | Every commit         |
+| **Can't debug production**    | observability skill, health endpoint             | Phase 1              |
+| **No rollback possible**      | /pre-ship migration check, tagging               | Pre-deploy           |
+
+**If any of these gates fail, DO NOT SHIP. Escalate to human.**
