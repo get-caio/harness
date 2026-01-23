@@ -214,25 +214,28 @@ _Modify per project as specified in SPEC.md_
 
 Reference these before implementing related features:
 
-| Skill                  | Use For                                                   |
-| ---------------------- | --------------------------------------------------------- |
-| `nextjs-bun-prisma`    | Project structure, API routes, database                   |
-| `react-best-practices` | React/Next.js performance patterns, bundle optimization   |
-| `auth`                 | Authentication, sessions, OAuth                           |
-| `trpc`                 | Type-safe API, routers, client setup                      |
-| `ai-integration`       | Claude API, prompts, tool use, streaming                  |
-| `react-native`         | Mobile app, Expo, offline, notifications                  |
-| `payments`             | Stripe, subscriptions, webhooks                           |
-| `testing`              | Vitest, unit tests, component tests, MSW mocking          |
-| `e2e-testing`          | Playwright, browser tests, visual regression, a11y        |
-| `security`             | Input validation, auth checks, secrets                    |
-| `code-quality`         | Complexity limits, refactoring                            |
-| `code-audit`           | Security scanning, dependency audit, codebase health      |
-| `red-team`             | Adversarial testing against running app, OWASP coverage   |
-| `observability`        | Logging, monitoring, health checks, debugging             |
-| `incident-response`    | Production incidents, rollback, post-mortems              |
-| `data-protection`      | GDPR, CCPA, privacy, data handling compliance             |
-| `design-craft`         | Empty states, loading states, micro-interactions, delight |
+| Skill                      | Use For                                                       |
+| -------------------------- | ------------------------------------------------------------- |
+| `nextjs-bun-prisma`        | Project structure, API routes, database                       |
+| `react-best-practices`     | React/Next.js performance patterns, bundle optimization       |
+| `auth`                     | Authentication, sessions, OAuth                               |
+| `trpc`                     | Type-safe API, routers, client setup                          |
+| `ai-integration`           | Claude API, prompts, tool use, streaming                      |
+| `react-native`             | Mobile app, Expo, offline, notifications                      |
+| `payments`                 | Stripe, subscriptions, webhooks                               |
+| `testing`                  | Vitest, unit tests, component tests, MSW mocking              |
+| `e2e-testing`              | Playwright, browser tests, visual regression, a11y            |
+| `security`                 | Input validation, auth checks, secrets                        |
+| `code-quality`             | Complexity limits, refactoring                                |
+| `code-audit`               | Security scanning, dependency audit, codebase health          |
+| `red-team`                 | Adversarial testing against running app, OWASP coverage       |
+| `observability`            | Logging, monitoring, health checks, debugging                 |
+| `incident-response`        | Production incidents, rollback, post-mortems                  |
+| `data-protection`          | GDPR, CCPA, privacy, data handling compliance                 |
+| `design-craft`             | Empty states, loading states, micro-interactions, delight     |
+| `context-engineering`      | Context window management, progressive disclosure, compaction |
+| `multi-agent-coordination` | Subagent patterns, token economics, coordination strategies   |
+| `evaluation`               | Agent quality rubrics, LLM-as-judge, test set design          |
 
 ---
 

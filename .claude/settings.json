@@ -64,6 +64,16 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file_path=$(jq -r '.tool_input.file_path // .tool_input.path // empty'); if echo \"$file_path\" | grep -qE '(\\.env|\\.git/|package-lock\\.json|bun\\.lockb)'; then echo '❌ BLOCKED: Cannot edit protected file: '$file_path >&2 && exit 1; fi; exit 0",
+            "timeout": 5
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
@@ -80,6 +90,21 @@
             "type": "command",
             "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git (merge.*prod|checkout prod)'; then echo '❌ BLOCKED: Cannot merge to or checkout prod branch. Production is human-only.' >&2 && exit 1; fi; exit 0",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if [ -f bun.lockb ] && echo \"$cmd\" | grep -qE '^npm (install|i|add|ci)'; then echo '❌ BLOCKED: Use bun instead of npm in this project' >&2 && exit 1; fi; exit 0",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__github__create_pull_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🧪 Running tests before PR creation...' && bun test --passWithNoTests || (echo '❌ BLOCKED: Tests must pass before creating PR' >&2 && exit 1)",
+            "timeout": 120
           }
         ]
       }
