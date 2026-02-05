@@ -95,6 +95,11 @@
             "type": "command",
             "command": "cmd=$(jq -r '.tool_input.command // empty'); if [ -f bun.lockb ] && echo \"$cmd\" | grep -qE '^npm (install|i|add|ci)'; then echo '❌ BLOCKED: Use bun instead of npm in this project' >&2 && exit 1; fi; exit 0",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git push'; then echo '🔍 Running pre-push checks...' && npm run lint && npm run build || (echo '❌ BLOCKED: Fix lint/build errors before pushing' >&2 && exit 1); fi; exit 0",
+            "timeout": 300
           }
         ]
       },

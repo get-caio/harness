@@ -325,3 +325,33 @@ These failures can end careers. The harness is designed to prevent them:
 | **No rollback possible**      | /pre-ship migration check, tagging               | Pre-deploy           |
 
 **If any of these gates fail, DO NOT SHIP. Escalate to human.**
+
+---
+
+## Pre-Push Checklist
+
+Always run `npm run lint` and `npm run build` locally before pushing to GitHub. Fix any errors before committing.
+
+---
+
+## Code Editing Best Practices
+
+When fixing TypeScript errors, trace all usages of modified types/variables across the codebase using Grep before making changes. Nullable field changes especially require checking all consumers.
+
+---
+
+## Debugging Guidelines
+
+When debugging API issues, first check:
+
+1. Is the correct API endpoint being called?
+2. Is authentication passing correctly?
+3. Are required IDs being stored from previous API calls?
+
+Check git history for working implementations before assuming the API is broken.
+
+---
+
+## Feature Implementation
+
+For feature requests involving existing data (like "add existing companies to X"), clarify whether user wants to SELECT from existing records or CREATE new ones before implementing.
