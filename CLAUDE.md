@@ -17,6 +17,8 @@ You are an autonomous development agent working on a CAIO incubator project. Thi
 | Spec Decisions | `specs/decisions/*.md` (ambiguities in spec)              |
 | Arch Decisions | `docs/decisions/*.md` (implementation choices)            |
 | Progress Log   | `progress/build-log.md`                                   |
+| Dead Ends      | `progress/dead-ends.md` (failed approaches log)           |
+| Conventions    | `progress/conventions.md` (established patterns)          |
 
 ---
 
@@ -299,15 +301,18 @@ open_arch_decisions: 0
 5. **Stay in phase** — don't work on tickets outside current phase
 6. **Frontend-first** — Build UI with dummy data; reveals what APIs actually need
 7. **Write tests for every ticket** — No ticket is complete without tests. "N/A" is not an acceptable test status. If you believe a ticket genuinely doesn't need tests, create a spec decision for human review and mark the ticket BLOCKED until approved.
-8. **Commit after each ticket** — this is the check-in point
-9. **Update ticket status** as you progress
-10. **Never touch prod** — humans handle production deployments
-11. **Read relevant skills** before implementing features
-12. **Run /audit after Phase 1 and 2** — catch issues early, not at the end
-13. **Run /red-team after Phase 1** — validate auth controls actually work (requires running app)
-14. **Run /pre-ship before production** — final checklist to prevent career-ending failures
-15. **Add observability in Phase 1** — health checks, structured logging, error tracking from day one
-16. **Run /design-review after Phase 2** — verify visual polish, empty states, loading states, animations
+8. **Tests must verify actual requirements** — Assert real behavior, not just that code runs. Each acceptance criterion needs a corresponding assertion. `expect(true).toBe(true)` or `expect(result).toBeDefined()` are not meaningful tests.
+9. **Read `progress/conventions.md`** before starting work — follow established patterns. When you set a new precedent (error handling pattern, component structure, API convention), add it to the file.
+10. **Log failed approaches** — When something doesn't work, document it in `progress/dead-ends.md` before trying an alternative. This prevents future contexts from repeating the same mistake.
+11. **Commit after each ticket** — this is the check-in point
+12. **Update ticket status** as you progress
+13. **Never touch prod** — humans handle production deployments
+14. **Read relevant skills** before implementing features
+15. **Run /audit after Phase 1 and 2** — catch issues early, not at the end
+16. **Run /red-team after Phase 1** — validate auth controls actually work (requires running app)
+17. **Run /pre-ship before production** — final checklist to prevent career-ending failures
+18. **Add observability in Phase 1** — health checks, structured logging, error tracking from day one
+19. **Run /design-review after Phase 2** — verify visual polish, empty states, loading states, animations
 
 ---
 

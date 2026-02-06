@@ -117,9 +117,14 @@ to:
 | PN-TXXX | Title | IN_PROGRESS | M | - |
 ```
 
-### 6. Read Relevant Skills
+### 6. Read Context & Relevant Skills
 
-Based on ticket content, read applicable skills:
+**Before every ticket**, read:
+
+- `progress/conventions.md` — follow established patterns
+- `progress/dead-ends.md` — avoid repeating failed approaches
+
+Then, based on ticket content, read applicable skills:
 
 | Ticket involves... | Read...                        |
 | ------------------ | ------------------------------ |
@@ -263,6 +268,24 @@ Add to `progress/build-log.md`:
 **Tests added:** Y
 **Commit:** abc123
 ```
+
+---
+
+## Logging Failed Approaches
+
+When an approach doesn't work during implementation (wrong library, bad pattern, hitting a dead end), log it in `progress/dead-ends.md` BEFORE trying an alternative:
+
+```markdown
+## YYYY-MM-DD — [PN-TXXX] Brief description
+
+**Ticket:** PN-TXXX
+**Approach:** What was attempted
+**Result:** What went wrong
+**Why it failed:** Root cause if known
+**What worked instead:** The successful approach
+```
+
+This is not optional busywork — it prevents the highest-waste pattern in agent development: a fresh context re-trying something that already failed.
 
 ---
 

@@ -141,7 +141,16 @@ Phase is complete when:
 - [ ] Human sign-off received
 ```
 
-### 4. Estimate Sizing
+### 4. Ticket Independence
+
+Each ticket should be independently completable. When generating tickets:
+
+- **Split large tickets:** If a ticket touches 10+ files or can't be described in one paragraph, break it down.
+- **Avoid coupling:** Two tickets should not require each other's uncommitted work. Use dependency ordering (`Blocked By` column) to enforce sequence instead.
+- **One concern per ticket:** A ticket that does "add form AND create API AND write migration" is three tickets.
+- **XL = always split:** Any ticket estimated as XL must be decomposed before work begins.
+
+### 5. Estimate Sizing
 
 | Size | Hours | Typical Scope                         |
 | ---- | ----- | ------------------------------------- |
