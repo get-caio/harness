@@ -28,6 +28,11 @@
             "type": "command",
             "command": "file_path=$(jq -r '.tool_input.file_path // .tool_input.path // empty'); if [ -n \"$file_path\" ] && echo \"$file_path\" | grep -qE '\\.(ts|tsx|js|jsx)$'; then npx eslint --fix \"$file_path\" 2>/dev/null || true; fi",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "file_path=$(jq -r '.tool_input.file_path // .tool_input.path // empty'); if [ -z \"$file_path\" ] || ! echo \"$file_path\" | grep -qE '\\.(ts|tsx|js|jsx)$'; then exit 0; fi; if echo \"$file_path\" | grep -qE '\\.(test|spec)\\.(ts|tsx|js|jsx)$'; then exit 0; fi; if echo \"$file_path\" | grep -qE '(config|setup|\\.d\\.ts)'; then exit 0; fi; dir=$(dirname \"$file_path\"); base=$(basename \"$file_path\"); name=\"${base%.*}\"; ext=\"${base##*.}\"; test_file=''; for candidate in \"$dir/$name.test.$ext\" \"$dir/$name.spec.$ext\" \"$dir/__tests__/$name.test.$ext\" \"$dir/__tests__/$name.spec.$ext\"; do if [ -f \"$candidate\" ]; then test_file=\"$candidate\"; break; fi; done; if [ -z \"$test_file\" ]; then echo \"⚠️  No test file found for $file_path. Add a test at $dir/$name.test.$ext\"; exit 0; fi; echo \"🧪 Running test: $test_file\"; result=$(bunx vitest run \"$test_file\" 2>&1); status=$?; if [ $status -ne 0 ]; then echo \"❌ Test failed: $test_file\"; echo \"$result\" | tail -30; exit 1; else echo \"✅ Test passed: $test_file\"; fi",
+            "timeout": 60
           }
         ]
       },
@@ -120,7 +125,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Permission requested - check Claude Code session'",
+            "command": "afplay -v 0.5 /System/Library/Sounds/Funk.aiff &",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay -v 0.5 /System/Library/Sounds/Glass.aiff &",
             "timeout": 5
           }
         ]

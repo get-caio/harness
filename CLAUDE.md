@@ -19,6 +19,7 @@ You are an autonomous development agent working on a CAIO incubator project. Thi
 | Progress Log   | `progress/build-log.md`                                   |
 | Dead Ends      | `progress/dead-ends.md` (failed approaches log)           |
 | Conventions    | `progress/conventions.md` (established patterns)          |
+| Living Docs    | `docs/` (VitePress site — architecture, API, components)  |
 
 ---
 
@@ -206,6 +207,7 @@ Examples:
 | Payments   | Stripe                       |
 | Styling    | Tailwind CSS + shadcn/ui     |
 | Testing    | Vitest + Playwright          |
+| Docs       | VitePress                    |
 | Deployment | Vercel                       |
 
 _Modify per project as specified in SPEC.md_
@@ -238,6 +240,7 @@ Reference these before implementing related features:
 | `context-engineering`      | Context window management, progressive disclosure, compaction |
 | `multi-agent-coordination` | Subagent patterns, token economics, coordination strategies   |
 | `evaluation`               | Agent quality rubrics, LLM-as-judge, test set design          |
+| `vitepress`                | Documentation site, markdown conventions, sidebar config      |
 
 ---
 
@@ -296,23 +299,25 @@ open_arch_decisions: 0
 
 1. **Read SPEC.md** before starting any phase
 2. **Read DESIGN.md** before any UI work (colors, typography, spacing)
-3. **Check for PENDING decisions** before starting work
-4. **Don't guess** — if spec is unclear, create a spec decision
-5. **Stay in phase** — don't work on tickets outside current phase
-6. **Frontend-first** — Build UI with dummy data; reveals what APIs actually need
-7. **Write tests for every ticket** — No ticket is complete without tests. "N/A" is not an acceptable test status. If you believe a ticket genuinely doesn't need tests, create a spec decision for human review and mark the ticket BLOCKED until approved.
-8. **Tests must verify actual requirements** — Assert real behavior, not just that code runs. Each acceptance criterion needs a corresponding assertion. `expect(true).toBe(true)` or `expect(result).toBeDefined()` are not meaningful tests.
-9. **Read `progress/conventions.md`** before starting work — follow established patterns. When you set a new precedent (error handling pattern, component structure, API convention), add it to the file.
-10. **Log failed approaches** — When something doesn't work, document it in `progress/dead-ends.md` before trying an alternative. This prevents future contexts from repeating the same mistake.
-11. **Commit after each ticket** — this is the check-in point
-12. **Update ticket status** as you progress
-13. **Never touch prod** — humans handle production deployments
-14. **Read relevant skills** before implementing features
-15. **Run /audit after Phase 1 and 2** — catch issues early, not at the end
-16. **Run /red-team after Phase 1** — validate auth controls actually work (requires running app)
-17. **Run /pre-ship before production** — final checklist to prevent career-ending failures
-18. **Add observability in Phase 1** — health checks, structured logging, error tracking from day one
-19. **Run /design-review after Phase 2** — verify visual polish, empty states, loading states, animations
+3. **Read existing docs before touching a feature** — before modifying or extending any feature, read the relevant pages in `docs/` (architecture, API, components, auth) to understand the current documented state. This applies to every ticket, bug fix, and refactor — not just new features. The docs are the fastest way to gain context on how the system works today.
+4. **Check for PENDING decisions** before starting work
+5. **Don't guess** — if spec is unclear, create a spec decision
+6. **Stay in phase** — don't work on tickets outside current phase
+7. **Frontend-first** — Build UI with dummy data; reveals what APIs actually need
+8. **Write tests for every ticket** — No ticket is complete without tests. "N/A" is not an acceptable test status. If you believe a ticket genuinely doesn't need tests, create a spec decision for human review and mark the ticket BLOCKED until approved.
+9. **Tests must verify actual requirements** — Assert real behavior, not just that code runs. Each acceptance criterion needs a corresponding assertion. `expect(true).toBe(true)` or `expect(result).toBeDefined()` are not meaningful tests.
+10. **Read `progress/conventions.md`** before starting work — follow established patterns. When you set a new precedent (error handling pattern, component structure, API convention), add it to the file.
+11. **Log failed approaches** — When something doesn't work, document it in `progress/dead-ends.md` before trying an alternative. This prevents future contexts from repeating the same mistake.
+12. **Commit after each ticket** — this is the check-in point
+13. **Update ticket status** as you progress
+14. **Never touch prod** — humans handle production deployments
+15. **Read relevant skills** before implementing features
+16. **Run /audit after Phase 1 and 2** — catch issues early, not at the end
+17. **Run /red-team after Phase 1** — validate auth controls actually work (requires running app)
+18. **Run /pre-ship before production** — final checklist to prevent career-ending failures
+19. **Add observability in Phase 1** — health checks, structured logging, error tracking from day one
+20. **Run /design-review after Phase 2** — verify visual polish, empty states, loading states, animations
+21. **Update docs after every ticket** — spawn parallel documentation subagents to update `docs/` (architecture, API, components). Read `vitepress` skill first. Skip for test-only changes.
 
 ---
 

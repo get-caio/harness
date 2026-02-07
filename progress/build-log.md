@@ -106,3 +106,5 @@ Template for session end:
 
 ---
 -->
+2026-02-06 21:41 - Dependency installed: bun add -D vitepress
+2026-02-06 21:47 - Dependency installed: bun add -D vitepress-plugin-mermaid mermaid

@@ -57,6 +57,12 @@ Before running `/work`:
 │           ↓                                              │
 │  11. Log to progress/build-log.md                        │
 │           ↓                                              │
+│  12. Update docs (parallel subagents)                    │
+│     - Determine affected doc categories                  │
+│     - Spawn subagents per category in parallel           │
+│     - Each reads VitePress skill + source + current doc  │
+│     - Updates docs/ markdown files                       │
+│           ↓                                              │
 │  └────────────→ Loop back to step 3                      │
 │                                                          │
 └─────────────────────────────────────────────────────────┘
@@ -123,6 +129,16 @@ to:
 
 - `progress/conventions.md` — follow established patterns
 - `progress/dead-ends.md` — avoid repeating failed approaches
+- **Relevant `docs/` pages** — read the existing documentation for any feature area the ticket touches. This is the fastest way to understand the current state of that part of the system (data model, API contracts, auth flow, component inventory). Check the mapping below.
+
+| Ticket touches...     | Read first...                     |
+| --------------------- | --------------------------------- |
+| Database / schema     | `docs/architecture/data-model.md` |
+| API routes / tRPC     | `docs/architecture/api.md`        |
+| Auth / sessions       | `docs/architecture/auth.md`       |
+| UI components         | `docs/components/index.md`        |
+| System architecture   | `docs/architecture/index.md`      |
+| Setup / env / tooling | `docs/guide/getting-started.md`   |
 
 Then, based on ticket content, read applicable skills:
 
@@ -268,6 +284,93 @@ Add to `progress/build-log.md`:
 **Tests added:** Y
 **Commit:** abc123
 ```
+
+### 12. Update Documentation
+
+After each ticket, update the living documentation in `docs/` using parallel documentation subagents.
+
+**Read the VitePress skill first:** `.claude/skills/vitepress/SKILL.md`
+
+**Step 12a: Determine affected doc categories**
+
+Based on what the ticket changed, identify which docs need updating:
+
+| Ticket changed...                 | Update these docs                       |
+| --------------------------------- | --------------------------------------- |
+| Prisma schema / migrations        | `docs/architecture/data-model.md`       |
+| tRPC routers / API routes         | `docs/architecture/api.md`, `docs/api/` |
+| Auth (login, session, middleware) | `docs/architecture/auth.md`             |
+| New shared UI component           | `docs/components/index.md`              |
+| Setup / tooling / env vars        | `docs/guide/getting-started.md`         |
+| New integration / service         | `docs/architecture/` (new page)         |
+| Architecture decision             | `docs/decisions/index.md`               |
+| System diagram changes            | `docs/architecture/index.md`            |
+
+If no doc categories are affected (e.g., pure test-only changes), skip this step.
+
+**Step 12b: Spawn parallel documentation subagents**
+
+For each affected doc category, spawn a subagent via the Task tool with `subagent_type: implementer`:
+
+```
+For EACH affected doc category, spawn in PARALLEL:
+
+Task:
+  subagent_type: implementer
+  prompt: |
+    You are a documentation subagent. Read the VitePress skill at
+    .claude/skills/vitepress/SKILL.md for formatting conventions.
+
+    TICKET CONTEXT:
+    - Ticket: [PN-TXXX] [Title]
+    - Files changed: [list of files]
+    - What was implemented: [brief summary]
+
+    YOUR JOB:
+    Update [specific doc file path] to reflect the changes from this ticket.
+
+    RULES:
+    - Read the current doc file first
+    - Read the relevant source files to understand what was built
+    - Update the doc with accurate, current information
+    - Use Mermaid diagrams where helpful (entity relationships, flows)
+    - Use the VitePress containers (::: tip, ::: warning, etc.)
+    - Keep entries in tables — don't write prose paragraphs for each item
+    - If adding a new page, also update docs/.vitepress/config.ts sidebar
+    - Do NOT remove existing content unless it's now incorrect
+    - Do NOT add speculative documentation for things not yet built
+```
+
+**Example: After a schema ticket**
+
+```
+Spawn in parallel:
+  1. Subagent → Update docs/architecture/data-model.md
+     - Read prisma/schema.prisma
+     - Update ER diagram, model tables, migration log
+
+  2. Subagent → Update docs/architecture/index.md
+     - Update system diagram if new entities affect architecture
+```
+
+**Example: After an API + component ticket**
+
+```
+Spawn in parallel:
+  1. Subagent → Update docs/architecture/api.md
+     - Read the new tRPC router
+     - Add procedures to the route table
+
+  2. Subagent → Update docs/api/index.md
+     - Add detailed endpoint docs with request/response shapes
+
+  3. Subagent → Update docs/components/index.md
+     - Add new component to appropriate category table
+```
+
+**Step 12c: Verify sidebar**
+
+After subagents complete, check if any new pages were added to `docs/`. If so, update `docs/.vitepress/config.ts` sidebar to include them.
 
 ---
 
