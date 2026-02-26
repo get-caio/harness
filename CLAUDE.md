@@ -241,6 +241,9 @@ Reference these before implementing related features:
 | `multi-agent-coordination` | Subagent patterns, token economics, coordination strategies   |
 | `evaluation`               | Agent quality rubrics, LLM-as-judge, test set design          |
 | `vitepress`                | Documentation site, markdown conventions, sidebar config      |
+| `ci-cd`                    | GitHub Actions, PR checks, preview/prod deploy pipelines      |
+| `git-workflow`             | Multi-engineer branch strategy, PR conventions, conflicts     |
+| `database-migrations`      | Prisma migrations, zero-downtime changes, rollback strategy   |
 
 ---
 
@@ -262,19 +265,72 @@ Reference these before implementing related features:
 
 ---
 
-## Feature Subagents
+## Agent & Model Strategy
 
-For substantial features (3+ hours or multi-file changes):
+### Model Selection
 
-- Spawn a dedicated feature subagent via Task tool
-- Keeps context focused and clean
-- Subagent works until feature complete
-- Returns control to main loop after commit
+| Model    | Setting      | Use For                                 | Cost   |
+| -------- | ------------ | --------------------------------------- | ------ |
+| `opus`   | Main session | Planning, architecture, review          | High   |
+| `sonnet` | Agent config | Feature implementation, testing         | Medium |
+| `haiku`  | Agent config | Documentation, exploration, cheap tasks | Low    |
 
-For small tickets (1-2 hours, few files):
+The main session runs `opus` for maximum reasoning quality. Subagents use the model specified in their frontmatter — `sonnet` for implementation, `haiku` for docs.
 
-- Work directly in main loop
-- No subagent overhead needed
+### Available Agents
+
+| Agent         | Model  | Purpose                                       | Isolation |
+| ------------- | ------ | --------------------------------------------- | --------- |
+| `feature`     | sonnet | Large feature implementation (L/XL tickets)   | worktree  |
+| `implementer` | sonnet | Medium ticket implementation (M tickets)      | same tree |
+| `architect`   | opus   | System design, architecture decisions         | same tree |
+| `reviewer`    | opus   | Code review, catches issues before human      | same tree |
+| `tester`      | sonnet | Test writing, coverage improvement            | same tree |
+| `interviewer` | opus   | Requirements refinement, ambiguity resolution | same tree |
+| `coordinator` | opus   | Orchestrates parallel agents across a phase   | same tree |
+| `doc-writer`  | haiku  | Documentation updates (cheap and fast)        | same tree |
+
+### Ticket Sizing & Delegation
+
+| Size     | Est. Lines | Approach                      | Agent         |
+| -------- | ---------- | ----------------------------- | ------------- |
+| S (< 2h) | < 200      | Work directly in main loop    | (self)        |
+| M (2-4h) | 200-500    | Subagent (stays in same tree) | `implementer` |
+| L (4-8h) | 500+       | Subagent in worktree          | `feature`     |
+| XL (8h+) | 1000+      | Subagent in worktree          | `feature`     |
+
+### Parallel Coordination
+
+When 3+ independent tickets have no file overlap, spawn the `coordinator` agent. It manages parallel feature agents in separate worktrees with file ownership rules to prevent merge conflicts. Max 3 parallel agents.
+
+### Documentation Updates
+
+After each ticket, spawn a `doc-writer` agent (haiku model — cheap and fast) to update the relevant docs. Skip for test-only changes.
+
+---
+
+## Environment Configuration
+
+The harness configures these environment variables in `.claude/settings.json`:
+
+| Variable                          | Value    | Purpose                                   |
+| --------------------------------- | -------- | ----------------------------------------- |
+| `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` | `70`     | Compact context at 70% usage (default 80) |
+| `CLAUDE_CODE_SUBAGENT_MODEL`      | `sonnet` | Default model for subagents               |
+
+### Session Management
+
+For long-running work sessions:
+
+```bash
+# Start a named session for easy resumption
+claude --session-id "phase-1-work" --resume
+
+# Resume after interruption or context exhaustion
+claude --session-id "phase-1-work" --resume
+```
+
+On resume, the agent re-reads phase state, build log, and conventions to pick up where it left off.
 
 ---
 
@@ -317,7 +373,12 @@ open_arch_decisions: 0
 18. **Run /pre-ship before production** — final checklist to prevent career-ending failures
 19. **Add observability in Phase 1** — health checks, structured logging, error tracking from day one
 20. **Run /design-review after Phase 2** — verify visual polish, empty states, loading states, animations
-21. **Update docs after every ticket** — spawn parallel documentation subagents to update `docs/` (architecture, API, components). Read `vitepress` skill first. Skip for test-only changes.
+21. **Update docs after every ticket** — spawn a `doc-writer` agent (haiku, cheap) to update `docs/`. Skip for test-only changes.
+22. **Never stop between tickets** — after committing a ticket, immediately pick up the next TODO. Only stop when the phase is complete, all tickets are blocked, or the human interrupts.
+23. **Delegate by ticket size** — S/M tickets: work inline. L/XL tickets: spawn `feature` agent in worktree. 3+ independent tickets: spawn `coordinator` for parallel execution.
+24. **Read `git-workflow` skill** before creating branches or PRs on multi-engineer projects.
+25. **Read `database-migrations` skill** before any schema changes — follow expand-contract for zero-downtime.
+26. **Read `ci-cd` skill** when setting up or modifying GitHub Actions workflows.
 
 ---
 

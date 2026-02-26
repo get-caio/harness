@@ -1,0 +1,82 @@
+{
+  "name": "caio-build-harness",
+  "version": "2.0.0",
+  "description": "CAIO Build Harness — autonomous development framework with phased execution, multi-agent coordination, and safety gates for team projects.",
+  "author": "CAIO",
+  "license": "MIT",
+  "claude_code_version": ">=1.0.0",
+  "includes": {
+    "skills": [
+      "skills/nextjs-bun-prisma",
+      "skills/react-best-practices",
+      "skills/auth",
+      "skills/trpc",
+      "skills/ai-integration",
+      "skills/react-native",
+      "skills/payments",
+      "skills/testing",
+      "skills/e2e-testing",
+      "skills/security",
+      "skills/code-quality",
+      "skills/code-audit",
+      "skills/red-team",
+      "skills/observability",
+      "skills/incident-response",
+      "skills/data-protection",
+      "skills/design-craft",
+      "skills/context-engineering",
+      "skills/multi-agent-coordination",
+      "skills/evaluation",
+      "skills/vitepress",
+      "skills/ci-cd",
+      "skills/git-workflow",
+      "skills/database-migrations"
+    ],
+    "commands": [
+      "commands/work.md",
+      "commands/init-phase.md",
+      "commands/plan-phases.md",
+      "commands/check-decisions.md",
+      "commands/status.md",
+      "commands/decision.md",
+      "commands/audit.md",
+      "commands/red-team.md",
+      "commands/pre-ship.md",
+      "commands/design-review.md",
+      "commands/clarify.md"
+    ],
+    "agents": [
+      "agents/feature.md",
+      "agents/implementer.md",
+      "agents/architect.md",
+      "agents/reviewer.md",
+      "agents/tester.md",
+      "agents/interviewer.md",
+      "agents/coordinator.md",
+      "agents/doc-writer.md"
+    ],
+    "settings": "settings.json"
+  },
+  "scaffold": {
+    "directories": [
+      "specs",
+      "specs/phases",
+      "specs/decisions",
+      "specs/design",
+      "specs/design/assets",
+      "docs",
+      "docs/decisions",
+      "docs/architecture",
+      "docs/api",
+      "docs/components",
+      "docs/guide",
+      "progress"
+    ],
+    "files": {
+      "specs/CURRENT_PHASE": "1",
+      "progress/build-log.md": "# Build Log\n\nProgress log for the project.\n",
+      "progress/dead-ends.md": "# Dead Ends\n\nFailed approaches logged here to prevent repeating mistakes.\n",
+      "progress/conventions.md": "# Conventions\n\nEstablished patterns and conventions for this project.\n"
+    }
+  }
+}

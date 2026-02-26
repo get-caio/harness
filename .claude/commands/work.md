@@ -2,6 +2,8 @@
 
 Continuously work through tickets in the current phase until blocked or complete.
 
+**CRITICAL: Auto-continuation is mandatory.** After completing a ticket, you MUST immediately pick up the next TODO ticket. Do NOT stop to summarize, ask permission, or wait for input between tickets. The only valid exit conditions are listed at the bottom of this file.
+
 ## Prerequisites
 
 Before running `/work`:
@@ -11,6 +13,40 @@ Before running `/work`:
 3. ✅ `/check-decisions` has been run
 4. ✅ All PENDING spec decisions for this phase are DECIDED
 5. ✅ Git repo initialized and clean
+
+## Session Management
+
+### Starting a session
+
+Name your session for easy resumption:
+
+```bash
+# Start a named work session
+claude --session-id "phase-1-work" --resume
+
+# Or use /rename inside Claude Code
+/rename phase-1-tickets
+```
+
+### Resuming after interruption
+
+If context runs out or the session is interrupted:
+
+```bash
+# Resume the same session
+claude --session-id "phase-1-work" --resume
+```
+
+On resume, re-read:
+
+1. `specs/CURRENT_PHASE`
+2. `specs/phases/PHASE-N-*.md` — check which tickets are DONE, find next TODO
+3. `progress/build-log.md` — see what was last completed
+4. `progress/conventions.md` — maintain established patterns
+
+### Context management
+
+The environment is configured with `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=70` for aggressive compaction. This means context auto-compacts at 70% usage, keeping you working longer before needing a new session.
 
 ## Execution Loop
 
@@ -158,17 +194,61 @@ Then, based on ticket content, read applicable skills:
 
 ### 7. Implement with TDD
 
-**Frontend-First Approach:**
+**Ticket Sizing and Agent Delegation:**
 
-For feature tickets, build in this order:
+| Size     | Lines (est.) | Approach                      | Agent         |
+| -------- | ------------ | ----------------------------- | ------------- |
+| S (< 2h) | < 200        | Work directly in main loop    | (self)        |
+| M (2-4h) | 200-500      | Subagent (stays in same tree) | `implementer` |
+| L (4-8h) | 500+         | Subagent in worktree          | `feature`     |
+| XL (8h+) | 1000+        | Subagent in worktree          | `feature`     |
 
+**For S/M tickets — work inline:**
+
+```
+Frontend-first approach:
 1. Define types/schema (shared contract)
 2. Build UI components with dummy data
 3. Use MSW to mock API responses
 4. Once UI is solid, implement backend
 5. Connect real API, remove mocks
+```
 
-This reveals what APIs actually need before building them.
+**For L/XL tickets — spawn feature agent in worktree:**
+
+```
+Task tool call:
+  subagent_type: feature
+  isolation: worktree
+  prompt: |
+    Implement [PN-TXXX]: [ticket title]
+
+    Ticket details: [paste from phase file]
+    Relevant spec section: [paste from SPEC.md]
+    Existing patterns: [paste from conventions.md]
+
+    Read these skills first: [relevant skill names]
+    Read these docs first: [relevant doc paths]
+
+    Commit with: [PN-TXXX] [description]
+```
+
+**For parallel independent tickets — use coordinator:**
+
+When 3+ independent tickets have no file overlap, spawn the coordinator agent:
+
+```
+Task tool call:
+  subagent_type: coordinator (custom agent)
+  prompt: |
+    Coordinate parallel work on these independent tickets:
+    - PN-TXXX: [title] (files: src/components/auth/*)
+    - PN-TXXX: [title] (files: src/components/dashboard/*)
+    - PN-TXXX: [title] (files: prisma/*, src/lib/db.ts)
+
+    Phase file: specs/phases/PHASE-N-*.md
+    Max 3 parallel agents. Respect file ownership.
+```
 
 **Test First:**
 
@@ -189,16 +269,6 @@ describe("Feature", () => {
 export function feature() {
   // Implementation that makes test pass
 }
-```
-
-**For Large Tickets (L or XL):**
-
-Consider spawning a feature subagent:
-
-```
-Task: Implement [ticket title]
-Context: [ticket details, relevant code, SPEC section]
-Agent: feature
 ```
 
 ### 8. Quality Gate
@@ -308,38 +378,22 @@ Based on what the ticket changed, identify which docs need updating:
 
 If no doc categories are affected (e.g., pure test-only changes), skip this step.
 
-**Step 12b: Spawn parallel documentation subagents**
+**Step 12b: Spawn doc-writer agent**
 
-For each affected doc category, spawn a subagent via the Task tool with `subagent_type: implementer`:
+Use the dedicated `doc-writer` agent (runs on haiku — cheap and fast):
 
 ```
-For EACH affected doc category, spawn in PARALLEL:
-
 Task:
-  subagent_type: implementer
+  subagent_type: doc-writer (custom agent)
   prompt: |
-    You are a documentation subagent. Read the VitePress skill at
-    .claude/skills/vitepress/SKILL.md for formatting conventions.
-
     TICKET CONTEXT:
     - Ticket: [PN-TXXX] [Title]
     - Files changed: [list of files]
     - What was implemented: [brief summary]
-
-    YOUR JOB:
-    Update [specific doc file path] to reflect the changes from this ticket.
-
-    RULES:
-    - Read the current doc file first
-    - Read the relevant source files to understand what was built
-    - Update the doc with accurate, current information
-    - Use Mermaid diagrams where helpful (entity relationships, flows)
-    - Use the VitePress containers (::: tip, ::: warning, etc.)
-    - Keep entries in tables — don't write prose paragraphs for each item
-    - If adding a new page, also update docs/.vitepress/config.ts sidebar
-    - Do NOT remove existing content unless it's now incorrect
-    - Do NOT add speculative documentation for things not yet built
+    - Doc files to update: [list from 12a mapping]
 ```
+
+The doc-writer agent already has the VitePress skill preloaded and knows the formatting rules. For multiple doc categories, spawn one doc-writer per category in parallel.
 
 **Example: After a schema ticket**
 
@@ -436,16 +490,30 @@ Then:
 
 ## Exit Conditions
 
-Stop the work loop when:
+**ONLY stop the work loop when one of these conditions is met:**
 
-1. **Phase complete** — All tickets DONE
-2. **All blocked** — Remaining tickets have PENDING decisions
-3. **Human interrupt** — Manual stop requested
-4. **Error threshold** — Too many consecutive failures
+1. **Phase complete** — All tickets are DONE or SKIPPED
+2. **All blocked** — Every remaining ticket has a PENDING decision
+3. **Human interrupt** — User explicitly says stop (Ctrl+C or message)
+4. **Error threshold** — 3+ consecutive failures on the same ticket
+
+**These are NOT valid reasons to stop:**
+
+- "I completed a ticket" — pick up the next one
+- "I want to summarize progress" — summarize after exiting, not instead of continuing
+- "The ticket was complex" — complexity is expected, continue working
+- "I should check with the user" — only stop if you're genuinely blocked
 
 On exit, report:
 
-- Tickets completed this session
-- Tickets remaining
-- Blocking decisions (if any)
-- Next steps
+```
+Work Session Summary
+━━━━━━━━━━━━━━━━━━━
+Phase: N
+Tickets completed: X (list them)
+Tickets remaining: Y
+Blocked tickets: Z (with blocking decision IDs)
+Next steps: [what human needs to do]
+
+Resume with: claude --session-id "[session-name]" --resume
+```
