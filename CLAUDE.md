@@ -236,7 +236,19 @@ Reference these before implementing related features:
 | `observability`            | Logging, monitoring, health checks, debugging                 |
 | `incident-response`        | Production incidents, rollback, post-mortems                  |
 | `data-protection`          | GDPR, CCPA, privacy, data handling compliance                 |
-| `design-craft`             | Empty states, loading states, micro-interactions, delight     |
+| `design-routing`           | **Read first for UI work** — which design skills to combine   |
+| `visual-design`            | Hierarchy, typography, color, spacing, layout, iconography    |
+| `ui-patterns`              | Heuristics, IA, forms, tables, modals, feedback, responsive   |
+| `interaction-motion`       | Motion, timing/easing, micro-interactions, drag-drop, charts  |
+| `design-system`            | Tokens, component API, variant/size, platform conventions     |
+| `svg-animation`            | SMIL animations, concept-driven SVG visuals, particle paths   |
+| `design-craft`             | Empty states, loading states, emotional design, delight       |
+| `seo-routing`              | **Read first for SEO work** — which SEO skills to combine     |
+| `seo-foundations`          | Keyword research, on-page, technical SEO, content, links      |
+| `local-seo`                | GBP, map pack, citations, reviews, competitor intel, DBA      |
+| `aeo-geo`                  | AI visibility — llms.txt, TL;DR blocks, AI mentions, GEO      |
+| `seo-agent-playbook`       | SEO agent workflows, Helm cards, autonomy, onboarding         |
+| `seo-integrations`         | DataForSEO, Google APIs, BrightLocal, connectors, cost model  |
 | `context-engineering`      | Context window management, progressive disclosure, compaction |
 | `multi-agent-coordination` | Subagent patterns, token economics, coordination strategies   |
 | `evaluation`               | Agent quality rubrics, LLM-as-judge, test set design          |
@@ -279,16 +291,20 @@ The main session runs `opus` for maximum reasoning quality. Subagents use the mo
 
 ### Available Agents
 
-| Agent         | Model  | Purpose                                       | Isolation |
-| ------------- | ------ | --------------------------------------------- | --------- |
-| `feature`     | sonnet | Large feature implementation (L/XL tickets)   | worktree  |
-| `implementer` | sonnet | Medium ticket implementation (M tickets)      | same tree |
-| `architect`   | opus   | System design, architecture decisions         | same tree |
-| `reviewer`    | opus   | Code review, catches issues before human      | same tree |
-| `tester`      | sonnet | Test writing, coverage improvement            | same tree |
-| `interviewer` | opus   | Requirements refinement, ambiguity resolution | same tree |
-| `coordinator` | opus   | Orchestrates parallel agents across a phase   | same tree |
-| `doc-writer`  | haiku  | Documentation updates (cheap and fast)        | same tree |
+| Agent            | Model  | Purpose                                        | Isolation |
+| ---------------- | ------ | ---------------------------------------------- | --------- |
+| `feature`        | sonnet | Large feature implementation (L/XL tickets)    | worktree  |
+| `implementer`    | sonnet | Medium ticket implementation (M tickets)       | same tree |
+| `architect`      | opus   | System design, architecture decisions          | same tree |
+| `reviewer`       | opus   | Code review, catches issues before human       | same tree |
+| `tester`         | sonnet | Test writing, coverage improvement             | same tree |
+| `interviewer`    | opus   | Requirements refinement, ambiguity resolution  | same tree |
+| `coordinator`    | opus   | Orchestrates parallel agents across a phase    | same tree |
+| `doc-writer`     | haiku  | Documentation updates (cheap and fast)         | same tree |
+| `auditor`        | opus   | Full product audit — dead code, gaps, patterns | same tree |
+| `product-critic` | opus   | Product quality — flows, UX, spec fidelity     | same tree |
+| `deployer`       | sonnet | Pre-deploy checklist — env, migrations, hooks  | same tree |
+| `refactorer`     | sonnet | Codebase cleanup — dedup, naming, dead code    | same tree |
 
 ### Ticket Sizing & Delegation
 
@@ -379,6 +395,10 @@ open_arch_decisions: 0
 24. **Read `git-workflow` skill** before creating branches or PRs on multi-engineer projects.
 25. **Read `database-migrations` skill** before any schema changes — follow expand-contract for zero-downtime.
 26. **Read `ci-cd` skill** when setting up or modifying GitHub Actions workflows.
+27. **Run `auditor` between phases** — full product walk: dead endpoints, schema-UI gaps, pattern inconsistencies, missing error handling. Not per-ticket — between phases.
+28. **Run `product-critic` after UI phases** — product quality check: does the flow make sense? Is onboarding asking for things it doesn't use? Three clicks where one would work? Technically correct but nobody would use it?
+29. **Run `deployer` before every deploy** — pre-deploy checklist: migrations, env vars, webhook registrations, cron configs. Missed config = silent failure.
+30. **Run `refactorer` between phases** — codebase cleanup: copy-pasted patterns, missing utils, naming inconsistencies. Zero new behavior, just cleanup PRs.
 
 ---
 
@@ -386,14 +406,17 @@ open_arch_decisions: 0
 
 These failures can end careers. The harness is designed to prevent them:
 
-| Failure Mode                  | Prevention                                       | Gate                 |
-| ----------------------------- | ------------------------------------------------ | -------------------- |
-| **Data breach**               | Secrets detection hook, /red-team, /audit        | Pre-commit + Phase 1 |
-| **Production outage**         | /pre-ship rollback plan, incident-response skill | Pre-deploy           |
-| **GDPR/compliance violation** | data-protection skill, /pre-ship checklist       | Phase 1 + Pre-deploy |
-| **Major bug in production**   | Mandatory tests, /audit, /red-team               | Every commit         |
-| **Can't debug production**    | observability skill, health endpoint             | Phase 1              |
-| **No rollback possible**      | /pre-ship migration check, tagging               | Pre-deploy           |
+| Failure Mode                  | Prevention                                 | Gate                 |
+| ----------------------------- | ------------------------------------------ | -------------------- |
+| **Data breach**               | Secrets detection hook, /red-team, /audit  | Pre-commit + Phase 1 |
+| **Production outage**         | /pre-ship rollback plan, deployer agent    | Pre-deploy           |
+| **GDPR/compliance violation** | data-protection skill, /pre-ship checklist | Phase 1 + Pre-deploy |
+| **Major bug in production**   | Mandatory tests, /audit, /red-team         | Every commit         |
+| **Can't debug production**    | observability skill, health endpoint       | Phase 1              |
+| **No rollback possible**      | /pre-ship migration check, deployer agent  | Pre-deploy           |
+| **Silent config failure**     | deployer agent: env vars, webhooks, crons  | Pre-deploy           |
+| **Product nobody uses**       | product-critic agent, /design-review       | End of UI phases     |
+| **Accumulated tech debt**     | auditor + refactorer between phases        | Phase boundaries     |
 
 **If any of these gates fail, DO NOT SHIP. Escalate to human.**
 
