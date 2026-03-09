@@ -85,7 +85,23 @@ For every page/route:
 - What happens when auth fails?
 ```
 
-### 3. Pattern Consistency Audit
+### 3. Cron & Serverless Audit
+
+```
+For every cron job registered in vercel.json:
+- Does the route file exist?
+- Does it export a GET handler? (Vercel crons ALWAYS use GET)
+- POST-only cron routes are SILENT FAILURES — they return 200/405 but never execute
+- Is there a distributed lock to prevent concurrent runs?
+- Does maxDuration match the expected workload?
+
+For any in-memory caches (module-level let/const):
+- Will this survive a cold start? (No — serverless functions restart)
+- Is state persisted to DB instead?
+- OAuth tokens, client IDs, session caches: must be in the database
+```
+
+### 4. Pattern Consistency Audit
 
 ```
 Check across the codebase:
@@ -98,7 +114,7 @@ Check across the codebase:
 - Import paths: Consistent alias usage?
 ```
 
-### 4. Dead Code Detection
+### 5. Dead Code Detection
 
 ```
 Find:
@@ -110,7 +126,7 @@ Find:
 - Config that references features that don't exist
 ```
 
-### 5. Error State Coverage
+### 6. Error State Coverage
 
 ```
 For every user-facing flow:

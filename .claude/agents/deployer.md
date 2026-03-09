@@ -106,20 +106,32 @@ grep -rn "webhook" --include="*.ts" -l .
 ```
 For every scheduled task:
 □ Is the cron expression correct?
-□ Is the job registered with the scheduler?
+□ Is the job registered with the scheduler (vercel.json)?
+□ Does the route export a GET handler? (Vercel crons use GET, not POST)
 □ Does the job handle concurrent execution? (locking)
 □ Is there monitoring/alerting if the job fails?
 □ Is there a timeout configured?
 □ Has the job been tested with production-scale data?
 ```
 
+**CRITICAL: Vercel cron routes MUST export GET.** Vercel always sends GET requests to cron endpoints. If the route only has a POST handler, the cron fires successfully (200 from health check or 405) but the actual logic never executes. This is the #1 silent cron failure.
+
 **Execution:**
 
 ```bash
-# Find all cron/scheduled references
-grep -rn "cron\|schedule\|setInterval" --include="*.ts" .
+# Find all cron route files
+find app/api/cron -name "route.ts" -o -name "route.js"
 
-# Verify cron config matches expected schedule
+# Verify each exports GET (not just POST)
+for f in $(find app/api/cron -name "route.ts"); do
+  exports=$(grep -c "export.*function GET\|export.*GET" "$f")
+  if [ "$exports" -eq 0 ]; then
+    echo "BLOCKER: $f has no GET export — cron will not execute"
+  fi
+done
+
+# Cross-reference with vercel.json cron config
+cat vercel.json | grep -A1 '"path"' | grep cron
 ```
 
 ### 5. API Endpoints & Routes
@@ -232,10 +244,10 @@ bun run lint
 
 ### Cron Jobs
 
-| Job Name       | Schedule       | Registered | Has Lock | Has Monitor | Status |
-| -------------- | -------------- | ---------- | -------- | ----------- | ------ |
-| syncInventory  | _/5 _ \* \* \* | Yes        | Yes      | Yes         | OK     |
-| cleanupExpired | 0 2 \* \* \*   | Yes        | No       | No          | WARN   |
+| Job Name       | Schedule       | Registered | Exports GET | Has Lock | Has Monitor | Status  |
+| -------------- | -------------- | ---------- | ----------- | -------- | ----------- | ------- |
+| syncInventory  | _/5 _ \* \* \* | Yes        | Yes         | Yes      | Yes         | OK      |
+| cleanupExpired | 0 2 \* \* \*   | Yes        | No (POST)   | No       | No          | BLOCKED |
 
 ### Build
 

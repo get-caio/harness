@@ -422,6 +422,58 @@ These failures can end careers. The harness is designed to prevent them:
 
 ---
 
+## Vercel & Serverless Pitfalls
+
+These are hard-won lessons from production incidents. Violating any of these WILL cause silent failures.
+
+### Cron Routes MUST Export GET
+
+**Vercel cron jobs always send GET requests.** If your cron route only exports a `POST` handler, the cron will either 405 or hit a no-op health check GET handler while the actual logic never runs.
+
+```typescript
+// WRONG — cron logic in POST, Vercel never calls it
+export async function POST(request: Request) {
+  // ... actual cron logic
+}
+export async function GET() {
+  return NextResponse.json({ status: "healthy" }); // This is what runs
+}
+
+// RIGHT — export POST as GET (or write the handler as GET)
+export async function POST(request: Request) {
+  // ... actual cron logic
+}
+export { POST as GET };
+```
+
+### No In-Memory State Across Requests
+
+Serverless functions start cold. Module-level variables (`let cachedClient = null`) are lost between invocations and across instances. Never rely on in-memory state persisting — use the database.
+
+Common violations:
+- OAuth `client_id` cached in memory during connect, gone by callback
+- Rate limiter counters in module scope
+- Session caches that assume same instance handles follow-up requests
+
+### Drizzle: Explicit UUIDs in Batch Inserts
+
+Drizzle's `uuid().defaultRandom()` emits `DEFAULT` in multi-row `VALUES` lists, but PostgreSQL has no column-level default for this. Single-row inserts work; batch inserts fail silently or throw.
+
+```typescript
+// WRONG — fails on batch insert
+await db.insert(myTable).values(items.map(i => ({
+  name: i.name, // id omitted, expects DEFAULT
+})));
+
+// RIGHT — generate UUIDs explicitly
+await db.insert(myTable).values(items.map(i => ({
+  id: crypto.randomUUID(),
+  name: i.name,
+})));
+```
+
+---
+
 ## Pre-Push Checklist
 
 Always run `npm run lint` and `npm run build` locally before pushing to GitHub. Fix any errors before committing.
