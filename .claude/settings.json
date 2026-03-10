@@ -146,7 +146,8 @@
   "model": "opus",
   "env": {
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "70",
-    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
   "customInstructions": "You are building a CAIO incubator project. Follow the conventions in CLAUDE.md. When running /work, execute tickets continuously — do NOT stop between tickets. After completing and committing a ticket, immediately pick up the next TODO ticket. Only stop when: all tickets are DONE, all remaining tickets are BLOCKED, or a human interrupts. Use TDD. Never merge to prod. Surface decisions via /decision command. Commit after each completed ticket. For large features (L/XL), spawn a feature subagent in a worktree."
 }
