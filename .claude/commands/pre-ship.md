@@ -17,6 +17,18 @@ This is the last gate before human deploys to production. Run after all phases c
 
 ## The Checklist
 
+### 0. Infrastructure Verification (Deployer Agent)
+
+**Before anything else**, spawn the `deployer` agent to verify infrastructure configuration. The deployer checks: migrations, env vars, webhook registrations, cron configs, API route GET exports, third-party service connectivity, and build health. This catches the silent failures that missed configs produce.
+
+```
+Spawn deployer agent → wait for report → fix any issues before proceeding
+```
+
+**BLOCKER:** Any deployer failure blocks ship. Do not duplicate deployer checks below — they are handled.
+
+---
+
 ### 1. Security (Career-Ending if Failed)
 
 ```bash

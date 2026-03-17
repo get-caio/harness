@@ -1,8 +1,10 @@
 # Authentication Skill
 
-Patterns for implementing authentication in CAIO incubator projects using NextAuth.js.
+Patterns for implementing authentication in CAIO incubator projects.
 
-## Stack
+> **IMPORTANT:** Check `CLAUDE.md` and `specs/SPEC.md` for the project's chosen auth provider. The default CAIO stack specifies **BetterAuth**, but some projects use NextAuth.js v5. If the spec says BetterAuth, use BetterAuth patterns (see https://www.better-auth.com/docs). The NextAuth patterns below are a fallback reference — do NOT use them if the spec specifies BetterAuth.
+
+## Stack (NextAuth.js — use only if spec confirms NextAuth)
 
 - **NextAuth.js v5** (Auth.js) — Authentication framework
 - **Prisma Adapter** — Database session storage
@@ -29,10 +31,10 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
-  
+
   // App-specific fields
   trainingPlans TrainingPlan[]
-  
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -77,15 +79,15 @@ model VerificationToken {
 
 ```typescript
 // lib/auth.ts
-import NextAuth from 'next-auth'
-import { PrismaAdapter } from '@auth/prisma-adapter'
-import { db } from '@/lib/db'
-import Google from 'next-auth/providers/google'
-import Resend from 'next-auth/providers/resend'
+import NextAuth from "next-auth";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { db } from "@/lib/db";
+import Google from "next-auth/providers/google";
+import Resend from "next-auth/providers/resend";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
-  
+
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -93,15 +95,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
     Resend({
       apiKey: process.env.RESEND_API_KEY,
-      from: 'noreply@trainingplan.ai',
+      from: "noreply@trainingplan.ai",
     }),
   ],
-  
+
   pages: {
-    signIn: '/login',
-    error: '/login',
+    signIn: "/login",
+    error: "/login",
   },
-  
+
   callbacks: {
     // Add user ID to session
     session: ({ session, user }) => ({
@@ -111,31 +113,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         id: user.id,
       },
     }),
-    
+
     // Control who can sign in
     signIn: async ({ user, account, profile }) => {
       // Add any sign-in restrictions here
-      return true
+      return true;
     },
   },
-  
+
   events: {
     createUser: async ({ user }) => {
       // Handle new user creation (e.g., send welcome email)
-      console.log('New user created:', user.email)
+      console.log("New user created:", user.email);
     },
   },
-})
+});
 
 // Type augmentation for session
-declare module 'next-auth' {
+declare module "next-auth" {
   interface Session {
     user: {
-      id: string
-      name?: string | null
-      email?: string | null
-      image?: string | null
-    }
+      id: string;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+    };
   }
 }
 ```
@@ -144,42 +146,45 @@ declare module 'next-auth' {
 
 ```typescript
 // app/api/auth/[...nextauth]/route.ts
-import { handlers } from '@/lib/auth'
+import { handlers } from "@/lib/auth";
 
-export const { GET, POST } = handlers
+export const { GET, POST } = handlers;
 ```
 
 ### 5. Middleware
 
 ```typescript
 // middleware.ts
-import { auth } from '@/lib/auth'
-import { NextResponse } from 'next/server'
+import { auth } from "@/lib/auth";
+import { NextResponse } from "next/server";
 
 export default auth((req) => {
-  const isLoggedIn = !!req.auth
-  const isAuthPage = req.nextUrl.pathname.startsWith('/login')
-  const isProtectedPage = req.nextUrl.pathname.startsWith('/dashboard') ||
-                          req.nextUrl.pathname.startsWith('/plans') ||
-                          req.nextUrl.pathname.startsWith('/settings')
-  
+  const isLoggedIn = !!req.auth;
+  const isAuthPage = req.nextUrl.pathname.startsWith("/login");
+  const isProtectedPage =
+    req.nextUrl.pathname.startsWith("/dashboard") ||
+    req.nextUrl.pathname.startsWith("/plans") ||
+    req.nextUrl.pathname.startsWith("/settings");
+
   // Redirect logged-in users away from auth pages
   if (isAuthPage && isLoggedIn) {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
-  
+
   // Redirect unauthenticated users to login
   if (isProtectedPage && !isLoggedIn) {
-    const callbackUrl = encodeURIComponent(req.nextUrl.pathname)
-    return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, req.url))
+    const callbackUrl = encodeURIComponent(req.nextUrl.pathname);
+    return NextResponse.redirect(
+      new URL(`/login?callbackUrl=${callbackUrl}`, req.url),
+    );
   }
-  
-  return NextResponse.next()
-})
+
+  return NextResponse.next();
+});
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
-}
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+};
 ```
 
 ## Usage Patterns
@@ -193,11 +198,11 @@ import { redirect } from 'next/navigation'
 
 export default async function DashboardPage() {
   const session = await auth()
-  
+
   if (!session?.user) {
     redirect('/login')
   }
-  
+
   return (
     <div>
       <h1>Welcome, {session.user.name}</h1>
@@ -210,26 +215,26 @@ export default async function DashboardPage() {
 
 ```typescript
 // actions/plans.ts
-'use server'
+"use server";
 
-import { auth } from '@/lib/auth'
+import { auth } from "@/lib/auth";
 
 export async function createPlan(formData: FormData) {
-  const session = await auth()
-  
+  const session = await auth();
+
   if (!session?.user) {
-    throw new Error('Unauthorized')
+    throw new Error("Unauthorized");
   }
-  
+
   // User is authenticated, proceed
   const plan = await db.trainingPlan.create({
     data: {
-      name: formData.get('name') as string,
+      name: formData.get("name") as string,
       userId: session.user.id,
     },
-  })
-  
-  return plan
+  });
+
+  return plan;
 }
 ```
 
@@ -244,15 +249,15 @@ import { Button } from '@/components/ui/button'
 
 export function UserMenu() {
   const { data: session, status } = useSession()
-  
+
   if (status === 'loading') {
     return <div>Loading...</div>
   }
-  
+
   if (!session) {
     return <Button href="/login">Sign In</Button>
   }
-  
+
   return (
     <div>
       <span>{session.user.name}</span>
@@ -303,16 +308,16 @@ import { Input } from '@/components/ui/input'
 
 export default async function LoginPage() {
   const session = await auth()
-  
+
   if (session?.user) {
     redirect('/dashboard')
   }
-  
+
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-md space-y-8 p-8">
         <h1 className="text-2xl font-bold text-center">Sign In</h1>
-        
+
         {/* Google Sign In */}
         <form
           action={async () => {
@@ -324,7 +329,7 @@ export default async function LoginPage() {
             Continue with Google
           </Button>
         </form>
-        
+
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t" />
@@ -335,7 +340,7 @@ export default async function LoginPage() {
             </span>
           </div>
         </div>
-        
+
         {/* Email Sign In */}
         <form
           action={async (formData) => {
@@ -366,54 +371,54 @@ export default async function LoginPage() {
 
 ```typescript
 // lib/auth-helpers.ts
-import { auth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 
 /**
  * Get authenticated user or throw
  */
 export async function requireAuth() {
-  const session = await auth()
-  
+  const session = await auth();
+
   if (!session?.user) {
-    throw new Error('Unauthorized')
+    throw new Error("Unauthorized");
   }
-  
-  return session.user
+
+  return session.user;
 }
 
 /**
  * Check if user owns a resource
  */
 export async function requireOwnership(resourceUserId: string) {
-  const user = await requireAuth()
-  
+  const user = await requireAuth();
+
   if (user.id !== resourceUserId) {
-    throw new Error('Forbidden')
+    throw new Error("Forbidden");
   }
-  
-  return user
+
+  return user;
 }
 
 /**
  * Get a plan with ownership check
  */
 export async function getPlanWithAuth(planId: string) {
-  const user = await requireAuth()
-  
+  const user = await requireAuth();
+
   const plan = await db.trainingPlan.findUnique({
     where: { id: planId },
-  })
-  
+  });
+
   if (!plan) {
-    throw new Error('Not found')
+    throw new Error("Not found");
   }
-  
+
   if (plan.userId !== user.id) {
-    throw new Error('Forbidden')
+    throw new Error("Forbidden");
   }
-  
-  return plan
+
+  return plan;
 }
 ```
 

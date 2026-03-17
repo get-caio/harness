@@ -31,6 +31,11 @@
           },
           {
             "type": "command",
+            "command": "file_path=$(jq -r '.tool_input.file_path // .tool_input.path // empty'); if echo \"$file_path\" | grep -qE 'CURRENT_PHASE$'; then echo '🔄 PHASE BOUNDARY DETECTED — Run these before starting the next phase:'; echo '  1. Spawn auditor agent — full product audit (dead endpoints, schema-UI gaps, pattern inconsistencies)'; echo '  2. Spawn product-critic agent — product quality check (flows, UX, spec fidelity)'; echo '  3. Spawn refactorer agent — codebase cleanup (dedup, naming, dead code)'; echo '  4. Run /audit for security and code quality review'; echo 'Complete all four before proceeding to next phase tickets.'; fi",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "file_path=$(jq -r '.tool_input.file_path // .tool_input.path // empty'); if [ -z \"$file_path\" ] || ! echo \"$file_path\" | grep -qE '\\.(ts|tsx|js|jsx)$'; then exit 0; fi; if echo \"$file_path\" | grep -qE '\\.(test|spec)\\.(ts|tsx|js|jsx)$'; then exit 0; fi; if echo \"$file_path\" | grep -qE '(config|setup|\\.d\\.ts)'; then exit 0; fi; dir=$(dirname \"$file_path\"); base=$(basename \"$file_path\"); name=\"${base%.*}\"; ext=\"${base##*.}\"; test_file=''; for candidate in \"$dir/$name.test.$ext\" \"$dir/$name.spec.$ext\" \"$dir/__tests__/$name.test.$ext\" \"$dir/__tests__/$name.spec.$ext\"; do if [ -f \"$candidate\" ]; then test_file=\"$candidate\"; break; fi; done; if [ -z \"$test_file\" ]; then echo \"⚠️  No test file found for $file_path. Add a test at $dir/$name.test.$ext\"; exit 0; fi; echo \"🧪 Running test: $test_file\"; result=$(bunx vitest run \"$test_file\" 2>&1); status=$?; if [ $status -ne 0 ]; then echo \"❌ Test failed: $test_file\"; echo \"$result\" | tail -30; exit 1; else echo \"✅ Test passed: $test_file\"; fi",
             "timeout": 60
           }
@@ -56,6 +61,16 @@
           },
           {
             "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then changed=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null | grep -E '\\.(ts|tsx|js|jsx)$' | grep -vE '\\.(test|spec)\\.' | head -20); if [ -n \"$changed\" ]; then echo '🔍 POST-COMMIT: Run /simplify to review changed code for reuse, quality, and efficiency:'; echo \"$changed\"; fi; fi",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit.*\\[P[0-9]+-T[0-9]+\\]'; then changed=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null | grep -vE '\\.(test|spec)\\.' | head -10); has_test_only=true; for f in $changed; do echo \"$f\" | grep -qE '\\.(test|spec)\\.' || { has_test_only=false; break; }; done; if [ \"$has_test_only\" = false ]; then echo '📝 POST-COMMIT: Spawn a doc-writer agent (haiku model) to update docs/ for the changes in this ticket commit.'; fi; fi",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^(bun add|npm install)'; then echo \"$(date '+%Y-%m-%d %H:%M') - Dependency installed: $cmd\" >> progress/build-log.md 2>/dev/null || true; fi",
             "timeout": 10
           },
@@ -63,6 +78,16 @@
             "type": "command",
             "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^(bun add|npm install)'; then echo '🔒 Running security audit...' && (bun audit 2>/dev/null || npm audit --audit-level=high 2>/dev/null || echo 'Audit not available'); fi",
             "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^(bun add|npm install)'; then if [ -f package.json ]; then dep_count=$(jq '[.dependencies // {} | length, .devDependencies // {} | length] | add' package.json 2>/dev/null || echo 0); if [ \"$dep_count\" -gt 40 ]; then echo \"⚠️  DEPENDENCY BUDGET: $dep_count total dependencies. Every dependency is attack surface. Review if all are necessary.\"; elif [ \"$dep_count\" -gt 30 ]; then echo \"📦 Dependency count: $dep_count (approaching budget of 40)\"; fi; fi; fi",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if [ -d src ]; then src_files=$(find src -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' 2>/dev/null | grep -vcE '\\.(test|spec)\\.' || echo 0); src_loc=$(find src -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' 2>/dev/null | grep -vE '\\.(test|spec)\\.' | xargs cat 2>/dev/null | wc -l | tr -d ' '); echo \"📊 Codebase: $src_files source files, $src_loc LOC (excluding tests)\"; fi; fi",
+            "timeout": 15
           }
         ]
       }
@@ -83,8 +108,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if git diff --cached | grep -qiE '(api[_-]?key|secret[_-]?key|password|token|credential)\\s*[=:]'; then echo '❌ BLOCKED: Potential secret detected in commit. Remove hardcoded credentials.' >&2 && exit 1; fi; fi; exit 0",
-            "timeout": 10
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if command -v gitleaks >/dev/null 2>&1; then gitleaks protect --staged --no-banner 2>&1 || (echo '❌ BLOCKED: gitleaks detected secrets in staged changes.' >&2 && exit 1); else if git diff --cached | grep -qiE '(api[_-]?key|secret[_-]?key|password|token|credential|private[_-]?key|client[_-]?secret|access[_-]?token|auth[_-]?token|bearer|jwt[_-]?secret|signing[_-]?key|encryption[_-]?key|database[_-]?url.*@|mongodb\\+srv://|postgres://|mysql://)\\s*[=:]'; then echo '❌ BLOCKED: Potential secret detected in commit. Remove hardcoded credentials.' >&2 && exit 1; fi; fi; fi; exit 0",
+            "timeout": 15
           },
           {
             "type": "command",
@@ -138,6 +163,11 @@
             "type": "command",
             "command": "afplay -v 0.5 /System/Library/Sounds/Glass.aiff &",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "if [ -d specs/decisions ]; then pending=$(grep -rl 'Status.*PENDING' specs/decisions/ 2>/dev/null | wc -l | tr -d ' '); if [ \"$pending\" -gt 0 ]; then echo \"⏳ $pending PENDING spec decision(s) need human input:\"; grep -rl 'Status.*PENDING' specs/decisions/ 2>/dev/null | while read f; do name=$(head -1 \"$f\" | sed 's/^# //'); echo \"  - $name ($f)\"; done; fi; fi; if [ -d docs/decisions ]; then arch_pending=$(grep -rl 'Status.*PENDING' docs/decisions/ 2>/dev/null | wc -l | tr -d ' '); if [ \"$arch_pending\" -gt 0 ]; then echo \"⏳ $arch_pending PENDING arch decision(s) need human input:\"; grep -rl 'Status.*PENDING' docs/decisions/ 2>/dev/null | while read f; do name=$(head -1 \"$f\" | sed 's/^# //'); echo \"  - $name ($f)\"; done; fi; fi",
+            "timeout": 10
           }
         ]
       }
@@ -149,5 +179,5 @@
     "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
-  "customInstructions": "You are building a CAIO incubator project. Follow the conventions in CLAUDE.md. When running /work, execute tickets continuously — do NOT stop between tickets. After completing and committing a ticket, immediately pick up the next TODO ticket. Only stop when: all tickets are DONE, all remaining tickets are BLOCKED, or a human interrupts. Use TDD. Never merge to prod. Surface decisions via /decision command. Commit after each completed ticket. For large features (L/XL), spawn a feature subagent in a worktree."
+  "customInstructions": "You are building a CAIO incubator project. Follow the conventions in CLAUDE.md. When running /work, execute tickets continuously — do NOT stop between tickets. After completing and committing a ticket, immediately pick up the next TODO ticket. Only stop when: all tickets are DONE, all remaining tickets are BLOCKED, or a human interrupts. Use TDD. Never merge to prod. Surface decisions via /decision command. Commit after each completed ticket. For large features (L/XL), spawn a feature subagent in a worktree.\n\nSIMPLICITY MANDATE: Prefer the smallest correct implementation. Before adding a function, check if an existing one already does it. Before adding a file, check if it fits in an existing one. Before adding a dependency, check if the standard library or existing deps cover it. Three lines of inline code is better than a premature abstraction. Every function must be under 40 lines, every file under 400 lines, nesting under 3 levels. If you find yourself writing a utility, search the codebase first — it probably already exists. Complexity is a bug."
 }

@@ -91,6 +91,18 @@ echo "any count:" && grep -rn ": any" --include="*.ts" . 2>/dev/null | wc -l
 - [ ] Proper foreign key relationships
 - [ ] No orphaned data possibilities
 
+#### BLOCKING Issues (Must Fix) — Complexity
+
+Complexity violations are blocking. Simple code is secure code — complexity hides bugs.
+
+- [ ] All functions under 40 lines (hard limit, no exceptions)
+- [ ] Max 3 levels of nesting (extract early returns or helper functions)
+- [ ] Max 5 parameters per function (use an options object beyond 3)
+- [ ] Files under 400 lines (split into focused modules)
+- [ ] Cyclomatic complexity under 10 per function
+- [ ] No premature abstractions (3 inline lines > 1 unnecessary helper)
+- [ ] No unnecessary dependencies (check if stdlib covers it)
+
 #### REQUEST CHANGES (Should Fix)
 
 **Code Quality**
@@ -101,11 +113,6 @@ echo "any count:" && grep -rn ": any" --include="*.ts" . 2>/dev/null | wc -l
 - [ ] Error messages are helpful
 - [ ] Function/variable names are clear
 - [ ] No code duplication
-
-**Complexity**
-
-- [ ] Functions under 40 lines
-- [ ] Max 3 levels of nesting
 - [ ] No magic numbers (use constants)
 - [ ] Complex conditions extracted to named booleans
 - [ ] No dead/commented-out code
