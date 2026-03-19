@@ -1,3 +1,7 @@
+---
+description: "Patterns for Vitest + Testing Library unit and component tests — test factories, MSW handler setup, interaction tests with userEvent, and integration tests hitting a real DB. Use for in-process tests; for browser/E2E flows use e2e-testing instead."
+---
+
 # Testing Skill
 
 Patterns for unit and component testing in CAIO incubator projects using Vitest and Testing Library.

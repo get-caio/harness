@@ -1,3 +1,7 @@
+---
+description: "Patterns for BetterAuth/NextAuth session setup, OAuth providers (Google, GitHub), magic-link email, Prisma adapter, JWT callbacks, and protected server actions. Use when adding login, sessions, or providers — not for authorization/permission checks."
+---
+
 # Authentication Skill
 
 Patterns for implementing authentication in CAIO incubator projects.

@@ -1,3 +1,7 @@
+---
+description: "Patterns for GDPR/CCPA compliance — data minimization, purpose limitation, retention policies, right-to-erasure workflows, PII audit checklists, and data processing agreements. Use when handling personal data storage or processing — not for consent banners (use gdpr-consent) or general security hardening."
+---
+
 # Data Protection Skill
 
 Legal compliance and data handling for CAIO projects. Getting this wrong means lawsuits, fines, and career-ending incidents.

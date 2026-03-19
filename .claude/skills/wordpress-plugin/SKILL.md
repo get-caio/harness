@@ -15,32 +15,109 @@ Secure WordPress plugin patterns using PHP 8.0+, WP REST API, React Gutenberg bl
 - Registering REST API endpoints in WordPress
 - Preparing for WordPress.org plugin directory submission
 
+---
+
+## WP-Specific Gotchas
+
+These are the patterns the model is most likely to miss. General PHP/security knowledge is not repeated here.
+
+### ABSPATH Guard — Required on Every File
+
+```php
+defined('ABSPATH') || exit;
+```
+
+Every PHP file in the plugin must begin with this. Without it, files can be accessed directly via URL, bypassing WordPress entirely. This is a WordPress.org submission requirement and a security necessity.
+
+### wp_remote_get/post vs curl
+
+```php
+// WRONG — bypasses WordPress proxy settings, fails on many hosts
+$response = curl_exec($ch);
+
+// RIGHT — respects WP HTTP API, proxy config, and SSL settings
+$response = wp_remote_get('https://api.example.com/data');
+$body = wp_remote_retrieve_body($response);
+$code = wp_remote_retrieve_response_code($response);
+```
+
+Always use `wp_remote_get()` / `wp_remote_post()` instead of `curl` or `file_get_contents()`. Hosts block raw curl; the WP HTTP API respects server proxy config.
+
+### Nonce Verification — Both Sides Required
+
+```php
+// Output side — always include in form
+wp_nonce_field('sided_save_settings', 'sided_nonce');
+
+// Verification side — before any processing
+if (!isset($_POST['sided_nonce']) ||
+    !wp_verify_nonce($_POST['sided_nonce'], 'sided_save_settings')) {
+    wp_die('Security check failed');
+}
+if (!current_user_can('manage_options')) {
+    wp_die('Unauthorized');
+}
+```
+
+Nonces expire after 24 hours by default. Use `check_ajax_referer()` for AJAX handlers.
+
+### REST API: Always Declare `permission_callback`
+
+```php
+register_rest_route('sided/v1', '/settings', [
+    'methods' => 'POST',
+    'callback' => [self::class, 'update_settings'],
+    // REQUIRED — omitting this defaults to open access in older WP versions
+    'permission_callback' => fn() => current_user_can('manage_options'),
+    'args' => [
+        'api_key' => [
+            'type' => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+            'required' => true,
+        ],
+    ],
+]);
+```
+
+The `sanitize_callback` in `args` runs before your handler receives the value — use it instead of sanitizing manually in the callback.
+
+### uninstall.php — Required for WordPress.org
+
+```php
+// uninstall.php — runs when user deletes the plugin
+defined('WP_UNINSTALL_PLUGIN') || exit;
+
+delete_option('sided_api_key');
+delete_option('sided_property_id');
+delete_option('sided_embed_enabled');
+```
+
+Must be a separate file (not a hook). WordPress.org requires it. Without it, plugin data persists indefinitely after deletion.
+
+---
+
 ## Plugin Structure
 
 ```
 sided-publisher/
 ├── sided-publisher.php           # Main plugin file (headers, activation)
 ├── includes/
-│   ├── class-sided-admin.php     # Admin settings page
-│   ├── class-sided-api.php       # REST API endpoints
-│   ├── class-sided-embed.php     # Script injection logic
-│   └── class-sided-gutenberg.php # Gutenberg block registration
+│   ├── class-sided-admin.php
+│   ├── class-sided-api.php
+│   ├── class-sided-embed.php
+│   └── class-sided-gutenberg.php
 ├── blocks/
-│   ├── sided-poll/
-│   │   ├── block.json            # Block metadata
-│   │   ├── edit.tsx              # Editor component
-│   │   ├── save.tsx              # Frontend render
-│   │   └── index.ts              # Block registration
-│   └── build/                    # Compiled block assets
-├── assets/
-│   ├── admin.css
-│   └── admin.js
+│   └── sided-poll/
+│       ├── block.json            # Block metadata
+│       ├── edit.tsx
+│       ├── save.tsx
+│       └── index.ts
 ├── languages/                    # i18n
 ├── readme.txt                    # WordPress.org listing
 └── uninstall.php                 # Clean uninstall handler
 ```
 
-## Main Plugin File
+## Main Plugin File Header
 
 ```php
 <?php
@@ -56,172 +133,6 @@ sided-publisher/
  */
 
 defined('ABSPATH') || exit;
-
-define('SIDED_VERSION', '2.0.0');
-define('SIDED_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('SIDED_PLUGIN_URL', plugin_dir_url(__FILE__));
-
-// Autoload
-require_once SIDED_PLUGIN_DIR . 'includes/class-sided-admin.php';
-require_once SIDED_PLUGIN_DIR . 'includes/class-sided-api.php';
-require_once SIDED_PLUGIN_DIR . 'includes/class-sided-embed.php';
-require_once SIDED_PLUGIN_DIR . 'includes/class-sided-gutenberg.php';
-
-// Initialize
-add_action('init', function () {
-    Sided_Gutenberg::register_blocks();
-});
-add_action('rest_api_init', [Sided_Api::class, 'register_routes']);
-add_action('admin_menu', [Sided_Admin::class, 'register_menu']);
-add_action('wp_enqueue_scripts', [Sided_Embed::class, 'inject_script']);
-
-// Activation
-register_activation_hook(__FILE__, function () {
-    add_option('sided_api_key', '');
-    add_option('sided_property_id', '');
-    add_option('sided_embed_enabled', 'yes');
-});
 ```
 
-## Security Patterns
-
-### Nonce Verification (CRITICAL)
-
-```php
-// In admin forms — always verify nonces
-public static function save_settings(): void {
-    if (!isset($_POST['sided_nonce']) ||
-        !wp_verify_nonce($_POST['sided_nonce'], 'sided_save_settings')) {
-        wp_die('Security check failed');
-    }
-
-    if (!current_user_can('manage_options')) {
-        wp_die('Unauthorized');
-    }
-
-    // Sanitize all input
-    $api_key = sanitize_text_field($_POST['sided_api_key'] ?? '');
-    $property_id = sanitize_text_field($_POST['sided_property_id'] ?? '');
-
-    update_option('sided_api_key', $api_key);
-    update_option('sided_property_id', $property_id);
-}
-
-// In forms — always output nonce field
-public static function render_settings(): void {
-    ?>
-    <form method="post" action="">
-        <?php wp_nonce_field('sided_save_settings', 'sided_nonce'); ?>
-        <!-- form fields -->
-        <?php submit_button(); ?>
-    </form>
-    <?php
-}
-```
-
-### REST API Authentication
-
-```php
-class Sided_Api {
-    public static function register_routes(): void {
-        register_rest_route('sided/v1', '/settings', [
-            'methods' => 'GET',
-            'callback' => [self::class, 'get_settings'],
-            'permission_callback' => function () {
-                return current_user_can('manage_options');
-            },
-        ]);
-
-        register_rest_route('sided/v1', '/settings', [
-            'methods' => 'POST',
-            'callback' => [self::class, 'update_settings'],
-            'permission_callback' => function () {
-                return current_user_can('manage_options');
-            },
-            'args' => [
-                'api_key' => [
-                    'type' => 'string',
-                    'sanitize_callback' => 'sanitize_text_field',
-                    'required' => true,
-                ],
-            ],
-        ]);
-    }
-}
-```
-
-### Input Sanitization
-
-```php
-// Always sanitize based on expected type
-sanitize_text_field($input);        // Single-line text
-sanitize_textarea_field($input);    // Multi-line text
-absint($input);                     // Positive integer
-esc_url_raw($input);                // URL (for storage)
-esc_url($input);                    // URL (for display)
-sanitize_email($input);             // Email
-wp_kses_post($input);               // Rich HTML content
-
-// Never trust user input directly
-// BAD: update_option('key', $_POST['value']);
-// GOOD: update_option('key', sanitize_text_field($_POST['value'] ?? ''));
-```
-
-## Script Injection
-
-```php
-class Sided_Embed {
-    public static function inject_script(): void {
-        if (get_option('sided_embed_enabled') !== 'yes') return;
-
-        $property_id = get_option('sided_property_id');
-        if (empty($property_id)) return;
-
-        wp_enqueue_script(
-            'sided-embed',
-            'https://embed-v2.sided.co/load.min.js',
-            [],
-            null,
-            ['strategy' => 'async', 'in_footer' => true]
-        );
-
-        wp_add_inline_script('sided-embed', sprintf(
-            'window.sidedConfig = %s;',
-            wp_json_encode([
-                'propertyId' => sanitize_text_field($property_id),
-                'apiBase' => 'https://api.sided.ai',
-            ])
-        ), 'before');
-    }
-}
-```
-
-## Gutenberg Block
-
-```json
-// blocks/sided-poll/block.json
-{
-  "$schema": "https://schemas.wp.org/trunk/block.json",
-  "apiVersion": 3,
-  "name": "sided/poll",
-  "title": "Sided Poll",
-  "category": "embed",
-  "icon": "chart-bar",
-  "description": "Embed a Sided poll in your content.",
-  "attributes": {
-    "pollId": { "type": "string", "default": "" }
-  },
-  "editorScript": "file:./index.js",
-  "render": "file:./render.php"
-}
-```
-
-## Common Mistakes
-
-1. **Never skip nonce verification** — every form submission and AJAX call needs it
-2. **Never use `$_GET`/`$_POST` without sanitization** — always sanitize before use
-3. **Always check `current_user_can()`** — verify permissions on every admin action
-4. **Use `esc_attr()`, `esc_html()`, `esc_url()`** when outputting to HTML
-5. **Never hardcode API URLs** — use `get_option()` so they can be updated
-6. **Always provide `uninstall.php`** — clean up options and data on plugin removal
-7. **Use `wp_remote_get/post`** instead of `curl` — respects WP proxy settings
+The header comment block is parsed by WordPress — every field affects directory listing appearance and compatibility checks.

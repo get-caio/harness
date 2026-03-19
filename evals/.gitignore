@@ -1,0 +1,4 @@
+# Eval run results (generated, not committed)
+results/*.md
+results/*.json
+!results/.gitkeep

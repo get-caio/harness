@@ -1,3 +1,7 @@
+---
+description: "Patterns for GitHub Actions PR check workflows, concurrency cancellation, Vercel preview deployments, secrets management in CI, and status gates that block merges. Use when setting up or modifying pipeline configs — not for local dev tooling."
+---
+
 # CI/CD Skill — GitHub Actions & Deployment Pipelines
 
 ## When to Use

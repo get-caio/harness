@@ -1,0 +1,883 @@
+cases:
+  # ══════════════════════════════════
+  # CI/CD
+  # ══════════════════════════════════
+  - id: abs-cicd-001
+    skill: ci-cd
+    task: >
+      Write a GitHub Actions workflow for a Next.js + Bun project that runs on
+      pull requests targeting main. It should run linting, type checking, unit tests
+      with coverage upload, and E2E tests. Cancel in-progress runs when new commits
+      are pushed.
+    assertions:
+      - pattern: "cancel-in-progress:\\s*true"
+        expect: present
+        description: "Cancels in-progress runs on new pushes"
+      - pattern: "concurrency:"
+        expect: present
+        description: "Uses concurrency group to deduplicate runs"
+      - pattern: "setup-bun|oven-sh/setup-bun"
+        expect: present
+        description: "Uses Bun setup action (not npm/yarn)"
+      - pattern: "frozen-lockfile|--frozen-lockfile"
+        expect: present
+        description: "Installs with frozen lockfile for reproducibility"
+      - pattern: "upload-artifact|actions/upload-artifact"
+        expect: present
+        description: "Uploads coverage or test report artifacts"
+      - pattern: "needs:\\s*\\[|needs:"
+        expect: present
+        description: "E2E job depends on lint/type job (fail fast ordering)"
+
+  - id: abs-cicd-002
+    skill: ci-cd
+    task: >
+      Write a GitHub Actions workflow that deploys to Vercel preview on every PR
+      and posts the preview URL as a comment on the PR. Also write a separate
+      production deployment workflow triggered on push to main.
+    assertions:
+      - pattern: "amondnet/vercel-action|vercel-action"
+        expect: present
+        description: "Uses Vercel GitHub Action for deployment"
+      - pattern: "VERCEL_TOKEN|VERCEL_ORG_ID|VERCEL_PROJECT_ID"
+        expect: present
+        description: "References required Vercel secrets"
+      - pattern: "permissions:\\s*\\n.*pull-requests:\\s*write"
+        expect: present
+        description: "Grants write permission to post PR comments"
+      - pattern: "github.rest.issues.createComment|actions/github-script"
+        expect: present
+        description: "Posts preview URL as PR comment"
+      - pattern: "vercel-args.*--prod|--prod"
+        expect: present
+        description: "Production workflow deploys with --prod flag"
+
+  - id: abs-cicd-003
+    skill: ci-cd
+    task: >
+      Add a security audit job to an existing GitHub Actions PR workflow. It should
+      scan for hardcoded secrets in source files and run a dependency vulnerability
+      audit.
+    assertions:
+      - pattern: "sk_live|pk_live|ghp_|AKIA"
+        expect: present
+        description: "Scans for known secret patterns"
+      - pattern: "grep.*--include|rg.*\\*\\.ts|secrets"
+        expect: present
+        description: "Searches source files for leaked secrets"
+      - pattern: "bun audit|npm audit|audit"
+        expect: present
+        description: "Runs dependency vulnerability audit"
+      - pattern: "exit 1|::error::"
+        expect: present
+        description: "Fails the job if secrets are found"
+
+  # ══════════════════════════════════
+  # GIT WORKFLOW
+  # ══════════════════════════════════
+  - id: abs-git-001
+    skill: git-workflow
+    task: >
+      Write a shell script and documentation for onboarding a new engineer to
+      the team's git workflow. Cover branch creation, daily sync with main,
+      and creating a PR. Also describe the branch naming convention.
+    assertions:
+      - pattern: "feature/|fix/|phase-"
+        expect: present
+        description: "Shows correct branch type prefixes"
+      - pattern: "git rebase.*main|rebase origin/main"
+        expect: present
+        description: "Uses rebase (not merge) to sync with main"
+      - pattern: "git pull.*--rebase|pull --rebase"
+        expect: present
+        description: "Pulls with rebase flag"
+      - pattern: "\\[P[0-9]-T[0-9]{3}\\]|PN-TXXX"
+        expect: present
+        description: "References ticket prefix format for PR/commit titles"
+      - pattern: "squash|squash merge"
+        expect: present
+        description: "Mentions squash merge as preferred strategy"
+
+  - id: abs-git-002
+    skill: git-workflow
+    task: >
+      A team of 4 engineers is working in parallel on the same Next.js codebase.
+      Describe how to divide file ownership to prevent merge conflicts, and show
+      the resolution process when a conflict occurs in a shared file like
+      package.json or prisma/schema.prisma.
+    assertions:
+      - pattern: "file.*ownership|own.*distinct|Engineer [A-D]:|area"
+        expect: present
+        description: "Assigns distinct file ownership areas per engineer"
+      - pattern: "git rebase --continue|git add.*rebase"
+        expect: present
+        description: "Shows rebase-based conflict resolution"
+      - pattern: "git diff --merge|git diff"
+        expect: present
+        description: "Checks what both sides changed before resolving"
+      - pattern: "bun install|bun test|bun typecheck"
+        expect: present
+        description: "Verifies after conflict resolution with tests/typecheck"
+      - pattern: "schema.*one engineer|one engineer.*schema|schema owner"
+        expect: present
+        description: "Notes that schema changes need single ownership per sprint"
+
+  # ══════════════════════════════════
+  # E2E TESTING
+  # ══════════════════════════════════
+  - id: abs-e2e-001
+    skill: e2e-testing
+    task: >
+      Write a Playwright E2E test suite for a login flow. Cover: successful login
+      redirects to dashboard, failed login shows error, logout clears session and
+      redirects to login, and accessing a protected route after logout redirects back.
+    assertions:
+      - pattern: "storageState|auth.*\\.json|user\\.json"
+        expect: present
+        description: "Uses Playwright auth state storage for session reuse"
+      - pattern: "page\\.waitForURL|waitForURL"
+        expect: present
+        description: "Waits for URL navigation, not hardcoded sleeps"
+      - pattern: "getByRole|getByLabel|getByText"
+        expect: present
+        description: "Uses semantic locators (not CSS selectors)"
+      - pattern: "test\\.describe"
+        expect: present
+        description: "Groups related tests with describe blocks"
+      - pattern: "expectError|toContainText.*[Ii]nvalid|Invalid.*credentials"
+        expect: present
+        description: "Asserts error message on failed login"
+
+  - id: abs-e2e-002
+    skill: e2e-testing
+    task: >
+      Write a Playwright Page Object Model for a dashboard page that has a
+      create button, a list of cards, and an empty state. Include tests that
+      mock an empty API response, a populated response, and a 500 error response.
+    assertions:
+      - pattern: "class.*Page|BasePage|extends BasePage"
+        expect: present
+        description: "Implements Page Object Model class"
+      - pattern: "page\\.route|route\\("
+        expect: present
+        description: "Uses Playwright route interception for API mocking"
+      - pattern: "route\\.fulfill"
+        expect: present
+        description: "Fulfills mocked routes with controlled responses"
+      - pattern: "getByTestId|data-testid"
+        expect: present
+        description: "Uses data-testid selectors for stable test hooks"
+      - pattern: "status.*500|\\{ status: 500 \\}"
+        expect: present
+        description: "Tests error state with 500 response mock"
+
+  - id: abs-e2e-003
+    skill: e2e-testing
+    task: >
+      Write a Playwright accessibility test suite and a visual regression test
+      suite for a marketing landing page. Cover keyboard navigation, ARIA violations,
+      and viewport snapshot comparison including dark mode.
+    assertions:
+      - pattern: "@axe-core/playwright|AxeBuilder"
+        expect: present
+        description: "Uses axe-core for automated accessibility scanning"
+      - pattern: "results\\.violations.*toEqual.*\\[\\]|violations.*length.*0"
+        expect: present
+        description: "Asserts zero accessibility violations"
+      - pattern: "keyboard\\.press.*Tab|press\\('Tab'\\)"
+        expect: present
+        description: "Tests keyboard navigation with Tab key"
+      - pattern: "toHaveScreenshot|screenshot"
+        expect: present
+        description: "Uses Playwright screenshot comparison for visual regression"
+      - pattern: "emulateMedia.*colorScheme.*dark|colorScheme.*dark"
+        expect: present
+        description: "Tests dark mode variant"
+
+  # ══════════════════════════════════
+  # PAYMENTS (generic Stripe patterns)
+  # ══════════════════════════════════
+  - id: abs-pay-gen-001
+    skill: payments
+    task: >
+      Implement a subscription checkout flow: a server action that creates a
+      Stripe Checkout session (getting or creating a Stripe customer first),
+      and a client-side button component that calls it and redirects to Stripe.
+    assertions:
+      - pattern: "stripe\\.customers\\.create|customers\\.create"
+        expect: present
+        description: "Creates a Stripe customer object"
+      - pattern: "stripeCustomerId|customerId|customer_id"
+        expect: present
+        description: "Stores and reuses Stripe customer ID"
+      - pattern: "stripe\\.checkout\\.sessions\\.create|checkout\\.sessions\\.create"
+        expect: present
+        description: "Creates a Stripe Checkout session"
+      - pattern: "mode.*subscription|subscription.*mode"
+        expect: present
+        description: "Sets checkout mode to subscription"
+      - pattern: "success_url|cancel_url"
+        expect: present
+        description: "Provides success and cancel redirect URLs"
+
+  - id: abs-pay-gen-002
+    skill: payments
+    task: >
+      Write a subscription status checker utility and a server action that
+      creates a Stripe Customer Portal session so users can manage their
+      billing. Gate a premium feature in a server action using the subscription check.
+    assertions:
+      - pattern: "hasActiveSubscription|subscription.*status|status.*active"
+        expect: present
+        description: "Checks subscription active status"
+      - pattern: "stripeCurrentPeriodEnd|current_period_end|periodEnd"
+        expect: present
+        description: "Checks subscription expiry date, not just status"
+      - pattern: "stripe\\.billingPortal\\.sessions\\.create|billingPortal"
+        expect: present
+        description: "Creates a Stripe Customer Portal session"
+      - pattern: "requireSubscription|throw.*[Uu]nauthorized|throw.*[Ss]ubscription"
+        expect: present
+        description: "Guards premium feature behind subscription check"
+      - pattern: "Unauthorized|403|subscription required"
+        expect: present
+        description: "Returns appropriate error when subscription is missing"
+
+  # ══════════════════════════════════
+  # AI INTEGRATION
+  # ══════════════════════════════════
+  - id: abs-ai-001
+    skill: ai-integration
+    task: >
+      Build a streaming chat API route that accepts a message history array and
+      returns a streaming text response using the Claude API. Include proper
+      error handling with retry logic for rate limit errors.
+    assertions:
+      - pattern: "anthropic\\.messages\\.stream|messages\\.stream"
+        expect: present
+        description: "Uses streaming API, not batch messages.create"
+      - pattern: "content_block_delta|text_delta"
+        expect: present
+        description: "Handles streaming delta events correctly"
+      - pattern: "ReadableStream|TransformStream"
+        expect: present
+        description: "Returns a streaming Response via ReadableStream"
+      - pattern: "RateLimitError|rate.*limit|exponential|backoff|Math\\.pow"
+        expect: present
+        description: "Implements retry with exponential backoff for rate limits"
+      - pattern: "max_tokens"
+        expect: present
+        description: "Sets max_tokens to prevent runaway costs"
+
+  - id: abs-ai-002
+    skill: ai-integration
+    task: >
+      Implement a structured output generator using the Claude API that produces
+      validated JSON matching a Zod schema. The function should generate a content
+      brief with title, audience, outline sections, and keywords.
+    assertions:
+      - pattern: "z\\.object|z\\.array|z\\.string"
+        expect: present
+        description: "Defines output schema with Zod"
+      - pattern: "JSON\\.parse|WorkoutSchema\\.parse|schema\\.parse"
+        expect: present
+        description: "Parses and validates the JSON response"
+      - pattern: "JSON only|valid JSON|Respond with.*JSON|Output.*JSON"
+        expect: present
+        description: "System prompt instructs model to output JSON only"
+      - pattern: "MODELS\\.|claude-3|claude-sonnet|claude-haiku"
+        expect: present
+        description: "Selects an appropriate Claude model"
+      - pattern: "try.*catch|catch.*JSON\\.parse|catch.*parse"
+        expect: present
+        description: "Handles JSON parse errors from model output"
+
+  - id: abs-ai-003
+    skill: ai-integration
+    task: >
+      Build an AI assistant that uses Claude tool use (function calling) to let
+      the model look up product information and check inventory. Define at least
+      two tools and implement the tool execution loop.
+    assertions:
+      - pattern: "tool_use|tools:"
+        expect: present
+        description: "Passes tools array to Claude API"
+      - pattern: "input_schema|type.*object.*properties"
+        expect: present
+        description: "Defines tool input schema"
+      - pattern: "block\\.type.*tool_use|type.*===.*tool_use"
+        expect: present
+        description: "Detects tool_use blocks in model response"
+      - pattern: "tool_result|type.*tool_result"
+        expect: present
+        description: "Sends tool results back to the model"
+      - pattern: "role.*user.*tool_result|tool_use_id"
+        expect: present
+        description: "Correctly formats tool result messages with tool_use_id"
+
+  # ══════════════════════════════════
+  # SEO FOUNDATIONS
+  # ══════════════════════════════════
+  - id: abs-seo-001
+    skill: seo-foundations
+    task: >
+      Write a Next.js generateMetadata function for a service page about
+      "AC Repair in Charlotte NC". Include meta title, description, canonical URL,
+      and Open Graph tags following SEO best practices.
+    assertions:
+      - pattern: "generateMetadata|Metadata"
+        expect: present
+        description: "Uses Next.js generateMetadata API"
+      - pattern: "title.*AC.*Repair|AC.*Repair.*title"
+        expect: present
+        description: "Includes primary keyword in meta title"
+      - pattern: ".{50,60}|characters|50.{0,5}60"
+        expect: present
+        description: "References or applies 50-60 character title guideline"
+      - pattern: "canonical|alternates.*canonical"
+        expect: present
+        description: "Sets canonical URL"
+      - pattern: "openGraph|og:title|og:description"
+        expect: present
+        description: "Includes Open Graph tags"
+      - pattern: "description.{0,80}150|description.{0,80}160|150.{0,10}character|160.{0,10}character"
+        expect: present
+        description: "Meta description within 150-160 character guideline"
+
+  - id: abs-seo-002
+    skill: seo-foundations
+    task: >
+      Write the structured data (JSON-LD) for a service page for a local HVAC
+      company. Include LocalBusiness, Service, and FAQPage schema types with
+      at least two FAQ entries about AC repair pricing.
+    assertions:
+      - pattern: "@context.*schema\\.org|schema\\.org"
+        expect: present
+        description: "Uses schema.org context"
+      - pattern: "LocalBusiness|@type.*LocalBusiness"
+        expect: present
+        description: "Includes LocalBusiness schema type"
+      - pattern: "FAQPage|@type.*FAQPage"
+        expect: present
+        description: "Includes FAQPage schema type"
+      - pattern: "Question|acceptedAnswer"
+        expect: present
+        description: "FAQ schema has proper Question/Answer structure"
+      - pattern: "application/ld\\+json"
+        expect: present
+        description: "Schema served as JSON-LD script tag"
+
+  - id: abs-seo-003
+    skill: seo-foundations
+    task: >
+      Generate a robots.txt and an XML sitemap configuration for a Next.js
+      service business site. The robots.txt should block admin and API routes
+      but allow AI crawlers. The sitemap should auto-generate on build.
+    assertions:
+      - pattern: "Disallow:.*admin|Disallow:.*\\/api"
+        expect: present
+        description: "Blocks admin and API routes from crawlers"
+      - pattern: "GPTBot|ClaudeBot|Google-Extended"
+        expect: present
+        description: "Includes AI bot directives"
+      - pattern: "Sitemap:.*sitemap\\.xml"
+        expect: present
+        description: "References sitemap URL in robots.txt"
+      - pattern: "urlset|<url>|<loc>"
+        expect: present
+        description: "Generates valid XML sitemap structure"
+      - pattern: "lastmod|changefreq|priority"
+        expect: present
+        description: "Sitemap includes lastmod and priority fields"
+
+  # ══════════════════════════════════
+  # LOCAL SEO
+  # ══════════════════════════════════
+  - id: abs-lseo-001
+    skill: local-seo
+    task: >
+      Write a script that takes a business's NAP (Name, Address, Phone) and
+      validates consistency across a set of directory listing objects. Flag any
+      discrepancies and output the canonical version. Include test cases showing
+      common inconsistencies.
+    assertions:
+      - pattern: "NAP|name.*address.*phone|address.*phone.*name"
+        expect: present
+        description: "Treats NAP as a unit to validate"
+      - pattern: "canonical|canonicalNAP|source.*truth"
+        expect: present
+        description: "Establishes a canonical NAP version as source of truth"
+      - pattern: "St\\..*Street|Suite.*Ste|\\(.*\\).*-"
+        expect: present
+        description: "Tests common formatting inconsistencies (St vs Street, etc.)"
+      - pattern: "discrepanc|inconsistent|mismatch"
+        expect: present
+        description: "Flags and reports NAP discrepancies"
+      - pattern: "normalize|toLowerCase|trim|replace"
+        expect: present
+        description: "Normalizes strings before comparison"
+
+  - id: abs-lseo-002
+    skill: local-seo
+    task: >
+      Implement a review routing system: after a job is completed, customers are
+      asked to rate their experience. 5-star ratings are redirected to Google review,
+      4-star gets an internal feedback form, and 1-3 star triggers an internal
+      escalation alert and never reaches Google.
+    assertions:
+      - pattern: "5.*star|rating.*===.*5|rating.*>=.*5"
+        expect: present
+        description: "Routes 5-star to Google review link"
+      - pattern: "4.*star|rating.*===.*4"
+        expect: present
+        description: "Routes 4-star to internal feedback"
+      - pattern: "1.*3|rating.*<=.*3|low.*rating|negative"
+        expect: present
+        description: "Routes negative ratings to internal escalation"
+      - pattern: "Google.*review|google\\.com.*review|maps\\.google"
+        expect: present
+        description: "Links 5-star customers to Google review URL"
+      - pattern: "alert|notify|escalat|Slack|internal"
+        expect: present
+        description: "Triggers alert for negative ratings"
+
+  - id: abs-lseo-003
+    skill: local-seo
+    task: >
+      Build a competitor intelligence data structure and a function that computes
+      a monthly scorecard comparing a business against its top 3 competitors.
+      Include metrics: review count, review velocity, average rating, and map pack
+      average position.
+    assertions:
+      - pattern: "reviewCount|review_count|totalReviews"
+        expect: present
+        description: "Tracks review count per competitor"
+      - pattern: "velocity|reviewsPerMonth|reviews.*month|monthly.*reviews"
+        expect: present
+        description: "Calculates review velocity"
+      - pattern: "avgRating|averageRating|average_rating"
+        expect: present
+        description: "Tracks average star rating"
+      - pattern: "mapPack|map_pack|packPosition|localPack"
+        expect: present
+        description: "Includes map pack position metric"
+      - pattern: "competitor|Competitor|competitors"
+        expect: present
+        description: "Structures data to compare multiple competitors"
+
+  # ══════════════════════════════════
+  # AEO / GEO
+  # ══════════════════════════════════
+  - id: abs-aeo-001
+    skill: aeo-geo
+    task: >
+      Generate an llms.txt file for a local HVAC company called "Charlotte Comfort
+      Systems" that serves Charlotte NC. Include their services, service area,
+      contact info, credentials, and 3 FAQ entries about common HVAC questions.
+    assertions:
+      - pattern: "llms\\.txt|# Charlotte|## Overview"
+        expect: present
+        description: "Structures content in llms.txt format with markdown sections"
+      - pattern: "## Services|## Contact|## FAQ"
+        expect: present
+        description: "Includes required llms.txt sections"
+      - pattern: "Licensed|Insured|Certif|Years in business"
+        expect: present
+        description: "Includes credentials section"
+      - pattern: "Q:|A:|## FAQ"
+        expect: present
+        description: "Includes FAQ section with Q/A format"
+      - pattern: "Charlotte|service area|NC"
+        expect: present
+        description: "Explicitly states geographic service area"
+
+  - id: abs-aeo-002
+    skill: aeo-geo
+    task: >
+      Write a TL;DR block component for a service page about emergency plumbing
+      in Dallas, TX. Then write the FAQPage JSON-LD schema for 3 questions about
+      emergency plumbing costs, response times, and what to do before the plumber
+      arrives. Follow AEO best practices.
+    assertions:
+      - pattern: "tldr|class.*tldr|TL;DR|itemscope.*Service"
+        expect: present
+        description: "Implements a TL;DR block with schema markup"
+      - pattern: "Dallas|TX|Texas|service area"
+        expect: present
+        description: "TL;DR includes geographic entity (WHO/WHAT/WHERE)"
+      - pattern: "\\$[0-9]|[0-9]+.*minute|[0-9]+.*star|[0-9]+.*review"
+        expect: present
+        description: "TL;DR contains a quantitative claim (price, time, rating, count)"
+      - pattern: "FAQPage|acceptedAnswer"
+        expect: present
+        description: "Includes FAQPage schema"
+      - pattern: "How much.*cost|cost.*\\$[0-9]|\\$[0-9].*repair"
+        expect: present
+        description: "FAQ includes direct price range answer"
+
+  - id: abs-aeo-003
+    skill: aeo-geo
+    task: >
+      Write a robots.txt for a local service business website that maximizes
+      AI crawler access while still blocking admin and auth routes. Then write
+      a script that checks server logs to detect which AI bots have been crawling
+      the site.
+    assertions:
+      - pattern: "GPTBot|ClaudeBot|PerplexityBot|Google-Extended"
+        expect: present
+        description: "Explicitly includes major AI bot directives"
+      - pattern: "Allow:\\s*/"
+        expect: present
+        description: "Allows AI bots to crawl content (not blocks them)"
+      - pattern: "Disallow:.*admin|Disallow:.*auth|Disallow:.*api"
+        expect: present
+        description: "Still blocks sensitive routes from all bots"
+      - pattern: "user.?agent.*GPTBot|GPTBot.*user.?agent|log.*bot|bot.*log"
+        expect: present
+        description: "Log monitoring script detects AI bot user agents"
+      - pattern: "crawl|traffic|activity|frequency"
+        expect: present
+        description: "Tracks crawl frequency or activity trends"
+
+  # ══════════════════════════════════
+  # INCIDENT RESPONSE
+  # ══════════════════════════════════
+  - id: abs-inc-001
+    skill: incident-response
+    task: >
+      Write an incident response runbook for a Next.js SaaS app deployed on
+      Vercel. Cover detection, severity classification, the rollback procedure,
+      and what to do when a rollback is not possible due to a database migration.
+    assertions:
+      - pattern: "SEV-1|SEV-2|SEV-3|severity"
+        expect: present
+        description: "Defines severity levels"
+      - pattern: "vercel rollback|vercel ls|Promote to Production"
+        expect: present
+        description: "Documents Vercel rollback procedure"
+      - pattern: "prisma migrate|migration.*not reversible|rollback.*migration"
+        expect: present
+        description: "Addresses the case where DB migration blocks rollback"
+      - pattern: "hotfix/|hotfix branch|git checkout -b hotfix"
+        expect: present
+        description: "Documents hotfix branch process for forward fixes"
+      - pattern: "health.*check|curl.*health|/api/health"
+        expect: present
+        description: "Includes post-fix health check verification step"
+
+  - id: abs-inc-002
+    skill: incident-response
+    task: >
+      Write a post-incident report template and fill it in for a hypothetical
+      SEV-1 incident where payment processing broke for 45 minutes due to an
+      expired Stripe webhook secret. Include timeline, root cause analysis,
+      what went well, and action items.
+    assertions:
+      - pattern: "Summary|Duration|Root [Cc]ause|Impact"
+        expect: present
+        description: "Includes required post-incident report sections"
+      - pattern: "Timeline|HH:MM|\\d{2}:\\d{2}"
+        expect: present
+        description: "Includes a timestamped incident timeline"
+      - pattern: "What [Ww]ent [Ww]ell|What [Ww]ent [Pp]oorly|[Ll]essons [Ll]earned"
+        expect: present
+        description: "Includes retrospective sections"
+      - pattern: "Action [Ii]tems|\\[ \\]|preventive"
+        expect: present
+        description: "Includes actionable follow-up items with owners"
+      - pattern: "STRIPE_WEBHOOK_SECRET|webhook.*expir|expir.*webhook|signing secret"
+        expect: present
+        description: "Root cause correctly identifies expired webhook secret"
+
+  - id: abs-inc-003
+    skill: incident-response
+    task: >
+      Write a Node.js script that acts as an automated first responder: it checks
+      the /api/health endpoint, queries recent Vercel deployments, and sends a
+      formatted Slack alert with severity and suggested first action when
+      the health check fails.
+    assertions:
+      - pattern: "/api/health|health.*endpoint|curl.*health"
+        expect: present
+        description: "Polls the health check endpoint"
+      - pattern: "vercel ls|vercel.*deploy|recent.*deploy"
+        expect: present
+        description: "Checks recent deployments to aid diagnosis"
+      - pattern: "SEV-1|SEV-2|severity"
+        expect: present
+        description: "Classifies alert with severity level"
+      - pattern: "Slack|webhook.*url|SLACK_WEBHOOK"
+        expect: present
+        description: "Sends alert to Slack"
+      - pattern: "rollback|suggested.*action|first.*action"
+        expect: present
+        description: "Includes a suggested first action in the alert"
+
+  # ══════════════════════════════════
+  # DEBUG
+  # ══════════════════════════════════
+  - id: abs-dbg-001
+    skill: debug
+    task: >
+      A Next.js API route is returning 401 errors intermittently when users try
+      to update their profile. The route uses BetterAuth sessions. Describe and
+      implement a systematic debugging approach to find the root cause.
+    assertions:
+      - pattern: "401|403|Unauthorized|authentication"
+        expect: present
+        description: "Identifies the auth error type first"
+      - pattern: "endpoint.*correct|correct.*endpoint|API.*route|route.*path"
+        expect: present
+        description: "Verifies the correct API endpoint is being called"
+      - pattern: "session|token|cookie|auth.*pass|header.*auth"
+        expect: present
+        description: "Checks that authentication is passing correctly"
+      - pattern: "console\\.log|logger|structured.*log|log.*request"
+        expect: present
+        description: "Adds logging to trace the request through the system"
+      - pattern: "git log|git.*history|working.*implementation|previous.*version"
+        expect: present
+        description: "Checks git history for working implementations"
+
+  - id: abs-dbg-002
+    skill: debug
+    task: >
+      An API integration with a third-party payments provider is failing with
+      "invalid customer ID" errors in production but not in development.
+      Walk through the debugging checklist and implement the fix.
+    assertions:
+      - pattern: "exact.*error|error.*message|error.*string"
+        expect: present
+        description: "Identifies the exact error message first"
+      - pattern: "endpoint|URL|correct.*API|API.*correct|deprecated"
+        expect: present
+        description: "Verifies the correct API endpoint (not deprecated)"
+      - pattern: "customer.*ID|ID.*stored|previous.*call|store.*ID"
+        expect: present
+        description: "Checks whether required IDs from previous calls are stored"
+      - pattern: "environment|env.*var|production.*env|dev.*vs.*prod"
+        expect: present
+        description: "Investigates environment differences (dev vs production)"
+      - pattern: "fix.*before|propose.*fix|only.*then|after.*check"
+        expect: present
+        description: "Completes the checklist before proposing a fix"
+
+  # ══════════════════════════════════
+  # CONTEXT ENGINEERING
+  # ══════════════════════════════════
+  - id: abs-ctx-001
+    skill: context-engineering
+    task: >
+      Design a system prompt architecture for a multi-step AI agent that processes
+      customer support tickets. The agent makes repeated Claude API calls. Show how
+      to structure the prompt to maximize KV cache hits and minimize cost.
+    assertions:
+      - pattern: "static.*first|stable.*prefix|cache.*static|LAYER 1|static.*layer"
+        expect: present
+        description: "Places static instructions before dynamic content"
+      - pattern: "cache_control|ephemeral|prompt.*caching"
+        expect: present
+        description: "Uses Anthropic prompt caching API"
+      - pattern: "timestamp.*second|avoid.*timestamp|no.*millisecond|date.*only"
+        expect: present
+        description: "Warns against timestamps with seconds (cache killer)"
+      - pattern: "dynamic.*last|dynamic.*end|content.*last|user.*input.*last"
+        expect: present
+        description: "Places dynamic/user content at the end of the prompt"
+      - pattern: "8x|8-10x|cached.*cheaper|cache.*hit|KV cache"
+        expect: present
+        description: "Explains the cost benefit of cache hits (8x cheaper)"
+
+  - id: abs-ctx-002
+    skill: context-engineering
+    task: >
+      An AI agent that processes batches of documents is becoming very expensive.
+      Implement a context budget manager that tracks cumulative tokens, triggers
+      compaction before the 200K pricing cliff, and uses the filesystem to store
+      tool outputs instead of keeping them in the conversation.
+    assertions:
+      - pattern: "200.?000|200K|200_000|CLIFF|pricing.*cliff"
+        expect: present
+        description: "References the 200K token pricing cliff"
+      - pattern: "compactContext|compact.*context|summarize.*context|compaction"
+        expect: present
+        description: "Implements context compaction logic"
+      - pattern: "70.*%|80.*%|utilization.*threshold|threshold.*70|threshold.*80"
+        expect: present
+        description: "Sets compaction trigger at 70-80% utilization"
+      - pattern: "writeFile|fs\\.write|filesystem|/tmp/|file.*path"
+        expect: present
+        description: "Stores tool outputs to filesystem instead of context"
+      - pattern: "cumulativeTokens|token.*count|total.*tokens|tokenBudget"
+        expect: present
+        description: "Tracks cumulative token usage across calls"
+
+  - id: abs-ctx-003
+    skill: context-engineering
+    task: >
+      Build a two-phase search tool for an AI agent: phase 1 returns lightweight
+      metadata (id, title, score), phase 2 retrieves full content for specific items.
+      Show how this reduces total token consumption compared to returning full
+      content in phase 1.
+    assertions:
+      - pattern: "phase.*1|phase.*2|two.?phase|Phase 1|Phase 2"
+        expect: present
+        description: "Explicitly implements two-phase tool pattern"
+      - pattern: "metadata|summary|snippet|title.*score|id.*title"
+        expect: present
+        description: "Phase 1 returns only lightweight metadata"
+      - pattern: "getDetail|retrieve|fullContent|full.*content"
+        expect: present
+        description: "Phase 2 retrieves full content on demand"
+      - pattern: "token.*reduc|fewer.*token|cheaper|10x|cost.*reduc"
+        expect: present
+        description: "Quantifies or explains token reduction benefit"
+      - pattern: "agent.*decide|model.*select|choose.*items"
+        expect: present
+        description: "Agent selects which items to fetch in phase 2"
+
+  # ══════════════════════════════════
+  # MULTI-AGENT COORDINATION
+  # ══════════════════════════════════
+  - id: abs-mac-001
+    skill: multi-agent-coordination
+    task: >
+      Design a multi-agent system for a content pipeline: one agent researches a
+      topic, one writes the draft, one reviews and edits. Choose the right
+      architecture pattern and justify why. Include a decision about whether this
+      actually needs multiple agents.
+    assertions:
+      - pattern: "supervisor|orchestrat|hierarchical|Supervisor"
+        expect: present
+        description: "Identifies an appropriate coordination pattern"
+      - pattern: "context.*isolat|isolat.*context|15x|token.*multipl"
+        expect: present
+        description: "Considers token multiplication cost of multi-agent"
+      - pattern: "single.*agent|upgrade.*model|single agent.*instead"
+        expect: present
+        description: "Evaluates whether single agent would suffice"
+      - pattern: "file.*system|shared.*file|findings\\.md|handoff"
+        expect: present
+        description: "Uses filesystem for state passing between agents"
+      - pattern: "validate.*output|output.*validate|before.*passing"
+        expect: present
+        description: "Validates outputs before passing between agents"
+
+  - id: abs-mac-002
+    skill: multi-agent-coordination
+    task: >
+      Implement a supervisor agent that delegates subtasks to specialized subagents
+      and synthesizes their results. Address the "telephone game problem" where
+      the supervisor summarizes and loses fidelity from subagent responses.
+    assertions:
+      - pattern: "forward_message|direct.*respond|bypass.*supervisor|pass.*through"
+        expect: present
+        description: "Implements forward_message to bypass supervisor summarization"
+      - pattern: "telephone.*game|50%.*loss|summariz.*loss|fidelity|paraphrase"
+        expect: present
+        description: "Addresses the telephone game summarization problem"
+      - pattern: "TTL|time.?to.?live|max.*turn|loop.*limit|infinite.*loop"
+        expect: present
+        description: "Sets TTL or turn limits to prevent infinite loops"
+      - pattern: "weighted.*vote|debate|adversarial|confidence.*score"
+        expect: present
+        description: "Uses weighted voting or debate rather than simple majority"
+      - pattern: "checkpoint|validate.*output|error.*propagat"
+        expect: present
+        description: "Validates outputs and guards against error propagation"
+
+  - id: abs-mac-003
+    skill: multi-agent-coordination
+    task: >
+      Write a decision framework function that takes a task description and returns
+      whether to use a single agent, parallel subagents, or a supervisor pattern.
+      Test it with 3 different task examples: a quick bug fix, parallel feature
+      implementation, and a complex multi-step research task.
+    assertions:
+      - pattern: "decomposable|independent.*subtask|parallel.*run"
+        expect: present
+        description: "Evaluates whether task is decomposable into independent parts"
+      - pattern: "single.*agent|stay.*main|quick.*fix|< 1 hour|small"
+        expect: present
+        description: "Returns single agent for short, non-decomposable tasks"
+      - pattern: "parallel|Task.*tool|worktree|spawn.*subagent"
+        expect: present
+        description: "Returns parallel subagents for independent concurrent work"
+      - pattern: "supervisor|sequential.*handoff|file.*based.*handoff"
+        expect: present
+        description: "Returns supervisor/sequential pattern for state-sharing tasks"
+      - pattern: "share.*state|frequent.*communication|state.*frequently"
+        expect: present
+        description: "Asks whether subtasks need to share state frequently"
+
+  # ══════════════════════════════════
+  # EVALUATION
+  # ══════════════════════════════════
+  - id: abs-eval-001
+    skill: evaluation
+    task: >
+      Design an evaluation framework for an AI agent that writes code. Define
+      the quality dimensions, scoring rubric with levels, and a test set strategy.
+      Include how to detect when the agent is degrading over time.
+    assertions:
+      - pattern: "Factual Accuracy|Completeness|Efficiency|Code Quality|Safety|dimension"
+        expect: present
+        description: "Defines multiple quality dimensions (not a single score)"
+      - pattern: "0\\.0|0\\.4|0\\.6|0\\.8|1\\.0|Excellent|Good|Acceptable|Poor|Failed"
+        expect: present
+        description: "Defines scoring levels with numeric anchors"
+      - pattern: "baseline|regression|trend|longitudinal|over time"
+        expect: present
+        description: "Establishes baseline and tracks degradation over time"
+      - pattern: "edge case|adversarial|failure.*mode|known.*failure"
+        expect: present
+        description: "Includes edge cases and known failure modes in test set"
+      - pattern: "end.?state|outcome|file.*exist|tests.*pass|not.*steps"
+        expect: present
+        description: "Evaluates outcomes rather than execution paths (end-state eval)"
+
+  - id: abs-eval-002
+    skill: evaluation
+    task: >
+      Write an LLM-as-judge prompt template and a scoring pipeline that evaluates
+      agent-written code against a task description and ground truth. The pipeline
+      should produce a structured score with per-dimension ratings and a pass/fail decision.
+    assertions:
+      - pattern: "Task Description|Ground Truth|Agent Output|Evaluation Criteria"
+        expect: present
+        description: "LLM-as-judge prompt includes task, ground truth, and output sections"
+      - pattern: "rate.*0\\.0.*1\\.0|score.*dimension|per.*dimension|0\\.0-1\\.0"
+        expect: present
+        description: "Scores each dimension 0.0-1.0"
+      - pattern: "justification|brief.*reason|explanation"
+        expect: present
+        description: "Requires justification for each dimension score"
+      - pattern: "PASS|FAIL|threshold|weighted.*average|overall"
+        expect: present
+        description: "Produces a final pass/fail decision from dimension scores"
+      - pattern: "hallucination|subtle|domain.*specific|human.*review|supplement"
+        expect: present
+        description: "Notes LLM judge limitations and need for human review"
+
+  - id: abs-eval-003
+    skill: evaluation
+    task: >
+      Build a test set for an AI agent that answers customer support questions.
+      Stratify by complexity level. Show how context window size affects accuracy
+      and set up alerts that fire when quality drops below acceptable thresholds.
+    assertions:
+      - pattern: "simple|medium|complex|edge.*case|30%|40%|20%|10%"
+        expect: present
+        description: "Stratifies test set by complexity level with approximate proportions"
+      - pattern: "context.*size|window.*size|10%|50%|80%|context.*condition"
+        expect: present
+        description: "Tests agent under different context utilization conditions"
+      - pattern: "accuracy.*0\\.[89]|0\\.[89].*accuracy|degrades|cliff|80%.*context"
+        expect: present
+        description: "Identifies context degradation cliff around high utilization"
+      - pattern: "alert|threshold|0\\.85|metric.*accuracy|error_rate"
+        expect: present
+        description: "Sets up quality threshold alerts"
+      - pattern: "real.*user|production.*sample|anonymized|actual.*interaction"
+        expect: present
+        description: "Sources some test cases from real user interactions"

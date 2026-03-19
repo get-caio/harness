@@ -1,0 +1,287 @@
+cases:
+  # ══════════════════════════════════
+  # SECURITY
+  # ══════════════════════════════════
+  - id: abs-sec-001
+    skill: security
+    task: >
+      Write a Next.js API route handler (app router) at /api/users/[id]/profile
+      that accepts a PATCH request with JSON body containing name, email, and bio fields.
+      Update the user in the database using Drizzle ORM.
+    assertions:
+      - pattern: "z\\.(string|object|email)"
+        expect: present
+        description: "Uses Zod for input validation"
+      - pattern: "\\.parse\\(|\\.safeParse\\("
+        expect: present
+        description: "Actually parses/validates input before use"
+      - pattern: "getServerSession|auth\\(\\)|getSession"
+        expect: present
+        description: "Checks authentication before processing"
+      - pattern: "params\\.id.*session|session.*params\\.id|userId.*===|===.*userId"
+        expect: present
+        description: "Verifies user owns the resource (authz check)"
+      - pattern: "rate.?[Ll]imit|throttle"
+        expect: present
+        description: "Implements or mentions rate limiting"
+
+  - id: abs-sec-002
+    skill: security
+    task: >
+      Write a search endpoint that accepts a query parameter and returns matching
+      products from the database using Drizzle ORM.
+    assertions:
+      - pattern: "z\\.string|z\\.object"
+        expect: present
+        description: "Validates search input with Zod"
+      - pattern: "like\\(|ilike\\(|sql`"
+        expect: present
+        description: "Uses parameterized query (not string concat)"
+      - pattern: "\\$\\{.*\\}.*WHERE|WHERE.*\\$\\{"
+        expect: absent
+        description: "No string interpolation in SQL"
+      - pattern: "\\.trim\\(\\)|\\.slice\\(|maxLength|max\\("
+        expect: present
+        description: "Bounds input length"
+
+  # ══════════════════════════════════
+  # TESTING
+  # ══════════════════════════════════
+  - id: abs-test-001
+    skill: testing
+    task: >
+      Implement a createUser function that accepts name, email, and password,
+      hashes the password, saves to the database, and returns the user.
+      Include a complete test file.
+    assertions:
+      - pattern: "describe\\(|it\\(|test\\("
+        expect: present
+        description: "Test file uses describe/it/test structure"
+      - pattern: "expect\\(.*\\)\\.toBe|expect\\(.*\\)\\.toEqual|expect\\(.*\\)\\.toMatch"
+        expect: present
+        description: "Contains real value assertions"
+      - pattern: "expect\\(true\\)|expect\\(result\\)\\.toBeDefined\\(\\)"
+        expect: absent
+        description: "No meaningless assertions"
+      - pattern: "throw|reject|error|invalid"
+        expect: present
+        description: "Tests error/edge cases"
+      - pattern: "mock|spy|vi\\.fn|jest\\.fn"
+        expect: present
+        description: "Uses mocking for external dependencies"
+
+  - id: abs-test-002
+    skill: testing
+    task: >
+      Write a Vitest test suite for a shopping cart module with addItem,
+      removeItem, updateQuantity, and calculateTotal functions.
+    assertions:
+      - pattern: "describe\\("
+        expect: present
+        description: "Groups tests with describe blocks"
+      - pattern: "beforeEach|beforeAll"
+        expect: present
+        description: "Uses setup hooks for test isolation"
+      - pattern: "expect\\(.*\\)\\.toBe\\(0\\)|empty|length.*0"
+        expect: present
+        description: "Tests empty/boundary states"
+      - pattern: "negative|zero|NaN|undefined|null"
+        expect: present
+        description: "Tests invalid inputs"
+
+  # ══════════════════════════════════
+  # AUTH
+  # ══════════════════════════════════
+  - id: abs-auth-001
+    skill: auth
+    task: >
+      Create a middleware for Next.js App Router that protects all /dashboard/*
+      routes, redirecting unauthenticated users to /login. Also create a
+      role-based wrapper that restricts /admin/* to users with the admin role.
+    assertions:
+      - pattern: "middleware|NextResponse\\.redirect"
+        expect: present
+        description: "Implements Next.js middleware"
+      - pattern: "session|token|getServerSession|auth\\(\\)"
+        expect: present
+        description: "Checks session/auth state"
+      - pattern: "role|admin|isAdmin|hasRole"
+        expect: present
+        description: "Implements role-based access control"
+      - pattern: "matcher|config.*matcher"
+        expect: present
+        description: "Uses Next.js matcher config for route matching"
+      - pattern: "redirect.*login|login.*redirect"
+        expect: present
+        description: "Redirects to login page"
+
+  # ══════════════════════════════════
+  # OBSERVABILITY
+  # ══════════════════════════════════
+  - id: abs-obs-001
+    skill: observability
+    task: >
+      Build a /api/health endpoint for a Next.js app that checks database
+      connectivity and returns system status. Add structured logging to the endpoint.
+    assertions:
+      - pattern: "database|db|postgres|connection"
+        expect: present
+        description: "Checks database connectivity"
+      - pattern: "status.*healthy|status.*ok|status.*degraded"
+        expect: present
+        description: "Returns meaningful health status"
+      - pattern: "uptime|version|timestamp|memory"
+        expect: present
+        description: "Includes system metadata"
+      - pattern: "structuredLog|logger|log.*\\{|JSON\\.stringify.*level"
+        expect: present
+        description: "Uses structured logging (not plain console.log)"
+      - pattern: "try.*catch|error"
+        expect: present
+        description: "Handles dependency check failures gracefully"
+
+  # ══════════════════════════════════
+  # CODE QUALITY
+  # ══════════════════════════════════
+  - id: abs-cq-001
+    skill: code-quality
+    task: >
+      Write a function that processes an order: validates stock, calculates
+      discounts (bulk, coupon, loyalty), applies tax by region, creates payment
+      intent, sends confirmation email, and updates inventory. Handle all error cases.
+    assertions:
+      - pattern: "function.*validate|function.*calculate|function.*apply|function.*send|function.*update"
+        expect: present
+        description: "Breaks logic into separate functions (SRP)"
+      - pattern: "async function.*\\{[^}]{0,600}\\}"
+        expect: present
+        description: "Individual functions stay under ~20 lines"
+      - pattern: "interface|type.*="
+        expect: present
+        description: "Defines explicit types for data structures"
+
+  # ══════════════════════════════════
+  # DRIZZLE ORM
+  # ══════════════════════════════════
+  - id: abs-drz-001
+    skill: drizzle-orm
+    task: >
+      Define a Drizzle ORM schema for a blog platform with users, posts, comments,
+      and tags (many-to-many). Include relations. Write a query that fetches a post
+      with its author, comments (with authors), and tags.
+    assertions:
+      - pattern: "pgTable|mysqlTable|sqliteTable"
+        expect: present
+        description: "Uses Drizzle table definition syntax"
+      - pattern: "relations\\("
+        expect: present
+        description: "Defines explicit Drizzle relations"
+      - pattern: "many|one"
+        expect: present
+        description: "Uses one/many relation types"
+      - pattern: "with:\\s*\\{"
+        expect: present
+        description: "Uses relational query API (with:)"
+      - pattern: "index\\(|uniqueIndex\\("
+        expect: present
+        description: "Defines database indexes"
+
+  # ══════════════════════════════════
+  # TRPC
+  # ══════════════════════════════════
+  - id: abs-trpc-001
+    skill: trpc
+    task: >
+      Build a tRPC router for a task management app with these procedures:
+      list tasks (with pagination), get task by id, create task, update task,
+      delete task. Include authentication middleware.
+    assertions:
+      - pattern: "createTRPCRouter|router\\("
+        expect: present
+        description: "Uses tRPC router creation"
+      - pattern: "protectedProcedure|middleware|isAuthed"
+        expect: present
+        description: "Implements auth middleware"
+      - pattern: "z\\.object|z\\.string|input\\("
+        expect: present
+        description: "Uses Zod input validation"
+      - pattern: "query\\(|mutation\\("
+        expect: present
+        description: "Properly distinguishes queries vs mutations"
+      - pattern: "cursor|offset|skip|take|limit"
+        expect: present
+        description: "Implements pagination"
+
+  # ══════════════════════════════════
+  # REACT BEST PRACTICES
+  # ══════════════════════════════════
+  - id: abs-rbp-001
+    skill: react-best-practices
+    task: >
+      Build a React component that renders a filterable, sortable data table
+      with 1000+ rows. The table should support column selection and row expansion.
+    assertions:
+      - pattern: "useMemo|useCallback|React\\.memo|memo\\("
+        expect: present
+        description: "Uses memoization to prevent re-renders"
+      - pattern: "virtuali|tanstack.*virtual|window|useVirtual"
+        expect: present
+        description: "Implements virtualization for large lists"
+      - pattern: "useTransition|useDeferredValue|startTransition"
+        expect: present
+        description: "Uses concurrent features for expensive updates"
+      - pattern: "'use client'"
+        expect: present
+        description: "Marks component as client component"
+
+  # ══════════════════════════════════
+  # SHADCN + TAILWIND
+  # ══════════════════════════════════
+  - id: abs-shd-001
+    skill: shadcn-tailwind
+    task: >
+      Build a settings page with a form containing text inputs, a select dropdown,
+      toggle switches, and a save button. Use shadcn/ui components with proper
+      form validation feedback.
+    assertions:
+      - pattern: "@/components/ui/"
+        expect: present
+        description: "Imports from shadcn/ui component paths"
+      - pattern: "cn\\("
+        expect: present
+        description: "Uses cn() utility for class merging"
+      - pattern: "Form|useForm|zodResolver"
+        expect: present
+        description: "Uses shadcn Form component with react-hook-form"
+      - pattern: "FormField|FormItem|FormLabel|FormMessage"
+        expect: present
+        description: "Uses proper shadcn form field structure"
+      - pattern: "variant|size"
+        expect: present
+        description: "Uses component variants"
+
+  # ══════════════════════════════════
+  # STRIPE / PAYMENTS
+  # ══════════════════════════════════
+  - id: abs-pay-001
+    skill: stripe-billing
+    task: >
+      Write a Next.js webhook handler for Stripe that processes subscription
+      events: checkout.session.completed, invoice.payment_succeeded,
+      invoice.payment_failed, and customer.subscription.deleted.
+    assertions:
+      - pattern: "constructEvent|stripe\\.webhooks\\.constructEvent"
+        expect: present
+        description: "Verifies webhook signature"
+      - pattern: "STRIPE_WEBHOOK_SECRET|whsec_|endpointSecret"
+        expect: present
+        description: "Uses webhook signing secret"
+      - pattern: "checkout\\.session\\.completed"
+        expect: present
+        description: "Handles checkout completion event"
+      - pattern: "customer\\.subscription\\.deleted|subscription.*cancel"
+        expect: present
+        description: "Handles subscription cancellation"
+      - pattern: "getRawBody|raw|buffer|text\\(\\)"
+        expect: present
+        description: "Reads raw request body for signature verification"

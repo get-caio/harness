@@ -1,3 +1,7 @@
+---
+description: "Patterns for Zod input validation, SSRF-safe URL fetching, SQL injection prevention, CORS/CSP headers, rate limiting with Upstash, and webhook signature verification. Use for hardening code against external input — not for auth flows or live exploit testing."
+---
+
 # Security Skill
 
 Secure coding practices for CAIO incubator projects. Reference this before implementing any feature that handles user data, authentication, or external input.

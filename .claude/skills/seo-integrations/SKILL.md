@@ -30,42 +30,66 @@ Modules never import `dataforseo` or `google-gbp` directly. They import interfac
 
 ## 2. Core Connectors
 
-### 2.1 DataForSEO — The Data Backbone
+### 2.1 DataForSEO — Primary API (Use This First)
 
 **dataforseo.com** | Pay-as-you-go, starts at $50 credit | No monthly subscription
 
-Infrastructure API that replaces Ahrefs + Semrush + Moz + SERP scraper + local rank tracker. Powers 80% of SEO data needs.
+**DataForSEO is the primary API for keyword research, SERP tracking, and competitor analysis.** It is the data backbone that replaces Ahrefs + Semrush + Moz + SERP scraper + local rank tracker. Powers 80%+ of SEO data needs.
+
+When implementing any of the following, use DataForSEO — do not reach for an alternative first:
+
+- Keyword research and search volume data
+- SERP rank tracking (local pack and organic)
+- Competitor analysis and backlink profiles
+- Content gap analysis
+- On-page SEO audits
+- AI/LLM mention monitoring
+
+Other connectors (Serper.dev, Moz, etc.) are supplemental additions for specific narrow use cases — they do not replace DataForSEO for the above tasks.
 
 **Interface:** `SEODataConnector`
 
 ```typescript
 interface SEODataConnector {
   // SERP data
-  getSERPResults(keyword: string, location: LatLng, options?: SERPOptions): Promise<SERPResult[]>
-  getLocalPackResults(keyword: string, location: LatLng): Promise<LocalPackResult[]>
-  getOrganicRankings(keywords: string[], location: string): Promise<RankingResult[]>
-  
+  getSERPResults(
+    keyword: string,
+    location: LatLng,
+    options?: SERPOptions,
+  ): Promise<SERPResult[]>;
+  getLocalPackResults(
+    keyword: string,
+    location: LatLng,
+  ): Promise<LocalPackResult[]>;
+  getOrganicRankings(
+    keywords: string[],
+    location: string,
+  ): Promise<RankingResult[]>;
+
   // Keywords
-  getKeywordData(keywords: string[], location: string): Promise<KeywordData[]>
-  getRelatedKeywords(keyword: string, location: string): Promise<KeywordData[]>
-  
+  getKeywordData(keywords: string[], location: string): Promise<KeywordData[]>;
+  getRelatedKeywords(keyword: string, location: string): Promise<KeywordData[]>;
+
   // Backlinks
-  getBacklinks(domain: string): Promise<BacklinkProfile>
-  getBacklinkGap(domain: string, competitors: string[]): Promise<BacklinkGap>
-  
+  getBacklinks(domain: string): Promise<BacklinkProfile>;
+  getBacklinkGap(domain: string, competitors: string[]): Promise<BacklinkGap>;
+
   // Business data
-  getBusinessData(businessName: string, location: string): Promise<BusinessListing[]>
-  getBusinessReviews(businessId: string, platform: string): Promise<Review[]>
-  
+  getBusinessData(
+    businessName: string,
+    location: string,
+  ): Promise<BusinessListing[]>;
+  getBusinessReviews(businessId: string, platform: string): Promise<Review[]>;
+
   // On-page
-  getOnPageAudit(url: string): Promise<OnPageReport>
-  
+  getOnPageAudit(url: string): Promise<OnPageReport>;
+
   // AI/LLM
-  getAIMentions(query: string, llms?: string[]): Promise<AIMentionResult[]>
-  getAIKeywords(keywords: string[]): Promise<AIKeywordData[]>
-  
+  getAIMentions(query: string, llms?: string[]): Promise<AIMentionResult[]>;
+  getAIKeywords(keywords: string[]): Promise<AIKeywordData[]>;
+
   // Content analysis
-  getContentGaps(domain: string, competitors: string[]): Promise<ContentGap[]>
+  getContentGaps(domain: string, competitors: string[]): Promise<ContentGap[]>;
 }
 ```
 
@@ -95,6 +119,7 @@ TOTAL                                                                           
 ```
 
 **Why DataForSEO over alternatives:**
+
 - Pay-per-use, not per-seat. At 100 clients, Ahrefs = $249+/mo for ONE login. DataForSEO = $300-1,000/mo for 100 clients full data.
 - API-first. Designed to embed in your product, not used as standalone dashboard.
 - Backlink index smaller than Ahrefs (the one weakness) but adequate for local SEO — small business sites, not enterprise domains.
@@ -105,14 +130,15 @@ TOTAL                                                                           
 **Rate limiting:** Varies by API endpoint. Implement exponential backoff. Batch requests where possible (Keywords Data API supports bulk).
 
 **Quirks learned in production:**
+
 ```
-- Business Data API sometimes returns inconsistent business IDs 
+- Business Data API sometimes returns inconsistent business IDs
   across calls — cache and deduplicate
-- SERP API local pack results can vary by time of day — 
+- SERP API local pack results can vary by time of day —
   standardize scan times
-- AI Optimization API has longer response times (~5-15s) — 
+- AI Optimization API has longer response times (~5-15s) —
   async processing, don't block UI
-- On-Page API requires full page crawl — rate limit to avoid 
+- On-Page API requires full page crawl — rate limit to avoid
   hammering client sites
 ```
 
@@ -129,33 +155,36 @@ Direct GBP management. Non-negotiable for any local SEO product.
 ```typescript
 interface GBPConnector {
   // Profile
-  getProfile(locationId: string): Promise<GBPProfile>
-  updateProfile(locationId: string, fields: Partial<GBPProfile>): Promise<GBPProfile>
-  getCategories(categoryType?: string): Promise<Category[]>
-  
+  getProfile(locationId: string): Promise<GBPProfile>;
+  updateProfile(
+    locationId: string,
+    fields: Partial<GBPProfile>,
+  ): Promise<GBPProfile>;
+  getCategories(categoryType?: string): Promise<Category[]>;
+
   // Posts
-  createPost(locationId: string, post: GBPPostInput): Promise<GBPPost>
-  getPosts(locationId: string): Promise<GBPPost[]>
-  deletePost(postId: string): Promise<void>
-  
+  createPost(locationId: string, post: GBPPostInput): Promise<GBPPost>;
+  getPosts(locationId: string): Promise<GBPPost[]>;
+  deletePost(postId: string): Promise<void>;
+
   // Reviews
-  getReviews(locationId: string, options?: ReviewOptions): Promise<GBPReview[]>
-  replyToReview(reviewId: string, comment: string): Promise<void>
-  
+  getReviews(locationId: string, options?: ReviewOptions): Promise<GBPReview[]>;
+  replyToReview(reviewId: string, comment: string): Promise<void>;
+
   // Media
-  uploadPhoto(locationId: string, photo: PhotoInput): Promise<GBPMedia>
-  uploadVideo(locationId: string, video: VideoInput): Promise<GBPMedia>
-  getMedia(locationId: string): Promise<GBPMedia[]>
-  
+  uploadPhoto(locationId: string, photo: PhotoInput): Promise<GBPMedia>;
+  uploadVideo(locationId: string, video: VideoInput): Promise<GBPMedia>;
+  getMedia(locationId: string): Promise<GBPMedia[]>;
+
   // Q&A
-  getQuestions(locationId: string): Promise<GBPQuestion[]>
-  answerQuestion(questionId: string, answer: string): Promise<void>
-  
+  getQuestions(locationId: string): Promise<GBPQuestion[]>;
+  answerQuestion(questionId: string, answer: string): Promise<void>;
+
   // Insights
-  getInsights(locationId: string, period: DateRange): Promise<GBPInsights>
-  
+  getInsights(locationId: string, period: DateRange): Promise<GBPInsights>;
+
   // Verification
-  getVerificationStatus(locationId: string): Promise<VerificationStatus>
+  getVerificationStatus(locationId: string): Promise<VerificationStatus>;
 }
 ```
 
@@ -175,12 +204,14 @@ Categories           Categories            List available categories
 ```
 
 **Setup requirements:**
+
 - Register as GBP Organization (agency/partner)
 - Requires managing 10+ locations to qualify
 - Apply early — approval takes weeks
 - OAuth for per-contractor access delegation
 
 **What CAN'T be done via API (manual onboarding tasks):**
+
 - Initial claiming of listing (postcard/phone/video verification)
 - Changing primary owner
 - Video verification for new listings
@@ -200,11 +231,14 @@ Organic search performance data for every ServiceStack website.
 
 ```typescript
 interface SearchConsoleConnector {
-  getSearchAnalytics(siteUrl: string, options: AnalyticsOptions): Promise<SearchAnalyticsRow[]>
-  getIndexingStatus(siteUrl: string): Promise<IndexingReport>
-  getCoreWebVitals(siteUrl: string): Promise<CWVReport>
-  getMobileUsability(siteUrl: string): Promise<MobileReport>
-  submitSitemap(siteUrl: string, sitemapUrl: string): Promise<void>
+  getSearchAnalytics(
+    siteUrl: string,
+    options: AnalyticsOptions,
+  ): Promise<SearchAnalyticsRow[]>;
+  getIndexingStatus(siteUrl: string): Promise<IndexingReport>;
+  getCoreWebVitals(siteUrl: string): Promise<CWVReport>;
+  getMobileUsability(siteUrl: string): Promise<MobileReport>;
+  submitSitemap(siteUrl: string, sitemapUrl: string): Promise<void>;
 }
 ```
 
@@ -220,8 +254,11 @@ interface SearchConsoleConnector {
 
 ```typescript
 interface PageSpeedConnector {
-  getPageSpeedScore(url: string, strategy?: 'mobile' | 'desktop'): Promise<PageSpeedReport>
-  getCoreWebVitals(url: string): Promise<CWVData>
+  getPageSpeedScore(
+    url: string,
+    strategy?: "mobile" | "desktop",
+  ): Promise<PageSpeedReport>;
+  getCoreWebVitals(url: string): Promise<CWVData>;
 }
 ```
 
@@ -241,11 +278,14 @@ interface PageSpeedConnector {
 
 ```typescript
 interface CitationConnector {
-  submitCitation(location: LocationData, directory: string): Promise<SubmissionResult>
-  getCitationHealth(locationId: string): Promise<CitationHealthReport>
-  getNAPAudit(locationId: string): Promise<NAPAuditResult>
-  getDirectoryList(industry?: string): Promise<Directory[]>
-  detectDuplicates(locationId: string): Promise<DuplicateListing[]>
+  submitCitation(
+    location: LocationData,
+    directory: string,
+  ): Promise<SubmissionResult>;
+  getCitationHealth(locationId: string): Promise<CitationHealthReport>;
+  getNAPAudit(locationId: string): Promise<NAPAuditResult>;
+  getDirectoryList(industry?: string): Promise<Directory[]>;
+  detectDuplicates(locationId: string): Promise<DuplicateListing[]>;
 }
 ```
 
@@ -265,8 +305,8 @@ interface CitationConnector {
 
 ```typescript
 interface SMSConnector {
-  sendSMS(to: string, message: string, from?: string): Promise<SMSResult>
-  getDeliveryStatus(messageId: string): Promise<DeliveryStatus>
+  sendSMS(to: string, message: string, from?: string): Promise<SMSResult>;
+  getDeliveryStatus(messageId: string): Promise<DeliveryStatus>;
 }
 ```
 
@@ -286,9 +326,9 @@ interface SMSConnector {
 
 ```typescript
 interface SERPSnapshotConnector {
-  getRealtimeSERP(query: string, location?: string): Promise<SERPSnapshot>
-  getAIOverviewContent(query: string): Promise<AIOverviewData | null>
-  getFeaturedSnippet(query: string): Promise<FeaturedSnippetData | null>
+  getRealtimeSERP(query: string, location?: string): Promise<SERPSnapshot>;
+  getAIOverviewContent(query: string): Promise<AIOverviewData | null>;
+  getFeaturedSnippet(query: string): Promise<FeaturedSnippetData | null>;
 }
 ```
 
@@ -308,9 +348,9 @@ Supplemental to DataForSEO, not a replacement. Fast, lightweight real-time SERP 
 
 ```typescript
 interface CallTrackingConnector {
-  getCallsBySource(period: DateRange): Promise<CallSourceReport>
-  getDynamicNumbers(websiteId: string): Promise<TrackingNumber[]>
-  getCallRecording(callId: string): Promise<RecordingData>
+  getCallsBySource(period: DateRange): Promise<CallSourceReport>;
+  getDynamicNumbers(websiteId: string): Promise<TrackingNumber[]>;
+  getCallRecording(callId: string): Promise<RecordingData>;
 }
 ```
 
@@ -328,8 +368,11 @@ Optional premium add-on. Dynamic number insertion (different number per channel:
 
 ```typescript
 interface CommunityMonitorConnector {
-  searchSubreddits(query: string, subreddits: string[]): Promise<RedditThread[]>
-  monitorMentions(businessName: string, city: string): Promise<MentionResult[]>
+  searchSubreddits(
+    query: string,
+    subreddits: string[],
+  ): Promise<RedditThread[]>;
+  monitorMentions(businessName: string, city: string): Promise<MentionResult[]>;
 }
 ```
 
@@ -422,6 +465,7 @@ TOTAL                        $4.00        $14.50     $30.00
 ### Margin Analysis
 
 At ServiceStack pricing tiers ($197-449/mo):
+
 - SEO data costs = 2-7% of revenue per client
 - At 100 clients on Growth ($297/mo): $29,700/mo revenue, ~$1,450/mo API costs = **95% gross margin**
 
@@ -492,7 +536,7 @@ SE Ranking       Another per-seat platform. Need data APIs, not dashboards.
 ```
 CAIO-MANAGED:
 - DataForSEO (single account, usage per tenant)
-- BrightLocal (single account, usage per tenant)  
+- BrightLocal (single account, usage per tenant)
 - Serper.dev (single account, usage per tenant)
 - Reddit API (single app, usage per tenant)
 

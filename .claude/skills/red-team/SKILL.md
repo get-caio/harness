@@ -1,3 +1,7 @@
+---
+description: "Patterns for live adversarial testing against a running app — OWASP Top 10 exploit attempts, IDOR probing, auth bypass, broken access control, and injection attacks. Requires a running local instance. Use AFTER code-audit to validate exploitability, not for static review."
+---
+
 # Red Team Skill
 
 Adversarial security testing for CAIO incubator projects. Assumes a running local instance. Complements the defensive `code-audit` skill with offensive testing to validate actual exploitability.

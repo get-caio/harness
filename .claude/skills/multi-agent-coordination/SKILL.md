@@ -1,3 +1,7 @@
+---
+description: "Patterns for supervisor/orchestrator topology, context isolation via subagents, token economics (15x multiplier), the telephone-game problem with paraphrase loss, worktree-based parallel agents, and file ownership rules to prevent merge conflicts."
+---
+
 # Multi-Agent Coordination
 
 Patterns for coordinating multiple agents effectively.

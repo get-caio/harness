@@ -1,3 +1,7 @@
+---
+description: "Patterns for end-state evals (assert on output artifacts, not execution paths), LLM-as-judge rubrics, test set design for non-deterministic agents, precision/recall measurement, and baseline-before-optimization workflow."
+---
+
 # Agent Evaluation
 
 Systematic evaluation of agent systems for quality assurance and continuous improvement.
@@ -10,6 +14,35 @@ Systematic evaluation of agent systems for quality assurance and continuous impr
 - Debugging inconsistent agent results
 - Comparing different agent configurations
 - Establishing baselines before optimization
+
+## Primary Principle: Evaluate End States, Not Execution Paths
+
+**Evals must measure what the code does (end state), not how it got there (execution path).**
+
+Execution-path evaluation is brittle — agents reach the same correct outcome through different tool calls, steps, and ordering. Asserting on steps causes false failures and teaches the wrong lessons.
+
+```python
+# ❌ WRONG — execution path eval (brittle)
+assert agent.steps[0] == "read_file"
+assert agent.tool_calls == expected_tool_calls
+assert agent.steps == expected_steps
+
+# ✅ RIGHT — end state eval (robust)
+assert file_exists("output.ts")
+assert tests_pass("output.ts")
+assert no_lint_errors("output.ts")
+assert code_compiles("output.ts")
+```
+
+**Apply this to every assertion you write:**
+
+- Assert on the output artifact, not on how it was produced
+- Assert on the final state of files, databases, and responses
+- Assert on functional behavior (does it work?) not structural behavior (did it use X function?)
+
+This is the single most important principle in evaluation design.
+
+---
 
 ## Core Challenge
 
@@ -113,19 +146,23 @@ Essential for catching what automation misses:
 - After significant changes
 - Edge cases and failures
 
-### 3. End-State Evaluation
+### 3. End-State Evaluation (preferred default)
 
-For state-mutating agents (file edits, deployments), focus on final state:
+For any agent that produces an artifact (file edits, code generation, deployments, data mutations), default to end-state evaluation. This is the most robust method.
 
 ```python
-# Instead of evaluating execution steps:
-assert agent.steps == expected_steps  # Brittle
+# ❌ Brittle — breaks when agent takes a different but valid path
+assert agent.steps == expected_steps
+assert agent.used_tool("read_file")
 
-# Evaluate the outcome:
+# ✅ Robust — only fails when the outcome is actually wrong
 assert file_exists("output.ts")
 assert tests_pass("output.ts")
 assert no_lint_errors("output.ts")
+assert schema_valid("output.ts")
 ```
+
+End-state evals are composable: stack multiple assertions to cover all acceptance criteria without coupling to implementation. Reserve execution-path assertions only for safety-critical invariants (e.g., "must not call delete without confirmation").
 
 ### 4. Regression Testing
 

@@ -1,3 +1,7 @@
+---
+description: "Patterns for VitePress docs sites — sidebar config, frontmatter conventions, architecture/API/component page templates, and Mermaid diagram integration. Use when writing or restructuring project documentation after completing tickets."
+---
+
 # VitePress Documentation
 
 Guidelines for writing and maintaining project documentation using VitePress.
@@ -173,6 +177,35 @@ Use standard markdown tables for structured data:
 | `/api/users`     | GET    | Required | List users     |
 | `/api/users/:id` | GET    | Required | Get user by ID |
 ```
+
+## Canonical Directory Structure
+
+Always organize docs into these categories. Files placed outside these directories will not render in the correct sidebar sections.
+
+```
+docs/
+├── .vitepress/
+│   └── config.ts              # Site config — title, sidebar, nav
+├── index.md                   # Landing page (layout: home)
+├── guide/
+│   ├── index.md               # Guide overview
+│   └── getting-started.md     # Local setup, env vars, dev workflow
+├── architecture/
+│   ├── index.md               # System overview + Mermaid diagram
+│   ├── data-model.md          # Database schema & relationships
+│   ├── api.md                 # API routes & tRPC procedures
+│   └── auth.md                # Auth flow (login, session, middleware)
+├── components/
+│   └── index.md               # Component inventory (props, usage, examples)
+├── api/
+│   └── index.md               # Full API reference (request/response shapes)
+└── decisions/
+    └── index.md               # Links to ADRs in docs/decisions/
+```
+
+**Rule:** If a new doc doesn't fit one of these categories, create a new subdirectory and add it to the sidebar in `.vitepress/config.ts`. Never put docs in the root `docs/` directory except `index.md`.
+
+---
 
 ## Documentation Categories
 

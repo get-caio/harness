@@ -1,0 +1,180 @@
+cases:
+  # ══════════════════════════════════
+  # SECURITY — Quality
+  # ══════════════════════════════════
+  - id: qual-sec-001
+    skill: security
+    task: >
+      Write a complete user profile update API endpoint in Next.js App Router.
+      The endpoint should accept PATCH requests with name, email, bio, and avatar URL.
+      Use Drizzle ORM for database access. Include full error handling.
+    rubric:
+      input_validation: "All user inputs validated with schema (Zod). Email format checked. URL format validated. String lengths bounded. No unchecked casts."
+      authentication: "Verifies user session exists. Checks the authenticated user owns the profile being updated. Returns 401/403 appropriately."
+      injection_prevention: "Uses parameterized queries exclusively. No string interpolation in SQL. No eval() or Function() on user input."
+      error_handling: "Returns appropriate HTTP status codes. Error messages don't leak internal details. Handles database errors gracefully."
+    ground_truth_patterns:
+      - "z\\.string|z\\.object"
+      - "getServerSession|auth\\(\\)"
+      - "params\\.id.*session|userId"
+
+  # ══════════════════════════════════
+  # TESTING — Quality
+  # ══════════════════════════════════
+  - id: qual-test-001
+    skill: testing
+    task: >
+      Implement a password reset flow module with three functions:
+      requestPasswordReset(email) — generates token, stores it, sends email
+      validateResetToken(token) — checks token exists and hasn't expired
+      resetPassword(token, newPassword) — validates token, hashes password, updates user
+      Include a comprehensive Vitest test suite.
+    rubric:
+      test_coverage: "Tests all three functions. Tests happy path and error cases for each. Tests token expiration. Tests invalid/missing tokens."
+      assertion_quality: "Assertions check specific values, not just truthiness. Verifies database state changes. Checks error types and messages."
+      test_isolation: "Each test can run independently. Uses beforeEach/afterEach for setup/teardown. Mocks external services (email, database)."
+      edge_cases: "Tests expired tokens, already-used tokens, non-existent emails, weak passwords, concurrent reset requests."
+
+  # ══════════════════════════════════
+  # REACT BEST PRACTICES — Quality
+  # ══════════════════════════════════
+  - id: qual-rbp-001
+    skill: react-best-practices
+    task: >
+      Build a dashboard page that displays: a line chart of daily metrics (30 days),
+      a data table of recent transactions (500+ rows), and a sidebar with filters
+      (date range, category, status). All data fetched from API. Filters update
+      both chart and table.
+    rubric:
+      performance: "Uses memoization for expensive computations. Virtualizes or paginates the table. Debounces filter inputs. Avoids unnecessary re-renders."
+      code_splitting: "Chart library loaded dynamically. Heavy components use lazy loading. Client/server component boundary is correct."
+      state_management: "Filter state managed centrally. URL state synced with filters. No prop drilling beyond 2 levels."
+      loading_states: "Shows skeletons or spinners during data fetch. Handles partial loading (chart loads before table). Error boundaries for each section."
+
+  # ══════════════════════════════════
+  # DRIZZLE ORM — Quality
+  # ══════════════════════════════════
+  - id: qual-drz-001
+    skill: drizzle-orm
+    task: >
+      Write a data access layer for an e-commerce app with these queries:
+      1. Get product catalog with category, average rating, and review count
+      2. Get user's order history with line items and total
+      3. Search products by name/description with category filter and price range
+      4. Get top 10 best-selling products this month
+      All using Drizzle ORM with PostgreSQL.
+    rubric:
+      query_correctness: "Joins are correct. Aggregations (avg, count, sum) are properly grouped. Subqueries used where appropriate."
+      type_safety: "Return types are explicit. No 'any' casts. Uses Drizzle's inferred types."
+      performance: "Uses indexes for filtered columns. Avoids N+1 queries. Pagination implemented for large result sets."
+      security: "No raw SQL with user input interpolation. All user-supplied values are parameterized."
+
+  # ══════════════════════════════════
+  # OBSERVABILITY — Quality
+  # ══════════════════════════════════
+  - id: qual-obs-001
+    skill: observability
+    task: >
+      Add observability to a Next.js API route that processes file uploads:
+      accepts file, validates type/size, uploads to S3, creates database record,
+      returns URL. Add structured logging, error tracking, and performance metrics.
+    rubric:
+      logging: "Structured JSON logs with request ID, timestamp, level. Logs entry, success, and error for each stage. No sensitive data (file contents, auth tokens) in logs."
+      error_tracking: "Errors include stack trace and context. Distinguishes expected errors (bad file type) from unexpected (S3 failure). Error categorization for alerting."
+      metrics: "Tracks upload duration, file size distribution, success/failure rates. Metrics are labeled (route, status, file_type)."
+      health_signals: "S3 connectivity checked. Database latency measured. Degraded state surfaced to health endpoint."
+
+  # ══════════════════════════════════
+  # AUTH — Quality
+  # ══════════════════════════════════
+  - id: qual-auth-001
+    skill: auth
+    task: >
+      Implement a complete authentication system for a Next.js app:
+      - Email/password signup with email verification
+      - Login with session management
+      - Protected API middleware
+      - Password reset flow
+      - Role-based access control (user, editor, admin)
+      Use BetterAuth or NextAuth.
+    rubric:
+      security: "Passwords hashed with bcrypt/argon2. Sessions use httpOnly secure cookies. CSRF protection implemented. Rate limiting on auth endpoints."
+      completeness: "All five features implemented (signup, login, middleware, reset, RBAC). Email verification actually blocks access until verified."
+      session_management: "Sessions have configurable expiry. Refresh token rotation implemented. Logout invalidates session server-side."
+      role_system: "Roles stored in database. Middleware checks roles. Role hierarchy respected (admin > editor > user)."
+
+  # ══════════════════════════════════
+  # STRIPE BILLING — Quality
+  # ══════════════════════════════════
+  - id: qual-pay-001
+    skill: stripe-billing
+    task: >
+      Build a complete Stripe subscription system:
+      - Pricing page with monthly/yearly toggle
+      - Checkout session creation
+      - Webhook handler for lifecycle events
+      - Customer portal redirect
+      - Subscription status display in user settings
+      - Handle payment failures with retry logic
+    rubric:
+      webhook_security: "Webhook signature verified. Raw body used for verification. Idempotency handled (duplicate events don't cause duplicate updates)."
+      billing_correctness: "Subscription status synced to database. Trial periods handled. Prorated upgrades/downgrades work. Cancellation sets end-of-period, not immediate."
+      error_handling: "Payment failures create user notifications. Failed webhook processing doesn't crash the app. Stripe API errors caught and logged."
+      ux_completeness: "Pricing toggle works. Loading states during checkout redirect. Subscription status reflects actual Stripe state. Portal link functional."
+
+  # ══════════════════════════════════
+  # TRPC — Quality
+  # ══════════════════════════════════
+  - id: qual-trpc-001
+    skill: trpc
+    task: >
+      Build a tRPC API layer for a project management app:
+      - Project CRUD with team-scoped access
+      - Task CRUD with assignment, status transitions, due dates
+      - Comment system on tasks
+      - Real-time subscription for task updates
+      - Pagination and filtering on list endpoints
+      Include error handling and input validation for all procedures.
+    rubric:
+      type_safety: "Input schemas defined with Zod. Output types inferred. No 'any' types. Client would get full autocomplete."
+      architecture: "Routers properly nested (project.task.comment). Middleware for auth/team-scoping reused. Procedures correctly typed as query/mutation/subscription."
+      validation: "All inputs validated. Status transitions validated (can't go from done to in_progress). Due dates validated (not in past)."
+      error_handling: "TRPCError used with correct codes (NOT_FOUND, FORBIDDEN, BAD_REQUEST). Error messages are user-friendly. Batch operations handle partial failures."
+
+  # ══════════════════════════════════
+  # SHADCN + TAILWIND — Quality
+  # ══════════════════════════════════
+  - id: qual-shd-001
+    skill: shadcn-tailwind
+    task: >
+      Build a complete user settings page with:
+      - Profile section (avatar upload, name, email, bio textarea)
+      - Notification preferences (toggle switches for email, push, SMS)
+      - Theme selector (light/dark/system with preview)
+      - Danger zone (delete account with confirmation dialog)
+      Use shadcn/ui components throughout. Include form validation.
+    rubric:
+      component_usage: "Uses correct shadcn components (Input, Textarea, Switch, Select, AlertDialog, Button). No custom implementations of existing shadcn components."
+      form_integration: "react-hook-form with zodResolver. FormField/FormItem/FormLabel/FormMessage pattern. Proper error display per field."
+      visual_consistency: "Consistent spacing, proper use of Card for sections, Separator between groups. Variants used correctly (destructive for delete)."
+      accessibility: "Labels associated with inputs. Dialog properly announced. Keyboard navigation works. Focus management on dialog open/close."
+
+  # ══════════════════════════════════
+  # CODE QUALITY — Quality
+  # ══════════════════════════════════
+  - id: qual-cq-001
+    skill: code-quality
+    task: >
+      Write an order processing pipeline that:
+      1. Validates the order (items exist, stock available, prices match)
+      2. Calculates totals (subtotal, discount, tax, shipping, total)
+      3. Processes payment via Stripe
+      4. Updates inventory
+      5. Sends confirmation email
+      6. Creates audit log entry
+      Handle failures at each step with appropriate rollback.
+    rubric:
+      decomposition: "Each step is a separate function. No function exceeds 30 lines. Clear separation of concerns. Pipeline orchestrator is thin."
+      error_handling: "Each step can fail independently. Failures trigger appropriate rollback. Errors are typed and specific (not generic Error)."
+      readability: "Function names describe what they do. No abbreviations or cryptic names. Types document the data flow between steps."
+      robustness: "Handles concurrent orders (stock race conditions). Payment failures don't leave inventory in bad state. Email failures don't block order completion."

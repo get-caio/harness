@@ -350,6 +350,20 @@ On resume, the agent re-reads phase state, build log, and conventions to pick up
 
 ---
 
+## Compressed Skill Rules
+
+> These rules are extracted from skills that showed zero absorption delta in evals.
+> The model already knows the general patterns; only these specific rules add value.
+
+- **testing**: Meaningless assertions are banned — `expect(true).toBe(true)` or `expect(result).toBeDefined()` do not count as tests; every assertion must verify a real acceptance criterion behavior. Also: configure MSW with `onUnhandledRequest: "error"` so forgotten mocks fail loudly instead of silently passing.
+- **auth**: The default CAIO stack uses **BetterAuth**, not NextAuth — check SPEC.md before wiring auth. When using NextAuth, always add `user.id` to the session in the `session` callback; it is not included by default and every protected action depends on it.
+- **observability**: Use `pino` for structured logging (key-value pairs, not interpolated strings); `console.log` is not structured and loses context in log aggregators. Health check endpoint must actually query the database (`SELECT 1`) and return 503 when degraded — a health route that always returns 200 is worse than no health route.
+- **trpc**: Always initialize tRPC with the `superjson` transformer; without it, `Date` and `BigInt` values silently serialize to strings/null across the wire. Test routers using `createCallerFactory` to call procedures directly without an HTTP round-trip.
+- **shadcn-tailwind**: Always use the `cn()` utility for conditional classes — never string-concatenate Tailwind classes, as later classes do not always win. Use semantic design tokens (`text-muted-foreground`, `bg-background`) instead of raw Tailwind colors (`text-gray-500`) or theme switching will break.
+- **stripe-billing**: Webhook handlers must read the request body as raw text (`await request.text()`) before calling `stripe.webhooks.constructEvent()` — parsing as JSON first corrupts the signature and every event will fail verification.
+
+---
+
 ## Current State
 
 <!-- UPDATED BY AGENT AFTER EACH TICKET -->
@@ -451,6 +465,7 @@ export { POST as GET };
 Serverless functions start cold. Module-level variables (`let cachedClient = null`) are lost between invocations and across instances. Never rely on in-memory state persisting — use the database.
 
 Common violations:
+
 - OAuth `client_id` cached in memory during connect, gone by callback
 - Rate limiter counters in module scope
 - Session caches that assume same instance handles follow-up requests
@@ -461,15 +476,19 @@ Drizzle's `uuid().defaultRandom()` emits `DEFAULT` in multi-row `VALUES` lists, 
 
 ```typescript
 // WRONG — fails on batch insert
-await db.insert(myTable).values(items.map(i => ({
-  name: i.name, // id omitted, expects DEFAULT
-})));
+await db.insert(myTable).values(
+  items.map((i) => ({
+    name: i.name, // id omitted, expects DEFAULT
+  })),
+);
 
 // RIGHT — generate UUIDs explicitly
-await db.insert(myTable).values(items.map(i => ({
-  id: crypto.randomUUID(),
-  name: i.name,
-})));
+await db.insert(myTable).values(
+  items.map((i) => ({
+    id: crypto.randomUUID(),
+    name: i.name,
+  })),
+);
 ```
 
 ---

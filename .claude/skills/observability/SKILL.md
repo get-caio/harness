@@ -1,3 +1,7 @@
+---
+description: "Patterns for structured logging with Pino, request tracing with correlation IDs, Sentry error capture, health check endpoints, and alerting thresholds. Use when setting up production monitoring infrastructure — not for debugging a specific active incident."
+---
+
 # Observability Skill
 
 Production monitoring, logging, and debugging infrastructure for CAIO projects. **If you can't see it, you can't fix it.**

@@ -1,3 +1,7 @@
+---
+description: "Patterns for SEV-1/2/3 triage, rollback procedures, Vercel instant rollback, war-room communication templates, post-mortem format, and on-call handoff. Use during or immediately after a production incident — not for general debugging or monitoring setup."
+---
+
 # Incident Response Skill
 
 When production breaks, every minute costs money and trust. This skill defines how to respond systematically to minimize damage.

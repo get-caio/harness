@@ -1,3 +1,7 @@
+---
+description: "Patterns for multi-engineer branch strategy — feature/fix/phase branch naming, PR review flow, conflict resolution, parallel work coordination, and cherry-pick protocol. Use on 2+ engineer teams; for single-engineer projects this is unnecessary overhead."
+---
+
 # Git Workflow Skill — Multi-Engineer Branch Strategy
 
 ## When to Use
@@ -24,12 +28,22 @@ phase-N/*     — Phase work branches (optional grouping)
 
 ### Naming Convention
 
+Use the prefix that matches the work type, followed by the ticket ID and a short slug:
+
 ```
 feature/P1-T001-user-auth
 feature/P2-T008-training-plan-form
 fix/P1-T003-login-redirect
 phase-1/foundation
 ```
+
+Rules:
+
+- `feature/` for new functionality
+- `fix/` for bug fixes
+- Include the ticket ID (`P1-T001`) so branches trace back to tickets
+- Use lowercase kebab-case for the slug
+- Keep slugs short (3-5 words max)
 
 ### Flow
 
@@ -223,11 +237,50 @@ bun test && bun build
 7. Deploy (human-triggered)
 ```
 
+## Merge Strategy
+
+### Squash Merge to main (default)
+
+**Always use squash merge when merging a feature/fix branch into main.** This keeps the main branch history clean — one commit per PR, not a stream of WIP commits.
+
+```bash
+# Via GitHub UI: select "Squash and merge"
+# Via CLI:
+git checkout main
+git merge --squash feature/P1-T001-user-auth
+git commit -m "[P1-T001] Add user authentication with BetterAuth"
+git push origin main
+```
+
+### Rebase on feature branches (not merge)
+
+While working on a feature branch, stay in sync with main via rebase — not merge. This keeps the branch history linear and avoids merge commits cluttering the diff.
+
+```bash
+# ✅ Rebase (keeps linear history)
+git fetch origin
+git rebase origin/main
+
+# ❌ Don't merge main into your branch
+git merge main  # creates a merge commit — avoid
+```
+
+### Rule summary
+
+| Context                       | Strategy                          |
+| ----------------------------- | --------------------------------- |
+| Feature branch → main         | Squash merge                      |
+| Staying in sync with main     | Rebase (`git rebase origin/main`) |
+| Resolving conflicts on branch | Rebase, then fix conflicts        |
+| Release/hotfix → prod         | Human-only, no agent action       |
+
+---
+
 ## Key Principles
 
 1. **main is always deployable** — never merge broken code
 2. **Small PRs** — easier to review, less conflict risk
-3. **Squash merge** — clean history on main
-4. **Rebase, don't merge** — linear history on feature branches
+3. **Squash merge to main** — one clean commit per PR, always
+4. **Rebase on feature branches** — stay in sync without merge commits
 5. **Own your area** — reduce conflicts by owning distinct files
 6. **Communicate** — talk before touching shared code

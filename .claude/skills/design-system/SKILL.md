@@ -140,6 +140,30 @@ Every interactive element has a state model. Map it explicitly:
 
 Design every state. Don't leave gaps. If a state isn't designed, it will look broken when it occurs.
 
+### Disabled State
+
+**Disabled state always uses reduced opacity + `cursor: not-allowed`.** This is non-negotiable — it is the standard pattern across all interactive components.
+
+```css
+/* ✅ Correct disabled pattern */
+:disabled,
+[aria-disabled="true"] {
+  opacity: 0.5; /* reduced opacity — communicates unavailability */
+  cursor: not-allowed; /* not-allowed cursor — communicates can't interact */
+  pointer-events: none; /* prevent click events */
+}
+```
+
+```typescript
+// ✅ Tailwind equivalent (apply to all interactive components)
+className={cn(
+  "base-styles",
+  disabled && "opacity-50 cursor-not-allowed pointer-events-none"
+)}
+```
+
+Do not use alternative disabled patterns (e.g., hiding the element, changing its color only, or using a different cursor). Reduced opacity + `not-allowed` cursor is the system standard.
+
 ### State Combinations
 
 States aren't always independent. A form field can be:
@@ -260,6 +284,7 @@ Every system component needs:
 □ Component exposes variant, size, and composition props where appropriate
 □ Controlled and uncontrolled modes both work
 □ All states explicitly designed (empty, hover, focus, active, error, disabled, loading)
+□ Disabled state uses reduced opacity (opacity-50) + cursor: not-allowed — no alternatives
 □ State transitions defined (animated vs instant, triggers, interruptibility)
 □ Platform adaptation planned (desktop hover → mobile tap, dropdown → bottom sheet)
 □ Component appears in 3+ contexts before adding to system

@@ -1,3 +1,7 @@
+---
+description: "Patterns for Prisma migrate dev workflow, expand-contract zero-downtime schema changes, rollback procedures, and coordinating migrations across team members. Use for any schema change — not for query optimization or ORM setup."
+---
+
 # Database Migrations Skill — Safe Schema Changes
 
 ## When to Use

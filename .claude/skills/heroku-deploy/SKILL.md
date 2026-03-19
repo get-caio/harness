@@ -5,17 +5,21 @@ description: Patterns for deploying Bun apps to Heroku — Procfile, config vars
 
 # Heroku Deployment
 
-Deploying Bun + Hono applications to Heroku with Redis, PlanetScale MySQL, and CI/CD pipelines.
+Deploying Bun + Hono applications to Heroku. Non-obvious patterns only — standard Procfile structure and PORT binding are well-known.
 
-## When to Read This
+---
 
-- Deploying a Bun app to Heroku for the first time
-- Configuring addons (Redis, logging)
-- Setting up CI/CD and review apps
-- Managing environment variables
-- Scaling and monitoring
+## Bun-Specific Setup
 
-## Procfile
+### Buildpack
+
+```bash
+heroku buildpacks:set https://github.com/heroku/heroku-buildpack-bun -a sided-api
+```
+
+Heroku has no official Bun buildpack. This community buildpack is the correct one. Do not use Node.js buildpack with Bun.
+
+### Procfile with Release Phase
 
 ```
 web: bun run src/index.ts
@@ -23,60 +27,34 @@ worker: bun run src/jobs/worker.ts
 release: bun run db:migrate
 ```
 
-The `release` phase runs migrations automatically on every deploy.
+The `release` phase runs automatically on every deploy before new dynos start. This is the correct place for migrations — never run migrations manually in production.
 
-## Buildpack
+---
 
-```bash
-heroku buildpacks:set https://github.com/heroku/heroku-buildpack-bun -a sided-api
+## PlanetScale Connection Pooling
+
+```typescript
+import mysql from "mysql2/promise";
+
+const pool = mysql.createPool({
+  uri: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: true }, // PlanetScale requires SSL
+  waitForConnections: true,
+  connectionLimit: 10, // Heroku standard-2x supports ~20 connections
+});
 ```
 
-## Config Vars
+PlanetScale requires SSL — `rejectUnauthorized: true` is not optional. Heroku dynos restart frequently; connection pooling (not single connections) recovers gracefully.
 
-```bash
-# Database
-heroku config:set DATABASE_URL="mysql://..." -a sided-api
+---
 
-# Redis
-# Auto-set when you add the addon:
-heroku addons:create heroku-redis:mini -a sided-api
-# Provides REDIS_URL automatically
-
-# Auth
-heroku config:set BETTER_AUTH_SECRET="..." -a sided-api
-heroku config:set GOOGLE_CLIENT_ID="..." -a sided-api
-heroku config:set GOOGLE_CLIENT_SECRET="..." -a sided-api
-
-# External services
-heroku config:set PINECONE_API_KEY="..." -a sided-api
-heroku config:set OPENAI_API_KEY="..." -a sided-api
-heroku config:set ANTHROPIC_API_KEY="..." -a sided-api
-heroku config:set STRIPE_SECRET_KEY="..." -a sided-api
-heroku config:set RESEND_API_KEY="..." -a sided-api
-
-# App config
-heroku config:set NODE_ENV=production -a sided-api
-heroku config:set PORT=3000 -a sided-api
-heroku config:set API_BASE_URL=https://api.sided.ai -a sided-api
-heroku config:set ADMIN_URL=https://admin.sided.ai -a sided-api
-
-# Feature flags
-heroku config:set TRAFFIC_SPLIT_PCT=0 -a sided-api
-heroku config:set IDENTITY_SYSTEM=fingerprint -a sided-api
-heroku config:set AUCTION_ENGINE=legacy -a sided-api
-```
-
-## Pipeline Setup
+## Review Apps Pipeline
 
 ```bash
 heroku pipelines:create sided -a sided-api-staging --stage staging
 heroku pipelines:add sided -a sided-api --stage production
-
-# Enable review apps (creates ephemeral apps per PR)
-heroku pipelines:setup sided
+heroku pipelines:setup sided  # enables review apps (ephemeral app per PR)
 ```
-
-### Pipeline Stages
 
 ```
 PR Branch → Review App (auto-created, auto-destroyed)
@@ -84,86 +62,25 @@ main      → Staging (auto-deploy on push)
            → Production (manual promote)
 ```
 
-## Hono Server Configuration
+Review apps inherit staging config vars. Ensure any secrets needed for PR testing are set on the pipeline, not just the staging app.
 
-```typescript
-// src/index.ts
-import { Hono } from 'hono';
-import { serve } from 'bun';
+---
 
-const app = new Hono();
-// ... routes and middleware ...
-
-const port = parseInt(process.env.PORT || '3000');
-console.log(`Starting server on port ${port}`);
-
-export default {
-  port,
-  fetch: app.fetch,
-};
-```
-
-Heroku assigns `PORT` dynamically — always read from env.
-
-## Health Check
-
-```typescript
-// routes/health.ts
-health.get('/health', (c) => c.json({ status: 'ok', timestamp: Date.now() }));
-
-health.get('/ready', async (c) => {
-  try {
-    await db.execute(sql`SELECT 1`);  // DB check
-    return c.json({ status: 'ready', db: 'ok' });
-  } catch (e) {
-    return c.json({ status: 'not ready', db: 'error' }, 503);
-  }
-});
-```
-
-## Scaling
+## Redis Addon
 
 ```bash
-# Scale web dynos
-heroku ps:scale web=2:standard-2x -a sided-api
-
-# Scale worker
-heroku ps:scale worker=1:standard-1x -a sided-api
-
-# Check current
-heroku ps -a sided-api
+heroku addons:create heroku-redis:mini -a sided-api
+# Provides REDIS_URL automatically — do not set this manually
 ```
 
-## Logging
+`REDIS_URL` is injected by the addon. If you set it manually via `config:set`, it will be overwritten when the addon rotates credentials.
 
-```bash
-heroku logs --tail -a sided-api
-heroku logs --tail --dyno=web -a sided-api
-
-# Add Papertrail for log retention
-heroku addons:create papertrail:choklad -a sided-api
-```
-
-## Database Connection (PlanetScale)
-
-```typescript
-// PlanetScale requires SSL
-import mysql from 'mysql2/promise';
-
-const pool = mysql.createPool({
-  uri: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: true },
-  waitForConnections: true,
-  connectionLimit: 10, // Heroku standard-2x supports ~20 connections
-});
-```
+---
 
 ## Common Mistakes
 
-1. **Always bind to `process.env.PORT`** — Heroku assigns this dynamically
-2. **Don't store secrets in code** — use `heroku config:set` exclusively
-3. **Use connection pooling** — Heroku dynos restart, connection pools recover gracefully
-4. **Set `NODE_ENV=production`** — affects framework behavior and performance
-5. **Monitor dyno memory** — Bun is efficient but watch for memory leaks with `heroku logs`
-6. **Rotate API keys every 90 days** — set a calendar reminder
-7. **Use `release` phase** for migrations — never run migrations manually in production
+1. **Always bind to `process.env.PORT`** — Heroku assigns this dynamically; hardcoding 3000 works locally but fails on Heroku
+2. **Use `release` phase for migrations** — never run migrations manually in production
+3. **Do not set `REDIS_URL` manually** — the addon manages it
+4. **PlanetScale requires SSL** — `ssl: { rejectUnauthorized: true }` is required, not optional
+5. **Use connection pooling** — Heroku dynos restart; pools recover gracefully, single connections do not

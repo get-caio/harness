@@ -1,0 +1,210 @@
+cases:
+  # ══════════════════════════════════
+  # CODE AUDIT
+  # ══════════════════════════════════
+  - id: abs-ca-001
+    skill: code-audit
+    task: >
+      Write a script that audits a Node.js codebase and generates a security
+      and quality report. It should check for: TypeScript 'any' usage count,
+      empty catch blocks, files over 500 lines, test-to-source file ratio,
+      and npm audit vulnerabilities. Output a markdown report with severity ratings.
+    assertions:
+      - pattern: "any.*count|count.*any|grep.*any"
+        expect: present
+        description: "Checks for TypeScript 'any' usage"
+      - pattern: "catch\\s*\\(|empty.*catch|catch.*empty"
+        expect: present
+        description: "Detects empty catch blocks"
+      - pattern: "test.*ratio|ratio.*test|coverage"
+        expect: present
+        description: "Calculates test-to-source ratio"
+      - pattern: "npm audit|audit|vulnerabilit"
+        expect: present
+        description: "Runs dependency vulnerability scan"
+      - pattern: "CRITICAL|HIGH|MEDIUM|LOW|severity"
+        expect: present
+        description: "Categorizes findings by severity"
+
+  - id: abs-ca-002
+    skill: code-audit
+    task: >
+      Write a function that scans a git repository for accidentally committed
+      secrets like API keys, AWS credentials, and private keys. Return findings
+      with file path, line number, and secret type.
+    assertions:
+      - pattern: "sk_live|AKIA|private.?key|secret|password"
+        expect: present
+        description: "Checks for common secret patterns"
+      - pattern: "git log|git diff|history|commit"
+        expect: present
+        description: "Scans git history not just current files"
+      - pattern: "line.*number|lineNumber|line:"
+        expect: present
+        description: "Reports line numbers for findings"
+
+  # ══════════════════════════════════
+  # COUNCIL (multi-agent deliberation)
+  # ══════════════════════════════════
+  - id: abs-council-001
+    skill: council
+    task: >
+      Write a TypeScript function that orchestrates a multi-perspective
+      deliberation on a design decision. It should spawn 4 advisor roles
+      (Visionary, Critic, Pragmatist, Recorder), run structured rounds
+      where each advisor responds, and produce a synthesized recommendation.
+    assertions:
+      - pattern: "visionary|critic|pragmatist|recorder"
+        expect: present
+        description: "Implements the four advisor roles"
+      - pattern: "round|turn|iteration|phase"
+        expect: present
+        description: "Structures deliberation in rounds"
+      - pattern: "synthesi|consensus|recommendation|summary"
+        expect: present
+        description: "Produces a synthesized output"
+      - pattern: "role|persona|system.*prompt|advisor"
+        expect: present
+        description: "Assigns distinct perspectives to each role"
+
+  # ══════════════════════════════════
+  # DESIGN ROUTING
+  # ══════════════════════════════════
+  - id: abs-dr-001
+    skill: design-routing
+    task: >
+      Write a function that takes a UI task description and returns which
+      design skills should be loaded. Map task types to skill combinations:
+      greenfield projects need design-philosophy + visual-design, component
+      work needs design-system + shadcn-tailwind, polish work needs
+      design-craft + interaction-motion.
+    assertions:
+      - pattern: "design-philosophy|visual-design|design-system|design-craft|interaction-motion"
+        expect: present
+        description: "References actual design skill names"
+      - pattern: "greenfield|new.*project|from.*scratch"
+        expect: present
+        description: "Handles greenfield project routing"
+      - pattern: "polish|refine|empty.*state|loading"
+        expect: present
+        description: "Handles polish/refinement routing"
+      - pattern: "component|token|variant"
+        expect: present
+        description: "Handles component-level routing"
+
+  # ══════════════════════════════════
+  # RED TEAM
+  # ══════════════════════════════════
+  - id: abs-rt-001
+    skill: red-team
+    task: >
+      Write an automated security testing script for a Next.js app running
+      at localhost:3000. It should test: authentication bypass attempts,
+      IDOR vulnerabilities on /api/users/:id, SQL injection on search
+      endpoints, XSS in user-generated content fields, and CSRF on
+      state-changing endpoints.
+    assertions:
+      - pattern: "auth.*bypass|bypass.*auth|unauth|without.*token"
+        expect: present
+        description: "Tests authentication bypass"
+      - pattern: "IDOR|other.*user|different.*id|horizontal"
+        expect: present
+        description: "Tests insecure direct object references"
+      - pattern: "injection|sql.*inject|'.*OR|UNION.*SELECT"
+        expect: present
+        description: "Tests SQL injection vectors"
+      - pattern: "XSS|script.*tag|<script|innerHTML|onerror"
+        expect: present
+        description: "Tests cross-site scripting"
+      - pattern: "CSRF|csrf.*token|origin.*check|referer"
+        expect: present
+        description: "Tests CSRF protection"
+
+  - id: abs-rt-002
+    skill: red-team
+    task: >
+      Write a test suite that validates rate limiting on authentication
+      endpoints. Test that login, signup, and password reset endpoints
+      enforce rate limits and return appropriate 429 responses.
+    assertions:
+      - pattern: "429|too.*many|rate.*limit"
+        expect: present
+        description: "Checks for 429 rate limit responses"
+      - pattern: "rapid|loop|concurrent|multiple.*request"
+        expect: present
+        description: "Sends multiple rapid requests"
+      - pattern: "Retry-After|retry.*after|X-RateLimit"
+        expect: present
+        description: "Checks for rate limit headers"
+
+  # ══════════════════════════════════
+  # SEO AGENT PLAYBOOK
+  # ══════════════════════════════════
+  - id: abs-sap-001
+    skill: seo-agent-playbook
+    task: >
+      Write a configuration file and workflow for an autonomous SEO agent
+      that monitors keyword rankings, detects drops, generates content
+      briefs, and schedules publishing. Include trigger conditions,
+      checkpoint gates, and escalation rules.
+    assertions:
+      - pattern: "trigger|schedule|cron|interval"
+        expect: present
+        description: "Defines trigger conditions for workflows"
+      - pattern: "checkpoint|gate|approval|review"
+        expect: present
+        description: "Includes checkpoint gates before actions"
+      - pattern: "escalat|human|alert|notify"
+        expect: present
+        description: "Has escalation rules for edge cases"
+      - pattern: "ranking|keyword|position|serp"
+        expect: present
+        description: "Monitors keyword rankings"
+
+  # ══════════════════════════════════
+  # SEO INTEGRATIONS
+  # ══════════════════════════════════
+  - id: abs-si-001
+    skill: seo-integrations
+    task: >
+      Write a TypeScript module that fetches keyword ranking data from
+      DataForSEO API, page speed scores from Google PageSpeed Insights API,
+      and review data from Google Business Profile API. Aggregate into a
+      single dashboard data structure.
+    assertions:
+      - pattern: "dataforseo|DataForSEO|dfs"
+        expect: present
+        description: "Uses DataForSEO API"
+      - pattern: "pagespeed|PageSpeed|lighthouse|core.*web.*vital"
+        expect: present
+        description: "Uses PageSpeed Insights API"
+      - pattern: "business.*profile|GBP|mybusiness|places"
+        expect: present
+        description: "Uses Google Business Profile API"
+      - pattern: "rate.*limit|throttle|delay|queue"
+        expect: present
+        description: "Handles API rate limits"
+
+  # ══════════════════════════════════
+  # SEO ROUTING
+  # ══════════════════════════════════
+  - id: abs-sr-001
+    skill: seo-routing
+    task: >
+      Write a function that takes an SEO task description and returns which
+      SEO skills to load. Always include seo-foundations as baseline. Add
+      local-seo for local businesses, aeo-geo for AI visibility, and
+      seo-integrations for connector/API work.
+    assertions:
+      - pattern: "seo-foundations|baseline|always.*load"
+        expect: present
+        description: "Always includes seo-foundations as baseline"
+      - pattern: "local-seo|local.*business|map.*pack|GBP"
+        expect: present
+        description: "Routes local business tasks to local-seo"
+      - pattern: "aeo-geo|AI.*visib|llms\\.txt|perplexity"
+        expect: present
+        description: "Routes AI visibility tasks to aeo-geo"
+      - pattern: "seo-integrations|DataForSEO|connector|API"
+        expect: present
+        description: "Routes integration tasks to seo-integrations"

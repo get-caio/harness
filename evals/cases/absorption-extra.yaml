@@ -1,0 +1,742 @@
+cases:
+  # ─── Batch 1: Framework / Runtime / API ──────────────────────────────────────
+
+  - id: abs-nextjs-bun-prisma-001
+    skill: nextjs-bun-prisma
+    task: >
+      Build a Next.js App Router page that lists a user's blog posts from a
+      Prisma-backed PostgreSQL database. The page should require authentication,
+      fetch posts server-side, support pagination, and include a form to create
+      a new post via a server action that validates input with Zod and calls
+      revalidatePath after writing.
+    assertions:
+      - pattern: "globalThis"
+        expect: present
+        description: "Prisma client singleton uses globalThis to prevent hot-reload connections"
+      - pattern: "'use server'"
+        expect: present
+        description: "Server action file is marked with use server directive"
+      - pattern: "revalidatePath"
+        expect: present
+        description: "Server action calls revalidatePath to bust Next.js cache after mutation"
+      - pattern: "useFormStatus|useTransition"
+        expect: present
+        description: "Client form component uses useFormStatus or useTransition for pending state"
+      - pattern: "planSchema\\.parse|z\\.object"
+        expect: present
+        description: "Input is validated with Zod schema before database write"
+
+  - id: abs-nextjs-bun-prisma-002
+    skill: nextjs-bun-prisma
+    task: >
+      Write the Prisma client singleton module for a Next.js project, a server
+      action to delete a resource by ID (with ownership check), and a client
+      component that calls the action with a Delete button showing a loading
+      state.
+    assertions:
+      - pattern: "globalForPrisma|global.*prisma"
+        expect: present
+        description: "Prisma singleton attached to globalThis to survive hot reload"
+      - pattern: "NODE_ENV.*development|development.*NODE_ENV"
+        expect: present
+        description: "Prisma singleton is only stored on global in non-production"
+      - pattern: "redirect|throw.*Unauthorized|throw.*Error"
+        expect: present
+        description: "Server action checks authentication before performing deletion"
+      - pattern: "'use client'"
+        expect: present
+        description: "Delete button component is a Client Component"
+      - pattern: "isPending|pending|startTransition"
+        expect: present
+        description: "Client component reflects pending/loading state during action"
+
+  - id: abs-bun-runtime-001
+    skill: bun-runtime
+    task: >
+      Write a test file for a UserService class using Bun's built-in test runner.
+      The service has createUser and findById methods. Include a mock for a
+      database dependency and test that createUser throws on an empty name.
+    assertions:
+      - pattern: "from ['\"]bun:test['\"]"
+        expect: present
+        description: "Imports test utilities from bun:test, not jest or vitest"
+      - pattern: "mock\\("
+        expect: present
+        description: "Uses Bun's mock() helper for dependency mocking"
+      - pattern: "describe\\s*\\("
+        expect: present
+        description: "Tests are grouped with describe blocks"
+      - pattern: "\\.toThrow|toThrowError"
+        expect: present
+        description: "Verifies that createUser throws on invalid input"
+      - pattern: "import.*jest|require.*jest|from ['\"]vitest['\"]"
+        expect: absent
+        description: "Does not import Jest or Vitest — uses native bun:test"
+
+  - id: abs-bun-runtime-002
+    skill: bun-runtime
+    task: >
+      Write a minimal HTTP server using Bun's native server API that reads a
+      JSON config file on startup and responds to GET /health. Include a
+      Dockerfile for production deployment using the official Bun base image.
+    assertions:
+      - pattern: "Bun\\.file\\s*\\("
+        expect: present
+        description: "Uses Bun.file() for file I/O instead of Node fs module"
+      - pattern: "export default\\s*\\{[^}]*fetch"
+        expect: present
+        description: "Exports a default object with a fetch handler for Bun.serve()"
+      - pattern: "oven/bun"
+        expect: present
+        description: "Dockerfile uses the official oven/bun base image"
+      - pattern: "bun install --frozen-lockfile"
+        expect: present
+        description: "Dockerfile installs deps with --frozen-lockfile for reproducibility"
+      - pattern: "fs\\.readFile|require\\(['\"]fs['\"]\\)"
+        expect: absent
+        description: "Does not use Node's fs.readFile — uses Bun.file() instead"
+
+  - id: abs-hono-001
+    skill: hono
+    task: >
+      Build a Hono API with route groups for /api/v1/posts and authentication
+      middleware. The middleware should validate a Bearer token from the
+      Authorization header, set userId on context, and reject unauthenticated
+      requests with 401. The posts route should use zValidator for request body
+      validation on POST.
+    assertions:
+      - pattern: "createMiddleware|c\\.set\\(['\"]userId"
+        expect: present
+        description: "Auth middleware uses createMiddleware and sets userId on context with c.set()"
+      - pattern: "c\\.get\\(['\"]userId"
+        expect: present
+        description: "Route handler reads userId from context with c.get()"
+      - pattern: "zValidator\\s*\\("
+        expect: present
+        description: "POST route uses zValidator for request body validation at the edge"
+      - pattern: "app\\.route\\s*\\("
+        expect: present
+        description: "Route groups are mounted with app.route() not app.all()"
+      - pattern: "await next\\(\\)"
+        expect: present
+        description: "Middleware calls await next() to pass control down the chain"
+
+  - id: abs-hono-002
+    skill: hono
+    task: >
+      Implement a global error handler for a Hono app that distinguishes between
+      known AppError subtypes (NotFoundError, ForbiddenError) and unexpected
+      errors, returning structured JSON with an error message and code in both
+      cases.
+    assertions:
+      - pattern: "class.*AppError.*extends Error|AppError"
+        expect: present
+        description: "Defines or references a typed AppError class hierarchy"
+      - pattern: "statusCode|status.*code"
+        expect: present
+        description: "AppError carries an HTTP status code"
+      - pattern: "app\\.onError\\s*\\("
+        expect: present
+        description: "Global error handler is registered with app.onError()"
+      - pattern: "instanceof AppError"
+        expect: present
+        description: "Error handler checks instanceof AppError to distinguish known errors"
+      - pattern: "INTERNAL_ERROR|internal.*error|500"
+        expect: present
+        description: "Unexpected errors fall through to a generic 500 response"
+
+  - id: abs-turborepo-001
+    skill: turborepo
+    task: >
+      Write a turbo.json configuration for a monorepo that has packages/db,
+      packages/shared, apps/web, and apps/api workspaces. The build task should
+      run dependencies first, outputs should be declared, dev should never be
+      cached, and environment variables that affect build output should be
+      listed.
+    assertions:
+      - pattern: "\"\\^build\""
+        expect: present
+        description: "build task dependsOn [\"^build\"] to enforce topological order"
+      - pattern: "\"outputs\""
+        expect: present
+        description: "build task declares outputs so Turbo knows what to cache"
+      - pattern: "\"cache\":\\s*false"
+        expect: present
+        description: "dev task sets cache: false because it has side effects"
+      - pattern: "\"persistent\":\\s*true"
+        expect: present
+        description: "dev task sets persistent: true for long-running servers"
+      - pattern: "\"env\""
+        expect: present
+        description: "Tasks declare env vars that affect outputs for correct cache keys"
+
+  - id: abs-turborepo-002
+    skill: turborepo
+    task: >
+      Write the root package.json scripts section and a GitHub Actions CI
+      workflow for a Turborepo monorepo using Bun. CI should cache the .turbo
+      directory, run build, test, and lint across all workspaces, and use the
+      Bun setup action.
+    assertions:
+      - pattern: "turbo build|turbo test|turbo lint"
+        expect: present
+        description: "Root scripts delegate to turbo commands"
+      - pattern: "oven-sh/setup-bun"
+        expect: present
+        description: "CI uses the official oven-sh/setup-bun action"
+      - pattern: "\\.turbo"
+        expect: present
+        description: "CI caches the .turbo directory for remote cache reuse"
+      - pattern: "bun install --frozen-lockfile"
+        expect: present
+        description: "CI installs deps with --frozen-lockfile to prevent lockfile drift"
+      - pattern: "hashFiles.*bun\\.lock"
+        expect: present
+        description: "Cache key is keyed on bun.lock to invalidate when deps change"
+
+  - id: abs-mcp-server-001
+    skill: mcp-server
+    task: >
+      Build an MCP server that exposes two tools: search_documents (searches a
+      document store by query string) and get_document (retrieves a single
+      document by ID). Use the MCP SDK, connect via StdioServerTransport, and
+      return structured JSON in all tool responses.
+    assertions:
+      - pattern: "McpServer|new McpServer"
+        expect: present
+        description: "Uses McpServer from the MCP SDK"
+      - pattern: "StdioServerTransport"
+        expect: present
+        description: "Connects using StdioServerTransport for stdio-based MCP"
+      - pattern: "server\\.tool\\s*\\("
+        expect: present
+        description: "Tools are registered with server.tool()"
+      - pattern: "type:\\s*['\"]text['\"]"
+        expect: present
+        description: "Tool responses return content with type: 'text'"
+      - pattern: "JSON\\.stringify"
+        expect: present
+        description: "Tool responses serialize data as JSON strings, not HTML or prose"
+
+  - id: abs-mcp-server-002
+    skill: mcp-server
+    task: >
+      Write tests for an MCP server's tools using the MCP SDK's in-memory
+      transport. Tests should create a linked client/server pair, call a tool,
+      and assert on the returned JSON content.
+    assertions:
+      - pattern: "InMemoryTransport\\.createLinkedPair"
+        expect: present
+        description: "Tests use InMemoryTransport.createLinkedPair() for in-process testing"
+      - pattern: "client\\.connect\\s*\\("
+        expect: present
+        description: "Test creates and connects an MCP Client"
+      - pattern: "client\\.callTool\\s*\\("
+        expect: present
+        description: "Tests invoke tools via client.callTool()"
+      - pattern: "result\\.content\\[0\\]\\.text|content.*text"
+        expect: present
+        description: "Assertions parse the text field from tool response content"
+      - pattern: "beforeEach|beforeAll"
+        expect: present
+        description: "Transport and client setup is done in a beforeEach or beforeAll hook"
+
+  - id: abs-contract-testing-001
+    skill: contract-testing
+    task: >
+      Write a contract test suite that loads recorded production API fixtures
+      from a fixtures/ directory and verifies that the new API implementation
+      returns the same response shapes. Missing fields or type changes should
+      fail the test, but additive new fields should only warn.
+    assertions:
+      - pattern: "extractShape|shape.*diff|diffShapes"
+        expect: present
+        description: "Implements or uses a shape extraction function to compare response structure"
+      - pattern: "MISSING:|TYPE_MISMATCH:"
+        expect: present
+        description: "Diff output distinguishes missing fields from type mismatches"
+      - pattern: "ADDED:|startsWith\\(['\"]ADDED"
+        expect: present
+        description: "New fields in actual response are flagged as ADDED, not hard failures"
+      - pattern: "breakingChanges|filter.*ADDED"
+        expect: present
+        description: "Test only fails on breaking changes, not additive differences"
+      - pattern: "fixture|fixtures/"
+        expect: present
+        description: "Tests load recorded fixtures from a fixtures directory"
+
+  - id: abs-contract-testing-002
+    skill: contract-testing
+    task: >
+      Write a script that records real API request/response pairs from a
+      production URL into fixture files, and a CI GitHub Actions step that runs
+      the contract tests and blocks merges on failure.
+    assertions:
+      - pattern: "recordedAt|new Date\\(\\)\\.toISOString"
+        expect: present
+        description: "Recorded fixtures include a recordedAt timestamp"
+      - pattern: "writeFileSync|Bun\\.write|fs.*write"
+        expect: present
+        description: "Recorder script writes fixture files to disk"
+      - pattern: "fixtures/"
+        expect: present
+        description: "Fixtures are stored in a fixtures/ directory"
+      - pattern: "bun test.*contract|tests/contract"
+        expect: present
+        description: "CI step runs the contract test suite"
+      - pattern: "PROD_API_URL|process\\.env.*API_URL"
+        expect: present
+        description: "Recorder reads production URL from environment variable"
+
+  - id: abs-msw-mock-api-001
+    skill: msw-mock-api
+    task: >
+      Set up MSW for a Next.js admin panel. Create CRUD handlers for a /api/posts
+      endpoint with realistic list (paginated), get-by-id, create, and delete
+      handlers. Include a data factory for generating test posts. Enable mocking
+      only when NEXT_PUBLIC_API_MOCKING=true.
+    assertions:
+      - pattern: "setupWorker|from ['\"]msw/browser['\"]"
+        expect: present
+        description: "Uses setupWorker from msw/browser for client-side interception"
+      - pattern: "http\\.get|http\\.post|http\\.delete"
+        expect: present
+        description: "Handlers use the MSW http object for method-specific routing"
+      - pattern: "HttpResponse\\.json"
+        expect: present
+        description: "Handlers return responses using HttpResponse.json()"
+      - pattern: "await delay\\s*\\("
+        expect: present
+        description: "Handlers include artificial delay to simulate realistic latency"
+      - pattern: "NEXT_PUBLIC_API_MOCKING"
+        expect: present
+        description: "MSW is only enabled when the API mocking env var is set"
+
+  - id: abs-msw-mock-api-002
+    skill: msw-mock-api
+    task: >
+      Write a MSW data factory that generates realistic user objects with
+      randomized fields, and demonstrate how to reset handler state between
+      tests using server.resetHandlers().
+    assertions:
+      - pattern: "factory\\s*\\(|buildList\\s*\\("
+        expect: present
+        description: "Implements a factory pattern with build and buildList helpers"
+      - pattern: "server\\.resetHandlers\\s*\\("
+        expect: present
+        description: "Test setup calls server.resetHandlers() to reset between tests"
+      - pattern: "onUnhandledRequest.*bypass"
+        expect: present
+        description: "MSW is configured with onUnhandledRequest: 'bypass' to pass through unmocked requests"
+      - pattern: "createId|randomUUID|cuid"
+        expect: present
+        description: "Factory generates unique IDs for each record"
+      - pattern: "toISOString\\s*\\(\\)"
+        expect: present
+        description: "Factory generates ISO date strings for timestamp fields"
+
+  - id: abs-resend-email-001
+    skill: resend-email
+    task: >
+      Implement a magic link email send function using Resend and a React Email
+      template. The template should include a preview text, expiry notice, and
+      branded button. Also write the webhook handler for bounce and complaint
+      events.
+    assertions:
+      - pattern: "new Resend|from ['\"]resend['\"]"
+        expect: present
+        description: "Initialises the Resend client with the API key"
+      - pattern: "RESEND_API_KEY"
+        expect: present
+        description: "API key is read from environment variable RESEND_API_KEY"
+      - pattern: "<Preview>|Preview>"
+        expect: present
+        description: "React Email template includes a Preview component for inbox preview text"
+      - pattern: "email\\.bounced|bounced"
+        expect: present
+        description: "Webhook handler handles the email.bounced event"
+      - pattern: "email\\.complained|unsubscribe"
+        expect: present
+        description: "Webhook handler handles complaint events and unsubscribes the address"
+
+  - id: abs-resend-email-002
+    skill: resend-email
+    task: >
+      Write code to send a weekly digest email to a list of 200 subscribers
+      using Resend's batch API. Use a React Email template and read the sender
+      address from an environment variable. Handle the rate limit constraint.
+    assertions:
+      - pattern: "resend\\.batch\\.send|batch\\.send"
+        expect: present
+        description: "Uses Resend's batch send API for bulk delivery"
+      - pattern: "render\\s*\\("
+        expect: present
+        description: "Renders React Email template to HTML with render()"
+      - pattern: "100|chunk|slice|batch.*100"
+        expect: present
+        description: "Respects the 100 emails per batch limit by chunking recipients"
+      - pattern: "noreply@|insights@|from.*\\.ai|from.*\\.com"
+        expect: present
+        description: "Sender address uses a custom verified domain, not a public email provider"
+      - pattern: "unsubscribe|CAN-SPAM|list-unsubscribe"
+        expect: present
+        description: "Bulk email includes unsubscribe mechanism for CAN-SPAM compliance"
+
+  # ─── Batch 2: Database / Data ─────────────────────────────────────────────────
+
+  - id: abs-mysql-planetscale-001
+    skill: mysql-planetscale
+    task: >
+      Set up a PlanetScale MySQL connection with Drizzle ORM including proper
+      SSL configuration and connection pooling. Write a schema for an
+      organizations table with an index for common query patterns. Implement
+      a cascade delete for an organization that removes all child records
+      manually since foreign keys are not supported.
+    assertions:
+      - pattern: "ssl:\\s*\\{\\s*rejectUnauthorized:\\s*true"
+        expect: present
+        description: "Connection requires SSL with rejectUnauthorized: true for PlanetScale"
+      - pattern: "connectionLimit|maxIdle|waitForConnections"
+        expect: present
+        description: "Connection pool is configured with size limits"
+      - pattern: '\\.references\s*\('
+        expect: absent
+        description: "Schema does not use .references() FK constraints unsupported by PlanetScale"
+      - pattern: "db\\.transaction|tx\\.delete"
+        expect: present
+        description: "Cascade delete is implemented manually inside a transaction"
+      - pattern: "index\\s*\\(['\"]idx_"
+        expect: present
+        description: "Table defines named composite indexes for query optimization"
+
+  - id: abs-mysql-planetscale-002
+    skill: mysql-planetscale
+    task: >
+      Write the PlanetScale branching workflow commands to add a new nullable
+      column to a production table, and implement a read replica setup using
+      a secondary DATABASE_READ_URL for analytics queries.
+    assertions:
+      - pattern: "pscale branch create|pscale deploy-request"
+        expect: present
+        description: "Uses pscale CLI commands to create branch and deploy request"
+      - pattern: "DATABASE_READ_URL|read.*replica|readPool|readDb"
+        expect: present
+        description: "Separate read replica pool is created for analytics queries"
+      - pattern: "connectionLimit.*20|Higher limit|reads"
+        expect: present
+        description: "Read replica pool has a higher connection limit than the write pool"
+      - pattern: "FOREIGN KEY|ADD FOREIGN KEY"
+        expect: absent
+        description: "Migration SQL does not add foreign key constraints"
+      - pattern: "NOT NULL|nullable|\\?"
+        expect: present
+        description: "New column is added as nullable to avoid locking the table"
+
+  - id: abs-database-migrations-001
+    skill: database-migrations
+    task: >
+      Write the steps and Prisma schema changes to safely rename a required
+      column from `title` to `displayName` on a users table with zero downtime,
+      following the expand-contract pattern. Include the backfill step.
+    assertions:
+      - pattern: "expand.*contract|expand-contract|EXPAND|CONTRACT"
+        expect: present
+        description: "Solution explicitly uses the expand-contract migration pattern"
+      - pattern: "displayName.*String\\?|nullable|optional"
+        expect: present
+        description: "First step adds the new column as nullable before populating it"
+      - pattern: "UPDATE.*SET.*displayName.*=.*title|backfill"
+        expect: present
+        description: "Includes a backfill step to populate the new column from the old one"
+      - pattern: "separate migration|separate deploy|step.*3|step.*4"
+        expect: present
+        description: "Removal of the old column is a separate migration/deploy"
+      - pattern: "pg_dump|prisma migrate diff|rollback"
+        expect: present
+        description: "Rollback strategy or backup step is included"
+
+  - id: abs-database-migrations-002
+    skill: database-migrations
+    task: >
+      Add a new non-nullable status enum field to an existing Prisma model that
+      already has millions of rows. Show the safe migration sequence: add
+      nullable, backfill, make required. Include the migration naming convention.
+    assertions:
+      - pattern: "add_.*status|add.*enum|migration.*name"
+        expect: present
+        description: "Migration is named with the add_ verb and describes the change"
+      - pattern: "String\\?|nullable.*first|Step 1.*nullable"
+        expect: present
+        description: "First migration adds the column as nullable"
+      - pattern: "UPDATE.*SET.*status.*WHERE.*status.*IS NULL|backfill"
+        expect: present
+        description: "Backfill SQL sets a default value for all existing rows"
+      - pattern: "@default|String(?!\\?)"
+        expect: present
+        description: "Final migration makes the column required with a default value"
+      - pattern: "prisma migrate dev --name|bunx prisma"
+        expect: present
+        description: "Uses prisma migrate dev with a descriptive --name flag"
+
+  - id: abs-data-migration-001
+    skill: data-migration
+    task: >
+      Write a batch migration script that moves records from a legacy `items`
+      table to a new `products` table, mapping renamed columns and transforming
+      a status field. The script should be safe to rerun (idempotent), process
+      1000 records at a time, and write an error report for failed rows.
+    assertions:
+      - pattern: "BATCH_SIZE.*1000|1000.*BATCH_SIZE|limit.*1000"
+        expect: present
+        description: "Script processes records in batches of 1000"
+      - pattern: "onDuplicateKeyUpdate|ON CONFLICT.*DO UPDATE|upsert"
+        expect: present
+        description: "Script uses upsert semantics to be safe for reruns (idempotent)"
+      - pattern: "errors\\.push|errors.*array|error.*report"
+        expect: present
+        description: "Per-row errors are collected and written to an error report"
+      - pattern: "Bun\\.write|writeFileSync|migration-errors"
+        expect: present
+        description: "Error report is written to a file for post-run inspection"
+      - pattern: "offset\\s*\\+?=|offset.*BATCH_SIZE|while.*true"
+        expect: present
+        description: "Script loops with offset to process all rows in batches"
+
+  - id: abs-data-migration-002
+    skill: data-migration
+    task: >
+      Implement a dual-write pattern to safely cut over from V1 to V2 database
+      during a zero-downtime migration. The V1 write should be non-fatal if it
+      fails, and the migration ordering should follow parent-before-child table
+      dependency order.
+    assertions:
+      - pattern: "v2db.*insert|v2.*primary|V2.*primary"
+        expect: present
+        description: "V2 database is the primary target for writes"
+      - pattern: "try.*v1db|catch.*V1.*warn|v1.*non-fatal"
+        expect: present
+        description: "V1 write failure is caught and treated as non-fatal with a warning"
+      - pattern: "organizations|users|org_members"
+        expect: present
+        description: "Migration order respects parent-before-child dependency (organizations before members)"
+      - pattern: "ENTITY_MAP|entity.*map|column.*map"
+        expect: present
+        description: "Explicit mapping document captures V1→V2 column/table renames"
+      - pattern: "preserve.*ID|v1Record\\.id|original.*id"
+        expect: present
+        description: "Original IDs are preserved to maintain referential integrity"
+
+  - id: abs-redis-caching-001
+    skill: redis-caching
+    task: >
+      Implement a cache-aside helper function and use it to cache product
+      listings from a database. Include a TTL of 5 minutes, consistent cache
+      key naming, and cache invalidation when a product is updated.
+    assertions:
+      - pattern: "getCached|cache.*aside|redis\\.get.*redis\\.setEx"
+        expect: present
+        description: "Implements cache-aside pattern: check cache, fetch on miss, store result"
+      - pattern: "try.*catch|fail.*open|catch.*miss"
+        expect: present
+        description: "Redis errors are caught and fail open — cache miss proceeds to DB"
+      - pattern: "setEx|ttl|TTL|300|600"
+        expect: present
+        description: "Cached values are stored with an explicit TTL"
+      - pattern: "redis\\.del\\s*\\(|del\\s*\\(KEYS"
+        expect: present
+        description: "Cache is invalidated (key deleted) when the underlying data is updated"
+      - pattern: "KEYS\\s*=\\s*\\{|const KEYS|key.*\\(.*\\).*=>"
+        expect: present
+        description: "Cache keys are defined via a consistent naming scheme or constants object"
+
+  - id: abs-redis-caching-002
+    skill: redis-caching
+    task: >
+      Implement a rate limiter middleware using Redis INCR with a sliding window,
+      setting X-RateLimit headers on responses and returning 429 when the limit
+      is exceeded. The middleware should fail open if Redis is unavailable.
+    assertions:
+      - pattern: "redis\\.incr\\s*\\(|INCR"
+        expect: present
+        description: "Rate limiter uses Redis INCR to atomically increment the counter"
+      - pattern: "redis\\.expire\\s*\\(|expire.*window|windowSeconds"
+        expect: present
+        description: "Counter key is given a TTL matching the rate limit window"
+      - pattern: "X-RateLimit-Limit|X-RateLimit-Remaining"
+        expect: present
+        description: "Response includes X-RateLimit-Limit and X-RateLimit-Remaining headers"
+      - pattern: "429|Rate limit exceeded"
+        expect: present
+        description: "Middleware returns HTTP 429 when the limit is exceeded"
+      - pattern: "catch.*allowed.*true|fail.*open|Redis.*down"
+        expect: present
+        description: "Redis errors cause fail-open behavior: request is allowed through"
+
+  - id: abs-pinecone-001
+    skill: pinecone
+    task: >
+      Build an embedding pipeline that takes a product description, generates
+      an embedding using OpenAI's text-embedding-3-small model, and upserts it
+      into a Pinecone index with metadata. Then implement a semantic search
+      function that queries the index and returns the top 10 results with scores.
+    assertions:
+      - pattern: "text-embedding-3-small"
+        expect: present
+        description: "Uses the text-embedding-3-small model for embeddings"
+      - pattern: "pollSearchIndex\\.upsert|index\\.upsert|pinecone.*upsert"
+        expect: present
+        description: "Upserts the embedding vector into the Pinecone index"
+      - pattern: "includeMetadata:\\s*true"
+        expect: present
+        description: "Queries include includeMetadata: true to return metadata with results"
+      - pattern: "topK"
+        expect: present
+        description: "Search query specifies topK to limit number of results"
+      - pattern: "m\\.score|matches.*score|score.*match"
+        expect: present
+        description: "Search results include the cosine similarity score"
+
+  - id: abs-pinecone-002
+    skill: pinecone
+    task: >
+      Write a backfill script that indexes all existing active records from a
+      database into Pinecone in batches of 100, using batch embedding for
+      efficiency, and implement filtered vector search to scope results to a
+      specific organization ID.
+    assertions:
+      - pattern: "embedBatch|embeddings\\.create.*input.*texts|batch.*embed"
+        expect: present
+        description: "Uses batch embedding API instead of embedding one record at a time"
+      - pattern: "BATCH_SIZE.*100|100.*BATCH_SIZE|limit.*100"
+        expect: present
+        description: "Upserts in batches of 100 to respect Pinecone's per-call limit"
+      - pattern: "await.*sleep|Bun\\.sleep|sleep.*200"
+        expect: present
+        description: "Includes rate limiting delay between batches to respect API limits"
+      - pattern: "filter.*organizationId|organizationId.*\\$eq"
+        expect: present
+        description: "Filtered search scopes results to a specific organizationId"
+      - pattern: "offset\\s*\\+?=|while.*true.*break|offset.*BATCH"
+        expect: present
+        description: "Backfill loops with pagination until all records are indexed"
+
+  # ─── Batch 3: Compliance / Privacy ───────────────────────────────────────────
+
+  - id: abs-data-protection-001
+    skill: data-protection
+    task: >
+      Design a user registration flow that collects minimum required data,
+      records explicit consent with policy version and IP address, and stores
+      a Consent model linked to the user. Also write the GDPR data export
+      endpoint that returns all user data as a downloadable JSON file.
+    assertions:
+      - pattern: "consentType|consent_type|ConsentRecord"
+        expect: present
+        description: "Consent records include a type field distinguishing terms, privacy, and marketing"
+      - pattern: "version.*String|policy.*version|consentVersion"
+        expect: present
+        description: "Consent records store the policy version the user agreed to"
+      - pattern: "ipAddress|ip_address"
+        expect: present
+        description: "Consent records store the IP address for audit trail purposes"
+      - pattern: "Content-Disposition.*attachment|attachment.*filename"
+        expect: present
+        description: "Data export endpoint sets Content-Disposition attachment header"
+      - pattern: "logDataAccess|data_access|action.*export"
+        expect: present
+        description: "Data export action is logged for audit trail"
+
+  - id: abs-data-protection-002
+    skill: data-protection
+    task: >
+      Implement GDPR Article 17 account deletion: soft-delete the user record,
+      anonymise PII fields, and write a data retention cleanup script that
+      permanently removes soft-deleted users after 90 days and purges inactive
+      sessions after 30 days.
+    assertions:
+      - pattern: "deletedAt.*new Date|deletedAt.*DateTime"
+        expect: present
+        description: "Deletion sets a deletedAt timestamp for soft delete rather than hard delete"
+      - pattern: "anonymized\\.local|deleted-.*@|DELETED.*email"
+        expect: present
+        description: "Email and PII fields are anonymized on deletion, not just nulled"
+      - pattern: "RETENTION_PERIODS|retention.*period|90.*days|deleteThreshold"
+        expect: present
+        description: "Cleanup script defines explicit retention periods (e.g. 90 days)"
+      - pattern: "deleteMany.*deletedAt|lt.*deleteThreshold"
+        expect: present
+        description: "Cleanup script permanently deletes records past the retention cutoff"
+      - pattern: "logDataAccess|log.*delete|action.*delete"
+        expect: present
+        description: "Deletion event is logged with logDataAccess for compliance audit"
+
+  - id: abs-data-protection-003
+    skill: data-protection
+    task: >
+      Write the logging setup for a web application that avoids logging any PII,
+      uses user IDs instead of emails in log events, and does not store passwords
+      in plain text. Include a user login handler demonstrating these patterns.
+    assertions:
+      - pattern: "userId.*log|log.*userId"
+        expect: present
+        description: "Log statements include userId instead of email or name"
+      - pattern: "email.*log|logger.*email"
+        expect: absent
+        description: "Log statements do not log the user's email address directly"
+      - pattern: "hash|bcrypt|argon2|passwordHash"
+        expect: present
+        description: "Password is hashed before storage, never stored as plaintext"
+      - pattern: "password.*log|log.*password"
+        expect: absent
+        description: "Password is never passed to the logger"
+      - pattern: "userId.*String|user_id|logger.*userId"
+        expect: present
+        description: "Log context carries only user ID as the identifier"
+
+  - id: abs-gdpr-consent-001
+    skill: gdpr-consent
+    task: >
+      Implement a consent storage schema with granular consent flags (essential,
+      analytics, targeting, cross-site) and a non-blocking consent banner that
+      shows for EU visitors but allows the user to interact with the page
+      immediately. Include the logic to read consent from a CMP if one is present.
+    assertions:
+      - pattern: "essential.*boolean|analytics.*boolean|targeting.*boolean"
+        expect: present
+        description: "Schema has granular boolean consent flags per purpose category"
+      - pattern: "cmpDetected|CMP.*consent|readCMPConsent"
+        expect: present
+        description: "Consent flow checks for an existing CMP before showing its own banner"
+      - pattern: "isEUCountry|EU.*country|ipCountry"
+        expect: present
+        description: "Consent banner is only shown to EU/UK visitors based on country detection"
+      - pattern: "non-blocking|onDismiss|parallel|interact.*while"
+        expect: present
+        description: "Banner does not block the page — users can interact immediately"
+      - pattern: "consentSource|cmp.*vendor|consent_source"
+        expect: present
+        description: "Consent records store the source (cmp, banner, implied, none)"
+
+  - id: abs-gdpr-consent-002
+    skill: gdpr-consent
+    task: >
+      Implement the right-to-erasure (data deletion) workflow: anonymize vote
+      records preserving aggregates, hard-delete personal profile data, and
+      write an audit log entry. Include a nightly retention job that anonymizes
+      records older than two years.
+    assertions:
+      - pattern: "DELETED|ANONYMIZED|profileId.*DELETED"
+        expect: present
+        description: "Vote records are anonymized by replacing profileId with a placeholder, not deleted"
+      - pattern: "ipAddress.*null|userAgent.*null|ip.*null"
+        expect: present
+        description: "PII fields (IP address, user agent) are nulled during anonymization"
+      - pattern: "db\\.transaction|tx\\.delete|tx\\.update"
+        expect: present
+        description: "Deletion workflow runs inside a database transaction for atomicity"
+      - pattern: "dataDeleteLog|deletion.*log|tablesAffected"
+        expect: present
+        description: "Deletion is logged to an audit table with the tables affected"
+      - pattern: "twoYearsAgo|setFullYear.*-.*2|retention.*2.*year"
+        expect: present
+        description: "Nightly retention job targets records older than two years"

@@ -1,3 +1,7 @@
+---
+description: "Patterns for Stripe Checkout sessions, subscription lifecycle (trial → active → canceled), webhook signature verification, customer portal, and metered billing. Use for any billing, paywall, or subscription flow — not for general Stripe setup."
+---
+
 # Payments Skill
 
 Patterns for implementing Stripe payments in CAIO incubator projects.
@@ -36,16 +40,16 @@ STRIPE_PRICE_YEARLY=price_...
 
 ```typescript
 // lib/stripe.ts
-import Stripe from 'stripe'
+import Stripe from "stripe";
 
 if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY is not set')
+  throw new Error("STRIPE_SECRET_KEY is not set");
 }
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16',
+  apiVersion: "2023-10-16",
   typescript: true,
-})
+});
 ```
 
 ### 4. Prisma Schema Extensions
@@ -57,11 +61,11 @@ model User {
   id               String    @id @default(cuid())
   email            String?   @unique
   name             String?
-  
+
   // Stripe fields
   stripeCustomerId String?   @unique
   subscription     Subscription?
-  
+
   // ... other fields
 }
 
@@ -69,12 +73,12 @@ model Subscription {
   id                   String   @id @default(cuid())
   userId               String   @unique
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   stripeSubscriptionId String   @unique
   stripePriceId        String
   stripeCurrentPeriodEnd DateTime
   status               SubscriptionStatus
-  
+
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }
@@ -94,49 +98,49 @@ enum SubscriptionStatus {
 
 ```typescript
 // actions/stripe.ts
-'use server'
+"use server";
 
-import { auth } from '@/lib/auth'
-import { stripe } from '@/lib/stripe'
-import { db } from '@/lib/db'
+import { auth } from "@/lib/auth";
+import { stripe } from "@/lib/stripe";
+import { db } from "@/lib/db";
 
 export async function createCheckoutSession(priceId: string) {
-  const session = await auth()
-  if (!session?.user) throw new Error('Unauthorized')
-  
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-  })
-  
+  });
+
   // Get or create Stripe customer
-  let customerId = user?.stripeCustomerId
-  
+  let customerId = user?.stripeCustomerId;
+
   if (!customerId) {
     const customer = await stripe.customers.create({
       email: session.user.email!,
       metadata: { userId: session.user.id },
-    })
-    
+    });
+
     await db.user.update({
       where: { id: session.user.id },
       data: { stripeCustomerId: customer.id },
-    })
-    
-    customerId = customer.id
+    });
+
+    customerId = customer.id;
   }
-  
+
   // Create checkout session
   const checkoutSession = await stripe.checkout.sessions.create({
     customer: customerId,
-    mode: 'subscription',
-    payment_method_types: ['card'],
+    mode: "subscription",
+    payment_method_types: ["card"],
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${process.env.NEXTAUTH_URL}/dashboard?success=true`,
     cancel_url: `${process.env.NEXTAUTH_URL}/pricing?canceled=true`,
     metadata: { userId: session.user.id },
-  })
-  
-  return { url: checkoutSession.url }
+  });
+
+  return { url: checkoutSession.url };
 }
 ```
 
@@ -157,7 +161,7 @@ interface CheckoutButtonProps {
 
 export function CheckoutButton({ priceId, children }: CheckoutButtonProps) {
   const [loading, setLoading] = useState(false)
-  
+
   async function handleCheckout() {
     setLoading(true)
     try {
@@ -169,7 +173,7 @@ export function CheckoutButton({ priceId, children }: CheckoutButtonProps) {
       setLoading(false)
     }
   }
-  
+
   return (
     <Button onClick={handleCheckout} disabled={loading}>
       {loading ? 'Loading...' : children}
@@ -182,64 +186,75 @@ export function CheckoutButton({ priceId, children }: CheckoutButtonProps) {
 
 ```typescript
 // app/api/webhooks/stripe/route.ts
-import { headers } from 'next/headers'
-import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
-import { db } from '@/lib/db'
-import Stripe from 'stripe'
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import { stripe } from "@/lib/stripe";
+import { db } from "@/lib/db";
+import Stripe from "stripe";
 
 export async function POST(req: Request) {
-  const body = await req.text()
-  const signature = headers().get('stripe-signature')!
-  
-  let event: Stripe.Event
-  
+  const body = await req.text();
+  const signature = headers().get("stripe-signature")!;
+
+  let event: Stripe.Event;
+
   try {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    )
+      process.env.STRIPE_WEBHOOK_SECRET!,
+    );
   } catch (err) {
-    console.error('Webhook signature verification failed:', err)
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+    console.error("Webhook signature verification failed:", err);
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
-  
+
   try {
     switch (event.type) {
-      case 'checkout.session.completed':
-        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session)
-        break
-        
-      case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription)
-        break
-        
-      case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
-        break
-        
-      case 'invoice.payment_failed':
-        await handlePaymentFailed(event.data.object as Stripe.Invoice)
-        break
-        
+      case "checkout.session.completed":
+        await handleCheckoutCompleted(
+          event.data.object as Stripe.Checkout.Session,
+        );
+        break;
+
+      case "customer.subscription.updated":
+        await handleSubscriptionUpdated(
+          event.data.object as Stripe.Subscription,
+        );
+        break;
+
+      case "customer.subscription.deleted":
+        await handleSubscriptionDeleted(
+          event.data.object as Stripe.Subscription,
+        );
+        break;
+
+      case "invoice.payment_failed":
+        await handlePaymentFailed(event.data.object as Stripe.Invoice);
+        break;
+
       default:
-        console.log(`Unhandled event type: ${event.type}`)
+        console.log(`Unhandled event type: ${event.type}`);
     }
   } catch (error) {
-    console.error('Webhook handler error:', error)
-    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 })
+    console.error("Webhook handler error:", error);
+    return NextResponse.json(
+      { error: "Webhook handler failed" },
+      { status: 500 },
+    );
   }
-  
-  return NextResponse.json({ received: true })
+
+  return NextResponse.json({ received: true });
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const userId = session.metadata?.userId
-  if (!userId) throw new Error('No userId in session metadata')
-  
-  const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
-  
+  const userId = session.metadata?.userId;
+  if (!userId) throw new Error("No userId in session metadata");
+
+  const subscription = await stripe.subscriptions.retrieve(
+    session.subscription as string,
+  );
+
   await db.subscription.upsert({
     where: { userId },
     create: {
@@ -247,27 +262,27 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       stripeSubscriptionId: subscription.id,
       stripePriceId: subscription.items.data[0].price.id,
       stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      status: 'active',
+      status: "active",
     },
     update: {
       stripeSubscriptionId: subscription.id,
       stripePriceId: subscription.items.data[0].price.id,
       stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      status: 'active',
+      status: "active",
     },
-  })
+  });
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const dbSubscription = await db.subscription.findUnique({
     where: { stripeSubscriptionId: subscription.id },
-  })
-  
+  });
+
   if (!dbSubscription) {
-    console.log('Subscription not found in database:', subscription.id)
-    return
+    console.log("Subscription not found in database:", subscription.id);
+    return;
   }
-  
+
   await db.subscription.update({
     where: { stripeSubscriptionId: subscription.id },
     data: {
@@ -275,20 +290,22 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       stripeCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
       status: subscription.status as any,
     },
-  })
+  });
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  await db.subscription.delete({
-    where: { stripeSubscriptionId: subscription.id },
-  }).catch(() => {
-    // Already deleted, ignore
-  })
+  await db.subscription
+    .delete({
+      where: { stripeSubscriptionId: subscription.id },
+    })
+    .catch(() => {
+      // Already deleted, ignore
+    });
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   // Send notification or update status
-  console.log('Payment failed for invoice:', invoice.id)
+  console.log("Payment failed for invoice:", invoice.id);
 }
 ```
 
@@ -297,24 +314,24 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 ```typescript
 // actions/stripe.ts
 export async function createPortalSession() {
-  const session = await auth()
-  if (!session?.user) throw new Error('Unauthorized')
-  
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
   const user = await db.user.findUnique({
     where: { id: session.user.id },
     select: { stripeCustomerId: true },
-  })
-  
+  });
+
   if (!user?.stripeCustomerId) {
-    throw new Error('No Stripe customer found')
+    throw new Error("No Stripe customer found");
   }
-  
+
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: user.stripeCustomerId,
     return_url: `${process.env.NEXTAUTH_URL}/settings`,
-  })
-  
-  return { url: portalSession.url }
+  });
+
+  return { url: portalSession.url };
 }
 ```
 
@@ -322,26 +339,26 @@ export async function createPortalSession() {
 
 ```typescript
 // lib/subscription.ts
-import { db } from '@/lib/db'
+import { db } from "@/lib/db";
 
 export async function hasActiveSubscription(userId: string): Promise<boolean> {
   const subscription = await db.subscription.findUnique({
     where: { userId },
-  })
-  
-  if (!subscription) return false
-  
+  });
+
+  if (!subscription) return false;
+
   return (
-    subscription.status === 'active' &&
+    subscription.status === "active" &&
     subscription.stripeCurrentPeriodEnd > new Date()
-  )
+  );
 }
 
 export async function requireSubscription(userId: string) {
-  const hasSubscription = await hasActiveSubscription(userId)
-  
+  const hasSubscription = await hasActiveSubscription(userId);
+
   if (!hasSubscription) {
-    throw new Error('Subscription required')
+    throw new Error("Subscription required");
   }
 }
 ```
@@ -350,17 +367,17 @@ export async function requireSubscription(userId: string) {
 
 ```typescript
 // actions/plans.ts
-import { requireSubscription } from '@/lib/subscription'
+import { requireSubscription } from "@/lib/subscription";
 
 export async function generateAdvancedPlan(data: PlanData) {
-  const session = await auth()
-  if (!session?.user) throw new Error('Unauthorized')
-  
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
   // Check subscription for premium features
-  await requireSubscription(session.user.id)
-  
+  await requireSubscription(session.user.id);
+
   // Premium feature logic
-  return generatePlan(data, { advanced: true })
+  return generatePlan(data, { advanced: true });
 }
 ```
 

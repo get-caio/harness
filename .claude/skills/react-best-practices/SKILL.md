@@ -1,6 +1,6 @@
 ---
 name: react-best-practices
-description: React and Next.js performance optimization guidelines from Vercel Engineering. This skill should be used when writing, reviewing, or refactoring React/Next.js code to ensure optimal performance patterns. Triggers on tasks involving React components, Next.js pages, data fetching, bundle optimization, or performance improvements.
+description: "Patterns for eliminating React request waterfalls, bundle splitting, Server vs Client Component boundaries, streaming with Suspense, and avoiding re-render traps. Use when optimizing performance — not for initial scaffold (use nextjs-bun-prisma) or general component structure."
 ---
 
 # React Best Practices
@@ -12,6 +12,7 @@ Performance optimization guide for React and Next.js applications, ordered by im
 ## When to Apply
 
 Reference these guidelines when:
+
 - Writing new React components or Next.js pages
 - Implementing data fetching (client or server-side)
 - Reviewing code for performance issues
@@ -22,28 +23,30 @@ Reference these guidelines when:
 
 Rules are prioritized by impact:
 
-| Priority | Category | Impact |
-|----------|----------|--------|
-| 1 | Eliminating Waterfalls | CRITICAL |
-| 2 | Bundle Size Optimization | CRITICAL |
-| 3 | Server-Side Performance | HIGH |
-| 4 | Client-Side Data Fetching | MEDIUM-HIGH |
-| 5 | Re-render Optimization | MEDIUM |
-| 6 | Rendering Performance | MEDIUM |
-| 7 | JavaScript Performance | LOW-MEDIUM |
-| 8 | Advanced Patterns | LOW |
+| Priority | Category                  | Impact      |
+| -------- | ------------------------- | ----------- |
+| 1        | Eliminating Waterfalls    | CRITICAL    |
+| 2        | Bundle Size Optimization  | CRITICAL    |
+| 3        | Server-Side Performance   | HIGH        |
+| 4        | Client-Side Data Fetching | MEDIUM-HIGH |
+| 5        | Re-render Optimization    | MEDIUM      |
+| 6        | Rendering Performance     | MEDIUM      |
+| 7        | JavaScript Performance    | LOW-MEDIUM  |
+| 8        | Advanced Patterns         | LOW         |
 
 ## Quick Reference
 
 ### Critical Patterns (Apply First)
 
 **Eliminate Waterfalls:**
+
 - Use `Promise.all()` for independent async operations
 - Start promises early, await late
 - Use `better-all` for partial dependencies
 - Use Suspense boundaries to stream content
 
 **Reduce Bundle Size:**
+
 - Avoid barrel file imports (import directly from source)
 - Use `next/dynamic` for heavy components
 - Defer non-critical third-party libraries
@@ -71,6 +74,7 @@ Full documentation with code examples is available in:
 - `references/rules/` - Individual rule files organized by category
 
 To look up a specific pattern, grep the rules directory:
+
 ```
 grep -l "suspense" references/rules/
 grep -l "barrel" references/rules/

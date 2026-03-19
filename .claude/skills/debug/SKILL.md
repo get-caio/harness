@@ -1,3 +1,7 @@
+---
+description: "A systematic pre-investigation checklist: verify the correct endpoint, confirm auth headers pass, check that IDs from prior calls are stored, and search git history for working implementations before proposing a fix."
+---
+
 # Debug Skill
 
 Before investigating any bug:

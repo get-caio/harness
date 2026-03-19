@@ -1,0 +1,235 @@
+cases:
+  # ── Auth & Security ──
+  - id: ret-001
+    task: "Add Google OAuth login and email/password signup to the Next.js app"
+    expected: [auth, security]
+    not_expected: [payments, seo-foundations, redis-caching, svg-animation]
+
+  - id: ret-002
+    task: "Protect API routes so only authenticated users with admin role can access them"
+    expected: [auth, security, trpc]
+    not_expected: [design-craft, local-seo, pinecone]
+
+  # ── Data Layer ──
+  - id: ret-003
+    task: "Write a Drizzle ORM schema for users, teams, and team memberships with proper relations"
+    expected: [drizzle-orm]
+    not_expected: [react-native, svg-animation, shopify-remix, wordpress-plugin]
+
+  - id: ret-004
+    task: "Add a PostgreSQL migration that adds a new column to the users table without downtime"
+    expected: [database-migrations, drizzle-orm]
+    not_expected: [design-philosophy, interaction-motion, aeo-geo]
+
+  # ── API ──
+  - id: ret-005
+    task: "Build a tRPC router with CRUD endpoints for managing training plans"
+    expected: [trpc, testing]
+    not_expected: [local-seo, cloudflare-dns, woocommerce]
+
+  # ── Frontend ──
+  - id: ret-006
+    task: "Build a data table with sorting, filtering, and pagination using shadcn/ui"
+    expected: [shadcn-tailwind, ui-patterns, react-best-practices]
+    not_expected: [redis-caching, mysql-planetscale, heroku-deploy]
+
+  - id: ret-007
+    task: "Create empty states, loading skeletons, and error boundaries for the dashboard"
+    expected: [design-craft, ui-patterns, shadcn-tailwind]
+    not_expected: [drizzle-orm, ci-cd, stripe-billing]
+
+  - id: ret-008
+    task: "Design the color palette, typography scale, and spacing system for the app"
+    expected: [visual-design, design-system]
+    not_expected: [testing, database-migrations, trpc]
+
+  # ── Payments ──
+  - id: ret-009
+    task: "Integrate Stripe for monthly subscriptions with a customer portal"
+    expected: [stripe-billing, payments, security]
+    not_expected: [react-native, vitepress, svg-animation]
+
+  - id: ret-010
+    task: "Handle Stripe webhooks for subscription lifecycle events"
+    expected: [stripe-billing, payments, security]
+    not_expected: [design-craft, local-seo, pinecone]
+
+  # ── AI ──
+  - id: ret-011
+    task: "Use Claude API to generate personalized workout plans from user profile data"
+    expected: [ai-integration]
+    not_expected: [wordpress-plugin, shopify-remix, woocommerce]
+
+  - id: ret-012
+    task: "Store workout embeddings in Pinecone for semantic search"
+    expected: [pinecone, ai-integration]
+    not_expected: [visual-design, interaction-motion, local-seo]
+
+  # ── Infrastructure ──
+  - id: ret-013
+    task: "Set up GitHub Actions CI pipeline with lint, type-check, unit tests, and E2E tests"
+    expected: [ci-cd, testing, e2e-testing]
+    not_expected: [design-craft, svg-animation, payments]
+
+  - id: ret-014
+    task: "Add structured logging, health check endpoint, and error tracking"
+    expected: [observability]
+    not_expected: [design-philosophy, shopify-remix, local-seo]
+
+  - id: ret-015
+    task: "Deploy the Next.js app to Vercel with preview environments per PR"
+    expected: [ci-cd]
+    not_expected: [react-native, pinecone, stripe-billing]
+
+  # ── Mobile ──
+  - id: ret-016
+    task: "Build an Expo React Native app with offline-first data sync"
+    expected: [react-native]
+    not_expected: [vitepress, wordpress-plugin, cloudflare-dns]
+
+  # ── SEO ──
+  - id: ret-017
+    task: "Optimize the marketing site for local search and Google Business Profile"
+    expected: [local-seo, seo-foundations]
+    not_expected: [drizzle-orm, testing, trpc]
+
+  - id: ret-018
+    task: "Make the site get cited by ChatGPT and Perplexity"
+    expected: [aeo-geo, seo-foundations]
+    not_expected: [payments, react-native, database-migrations]
+
+  # ── Testing ──
+  - id: ret-019
+    task: "Write Playwright E2E tests for the complete auth flow including OAuth"
+    expected: [e2e-testing, testing, auth]
+    not_expected: [svg-animation, design-philosophy, pinecone]
+
+  - id: ret-020
+    task: "Set up MSW mock handlers to develop the dashboard before the API is ready"
+    expected: [msw-mock-api, testing]
+    not_expected: [heroku-deploy, woocommerce, cloudflare-dns]
+
+  # ── Framework/Runtime ──
+  - id: ret-021
+    task: "Scaffold a new Next.js app with Bun, Prisma, and tRPC using the App Router"
+    expected: [nextjs-bun-prisma, bun-runtime, trpc]
+    not_expected: [react-native, wordpress-plugin, local-seo]
+
+  - id: ret-022
+    task: "Build a REST API using the Hono framework with middleware for auth and logging"
+    expected: [hono, security, observability]
+    not_expected: [shopify-remix, vitepress, svg-animation]
+
+  - id: ret-023
+    task: "Configure Turborepo for a monorepo with web, api, and shared packages"
+    expected: [turborepo, bun-runtime, ci-cd]
+    not_expected: [local-seo, design-craft, pinecone]
+
+  # ── MCP/AI Tooling ──
+  - id: ret-024
+    task: "Build an MCP server that exposes database query and file search tools to AI agents"
+    expected: [mcp-server, ai-integration]
+    not_expected: [stripe-billing, woocommerce, visual-design]
+
+  # ── Data/Migration ──
+  - id: ret-025
+    task: "Migrate 2 million user records from MongoDB to PostgreSQL with zero downtime"
+    expected: [data-migration, database-migrations]
+    not_expected: [svg-animation, design-philosophy, react-native]
+
+  # ── Compliance ──
+  - id: ret-026
+    task: "Implement GDPR cookie consent banner with granular preferences and a data export endpoint"
+    expected: [gdpr-consent, data-protection]
+    not_expected: [turborepo, hono, pinecone]
+
+  # ── Email ──
+  - id: ret-027
+    task: "Set up transactional emails for welcome, password reset, and invoice using Resend"
+    expected: [resend-email]
+    not_expected: [react-native, drizzle-orm, cloudflare-dns]
+
+  # ── Code Quality/Audit ──
+  - id: ret-028
+    task: "Run a full security and code quality audit on the codebase before the v1 launch"
+    expected: [code-audit, code-quality, security]
+    not_expected: [design-craft, local-seo, shopify-remix]
+
+  - id: ret-029
+    task: "Refactor the order processing module to reduce complexity and improve readability"
+    expected: [code-quality]
+    not_expected: [react-native, aeo-geo, cloudflare-dns]
+
+  # ── Contract Testing ──
+  - id: ret-030
+    task: "Set up contract tests to verify our API responses match the documented schema before deploys"
+    expected: [contract-testing, testing, ci-cd]
+    not_expected: [svg-animation, design-philosophy, pinecone]
+
+  # ── Git Workflow ──
+  - id: ret-031
+    task: "Set up a branching strategy for a 4-person team with feature branches, PR reviews, and release flow"
+    expected: [git-workflow, ci-cd]
+    not_expected: [react-native, stripe-billing, pinecone]
+
+  # ── Debugging/Incident ──
+  - id: ret-032
+    task: "Debug why authenticated API requests intermittently return 401 in production"
+    expected: [debug, observability, auth]
+    not_expected: [svg-animation, design-craft, shopify-remix]
+
+  - id: ret-033
+    task: "Write an incident response runbook for database failover with rollback procedures"
+    expected: [incident-response, observability, database-migrations]
+    not_expected: [design-philosophy, local-seo, react-native]
+
+  # ── Security Testing ──
+  - id: ret-034
+    task: "Run adversarial security tests against the running app to find auth bypasses and injection vulnerabilities"
+    expected: [red-team, security]
+    not_expected: [vitepress, design-system, turborepo]
+
+  # ── Caching ──
+  - id: ret-035
+    task: "Add Redis caching to the product catalog API with cache invalidation on updates"
+    expected: [redis-caching]
+    not_expected: [react-native, wordpress-plugin, svg-animation]
+
+  # ── SEO Operations ──
+  - id: ret-036
+    task: "Set up an autonomous SEO monitoring agent that tracks rankings and generates content briefs"
+    expected: [seo-agent-playbook, seo-foundations]
+    not_expected: [drizzle-orm, testing, payments]
+
+  - id: ret-037
+    task: "Integrate DataForSEO and Google Search Console APIs to build an SEO dashboard"
+    expected: [seo-integrations, seo-foundations]
+    not_expected: [auth, stripe-billing, react-native]
+
+  # ── Agent/Eval Meta ──
+  - id: ret-038
+    task: "Design an evaluation framework to measure agent quality with rubrics, test sets, and LLM-as-judge"
+    expected: [evaluation, context-engineering]
+    not_expected: [shopify-remix, wordpress-plugin, cloudflare-dns]
+
+  - id: ret-039
+    task: "Architect a multi-agent system where a coordinator spawns specialized subagents for parallel work"
+    expected: [multi-agent-coordination, context-engineering, evaluation]
+    not_expected: [local-seo, stripe-billing, woocommerce]
+
+  # ── Routing Meta-Skills ──
+  - id: ret-040
+    task: "Figure out which design skills to load for building a new SaaS product dashboard from scratch"
+    expected: [design-routing, design-philosophy, visual-design, ui-patterns]
+    not_expected: [seo-foundations, drizzle-orm, payments]
+
+  - id: ret-041
+    task: "Determine the right SEO skill stack for a local plumber's website"
+    expected: [seo-routing, local-seo, seo-foundations]
+    not_expected: [react-native, stripe-billing, ai-integration]
+
+  # ── Orchestration ──
+  - id: ret-042
+    task: "Run a multi-perspective deliberation to decide between PostgreSQL and MongoDB for the project"
+    expected: [council]
+    not_expected: [svg-animation, shopify-remix, local-seo]

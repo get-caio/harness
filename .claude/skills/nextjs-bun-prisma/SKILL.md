@@ -1,16 +1,20 @@
+---
+description: "Project scaffold and file-layout conventions for Next.js App Router + Bun + Prisma: folder structure, server action patterns, Prisma client singleton, tRPC setup, and environment validation. Use for initial project setup or when adding new feature areas — not for specific optimizations or migrations."
+---
+
 # Next.js + Bun + Prisma Skill
 
 Standard stack conventions for CAIO incubator projects.
 
 ## Stack Overview
 
-| Component | Technology | Version |
-|-----------|------------|---------|
-| Framework | Next.js | 14.x (App Router) |
-| Runtime | Bun | Latest |
-| ORM | Prisma | 5.x |
-| Database | PostgreSQL | Via Supabase |
-| Styling | Tailwind CSS + shadcn/ui | Latest |
+| Component | Technology               | Version           |
+| --------- | ------------------------ | ----------------- |
+| Framework | Next.js                  | 14.x (App Router) |
+| Runtime   | Bun                      | Latest            |
+| ORM       | Prisma                   | 5.x               |
+| Database  | PostgreSQL               | Via Supabase      |
+| Styling   | Tailwind CSS + shadcn/ui | Latest            |
 
 ## Project Structure
 
@@ -60,12 +64,12 @@ import { auth } from '@/lib/auth'
 export default async function PlansPage() {
   const session = await auth()
   if (!session?.user) redirect('/login')
-  
+
   const plans = await db.trainingPlan.findMany({
     where: { userId: session.user.id },
     orderBy: { createdAt: 'desc' },
   })
-  
+
   return <PlanList plans={plans} />
 }
 ```
@@ -74,32 +78,32 @@ export default async function PlansPage() {
 
 ```typescript
 // actions/plans.ts
-'use server'
+"use server";
 
-import { db } from '@/lib/db'
-import { auth } from '@/lib/auth'
-import { revalidatePath } from 'next/cache'
-import { planSchema } from '@/lib/validations/plan'
+import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
+import { planSchema } from "@/lib/validations/plan";
 
 export async function createPlan(formData: FormData) {
-  const session = await auth()
-  if (!session?.user) throw new Error('Unauthorized')
-  
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
   const validated = planSchema.parse({
-    name: formData.get('name'),
-    goal: formData.get('goal'),
-    weeks: Number(formData.get('weeks')),
-  })
-  
+    name: formData.get("name"),
+    goal: formData.get("goal"),
+    weeks: Number(formData.get("weeks")),
+  });
+
   const plan = await db.trainingPlan.create({
     data: {
       ...validated,
       userId: session.user.id,
     },
-  })
-  
-  revalidatePath('/plans')
-  return plan
+  });
+
+  revalidatePath("/plans");
+  return plan;
 }
 ```
 
@@ -107,33 +111,33 @@ export async function createPlan(formData: FormData) {
 
 ```typescript
 // app/api/webhooks/stripe/route.ts
-import { headers } from 'next/headers'
-import { stripe } from '@/lib/stripe'
-import { db } from '@/lib/db'
+import { headers } from "next/headers";
+import { stripe } from "@/lib/stripe";
+import { db } from "@/lib/db";
 
 export async function POST(req: Request) {
-  const body = await req.text()
-  const signature = headers().get('stripe-signature')!
-  
-  let event
+  const body = await req.text();
+  const signature = headers().get("stripe-signature")!;
+
+  let event;
   try {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    )
+      process.env.STRIPE_WEBHOOK_SECRET!,
+    );
   } catch (err) {
-    return new Response('Webhook error', { status: 400 })
+    return new Response("Webhook error", { status: 400 });
   }
-  
+
   switch (event.type) {
-    case 'checkout.session.completed':
+    case "checkout.session.completed":
       // Handle successful payment
-      break
+      break;
     // ... other events
   }
-  
-  return new Response('OK', { status: 200 })
+
+  return new Response("OK", { status: 200 });
 }
 ```
 
@@ -143,17 +147,20 @@ export async function POST(req: Request) {
 
 ```typescript
 // lib/db.ts
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-export const db = globalForPrisma.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === 'development' 
-    ? ['query', 'error', 'warn'] 
-    : ['error'],
-})
+export const db =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log:
+      process.env.NODE_ENV === "development"
+        ? ["query", "error", "warn"]
+        : ["error"],
+  });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
 ```
 
 ### Transactions
@@ -161,16 +168,16 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
 ```typescript
 // For multi-step operations
 const result = await db.$transaction(async (tx) => {
-  const plan = await tx.trainingPlan.create({ data: planData })
-  
+  const plan = await tx.trainingPlan.create({ data: planData });
+
   const weeks = await Promise.all(
-    weekData.map(week => 
-      tx.week.create({ data: { ...week, planId: plan.id } })
-    )
-  )
-  
-  return { plan, weeks }
-})
+    weekData.map((week) =>
+      tx.week.create({ data: { ...week, planId: plan.id } }),
+    ),
+  );
+
+  return { plan, weeks };
+});
 ```
 
 ### Query Patterns
@@ -182,21 +189,21 @@ const plans = await db.trainingPlan.findMany({
   include: {
     weeks: {
       include: { workouts: true },
-      orderBy: { number: 'asc' },
+      orderBy: { number: "asc" },
     },
   },
-})
+});
 
 // Pagination
 const plans = await db.trainingPlan.findMany({
   where: { userId },
   take: 10,
   skip: (page - 1) * 10,
-  orderBy: { createdAt: 'desc' },
-})
+  orderBy: { createdAt: "desc" },
+});
 
 // Count for pagination
-const total = await db.trainingPlan.count({ where: { userId } })
+const total = await db.trainingPlan.count({ where: { userId } });
 ```
 
 ## Component Patterns
@@ -227,7 +234,7 @@ import { Button } from '@/components/ui/button'
 
 export function PlanActions({ planId }: { planId: string }) {
   const [isPending, startTransition] = useTransition()
-  
+
   return (
     <Button
       variant="destructive"
@@ -275,10 +282,10 @@ export function CreatePlanForm() {
 
 ```typescript
 // lib/auth.ts
-import NextAuth from 'next-auth'
-import { PrismaAdapter } from '@auth/prisma-adapter'
-import { db } from '@/lib/db'
-import Google from 'next-auth/providers/google'
+import NextAuth from "next-auth";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import { db } from "@/lib/db";
+import Google from "next-auth/providers/google";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(db),
@@ -294,23 +301,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       user: { ...session.user, id: user.id },
     }),
   },
-})
+});
 ```
 
 ## Validation Pattern
 
 ```typescript
 // lib/validations/plan.ts
-import { z } from 'zod'
+import { z } from "zod";
 
 export const planSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  goal: z.enum(['marathon', '5k', '10k', 'half_marathon', 'general']),
+  name: z.string().min(1, "Name is required").max(100),
+  goal: z.enum(["marathon", "5k", "10k", "half_marathon", "general"]),
   weeks: z.number().min(1).max(52),
   hoursPerWeek: z.number().min(1).max(40).optional(),
-})
+});
 
-export type PlanInput = z.infer<typeof planSchema>
+export type PlanInput = z.infer<typeof planSchema>;
 ```
 
 ## Error Handling Pattern
@@ -321,34 +328,34 @@ export class AppError extends Error {
   constructor(
     message: string,
     public code: string,
-    public status: number = 400
+    public status: number = 400,
   ) {
-    super(message)
+    super(message);
   }
 }
 
 export class UnauthorizedError extends AppError {
-  constructor(message = 'Unauthorized') {
-    super(message, 'UNAUTHORIZED', 401)
+  constructor(message = "Unauthorized") {
+    super(message, "UNAUTHORIZED", 401);
   }
 }
 
 export class NotFoundError extends AppError {
-  constructor(message = 'Not found') {
-    super(message, 'NOT_FOUND', 404)
+  constructor(message = "Not found") {
+    super(message, "NOT_FOUND", 404);
   }
 }
 
 // Usage in server actions
 export async function getPlan(id: string) {
-  const session = await auth()
-  if (!session?.user) throw new UnauthorizedError()
-  
-  const plan = await db.trainingPlan.findUnique({ where: { id } })
-  if (!plan) throw new NotFoundError('Plan not found')
-  if (plan.userId !== session.user.id) throw new UnauthorizedError()
-  
-  return plan
+  const session = await auth();
+  if (!session?.user) throw new UnauthorizedError();
+
+  const plan = await db.trainingPlan.findUnique({ where: { id } });
+  if (!plan) throw new NotFoundError("Plan not found");
+  if (plan.userId !== session.user.id) throw new UnauthorizedError();
+
+  return plan;
 }
 ```
 

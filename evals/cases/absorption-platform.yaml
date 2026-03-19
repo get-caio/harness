@@ -1,0 +1,720 @@
+cases:
+  # ── Platform / Deployment ─────────────────────────────────────────────────
+
+  - id: abs-rn-001
+    skill: react-native
+    task: >
+      Build a React Native screen that displays a list of workout sessions
+      fetched from an API. The list should handle offline gracefully by queuing
+      failed syncs, support push notifications to remind users of upcoming
+      sessions, and use secure token storage for authentication.
+    assertions:
+      - pattern: "AsyncStorage|SecureStore"
+        expect: present
+        description: Uses Expo secure/async storage, not in-memory state
+      - pattern: "NetInfo|offlineQueue|QueuedAction"
+        expect: present
+        description: Implements offline queue with network state listener
+      - pattern: "expo-notifications|Notifications\\.getExpoPushToken|requestPermissionsAsync"
+        expect: present
+        description: Uses expo-notifications for push notification registration
+      - pattern: "StyleSheet\\.create"
+        expect: present
+        description: Uses StyleSheet.create instead of inline objects or Tailwind
+      - pattern: "FlashList|estimatedItemSize"
+        expect: present
+        description: Uses FlashList for performant large list rendering
+
+  - id: abs-rn-002
+    skill: react-native
+    task: >
+      Create an authentication flow for a React Native app using Expo Router.
+      Users should be redirected to sign-in when unauthenticated and to the
+      main tab layout when authenticated. Auth tokens must be stored securely.
+    assertions:
+      - pattern: "expo-secure-store|SecureStore\\.setItemAsync|SecureStore\\.getItemAsync"
+        expect: present
+        description: Stores auth tokens in expo-secure-store, not AsyncStorage
+      - pattern: "useSegments|useRouter"
+        expect: present
+        description: Uses Expo Router hooks for programmatic navigation
+      - pattern: "\\(auth\\)|\\(tabs\\)"
+        expect: present
+        description: Uses Expo Router route group conventions for auth/tab separation
+      - pattern: "AuthProvider|AuthContext|createContext"
+        expect: present
+        description: Wraps app in an auth context provider
+      - pattern: "className=|tailwind"
+        expect: absent
+        description: Does not use Tailwind/className syntax in React Native
+
+  - id: abs-shopify-001
+    skill: shopify-remix
+    task: >
+      Build a Shopify app that syncs a merchant's product catalog to an
+      external database and handles order webhooks to record attribution.
+      The app should use Shopify OAuth via the Remix template.
+    assertions:
+      - pattern: "authenticate\\.admin|authenticate\\.webhook"
+        expect: present
+        description: Uses Shopify Remix authenticate helpers instead of custom OAuth
+      - pattern: "admin\\.graphql|PRODUCTS_QUERY|pageInfo.*hasNextPage|endCursor"
+        expect: present
+        description: Uses cursor-based GraphQL pagination for product sync
+      - pattern: "shopifyApp\\s*\\(|@shopify/shopify-app-remix"
+        expect: present
+        description: Uses official Shopify Remix app package for configuration
+      - pattern: "note_attributes|sidedRef|recordAttribution|webhook"
+        expect: present
+        description: Handles order webhook for attribution tracking
+      - pattern: "SHOPIFY_API_KEY|SHOPIFY_API_SECRET|scopes"
+        expect: present
+        description: Configures API keys and scopes through shopifyApp config
+
+  - id: abs-shopify-002
+    skill: shopify-remix
+    task: >
+      Implement a ScriptTag injection for a Shopify app that embeds a
+      JavaScript file into all merchant store pages using the Admin GraphQL API.
+    assertions:
+      - pattern: "scriptTagCreate|ScriptTagInput|displayScope"
+        expect: present
+        description: Uses scriptTagCreate GraphQL mutation for script injection
+      - pattern: "admin\\.graphql"
+        expect: present
+        description: Uses admin.graphql client from Shopify Remix
+      - pattern: "afterAuth|register_hooks|register.*webhook"
+        expect: present
+        description: Registers scripts/webhooks programmatically via afterAuth hook
+      - pattern: "read_products|write_script_tags|scopes"
+        expect: present
+        description: Declares required OAuth scopes for script tag access
+      - pattern: "curl\\s|fetch\\(|axios"
+        expect: absent
+        description: Does not use raw HTTP calls for Shopify Admin API
+
+  - id: abs-wp-001
+    skill: wordpress-plugin
+    task: >
+      Write a WordPress plugin admin settings page that allows administrators
+      to save an API key and a property ID. The form must be secured against
+      CSRF and the inputs must be sanitized before storage.
+    assertions:
+      - pattern: "wp_verify_nonce|wp_nonce_field|wp_die.*Security"
+        expect: present
+        description: Verifies nonce on form submission and dies on failure
+      - pattern: "current_user_can\\s*\\(\\s*['\"]manage_options"
+        expect: present
+        description: Checks manage_options capability before saving settings
+      - pattern: "sanitize_text_field"
+        expect: present
+        description: Sanitizes all user input with appropriate WP function
+      - pattern: "update_option|get_option"
+        expect: present
+        description: Uses WP options API for settings persistence
+      - pattern: "\\$_POST\\s*\\[(?!.*\\$_POST\\s*\\[.*sanitize)"
+        expect: absent
+        description: Does not use raw $_POST values without sanitization
+
+  - id: abs-wp-002
+    skill: wordpress-plugin
+    task: >
+      Register a custom WP REST API endpoint for a WordPress plugin that
+      returns plugin settings. The endpoint should only be accessible to
+      administrators and validate/sanitize any input arguments.
+    assertions:
+      - pattern: "register_rest_route|rest_api_init"
+        expect: present
+        description: Registers route using WP REST API convention
+      - pattern: "permission_callback.*current_user_can|current_user_can.*manage_options"
+        expect: present
+        description: Uses permission_callback to restrict access to admins
+      - pattern: "sanitize_callback|sanitize_text_field"
+        expect: present
+        description: Declares sanitize_callback on route args
+      - pattern: "defined\\s*\\(\\s*['\"]ABSPATH|ABSPATH.*exit"
+        expect: present
+        description: Guards file with ABSPATH check to prevent direct access
+      - pattern: "wp_remote_get|wp_remote_post"
+        expect: present
+        description: Uses wp_remote_* for outbound HTTP rather than curl
+
+  - id: abs-wc-001
+    skill: woocommerce
+    task: >
+      Write a WooCommerce plugin that syncs the store's published product
+      catalog to an external API on a scheduled basis and hooks into order
+      completion to send attribution data.
+    assertions:
+      - pattern: "woocommerce_order_status_completed|wc_get_order"
+        expect: present
+        description: Uses WooCommerce order status hook for attribution tracking
+      - pattern: "wp_remote_post|wp_remote_get"
+        expect: present
+        description: Uses WordPress HTTP API instead of curl
+      - pattern: "wp_schedule_event|wp_next_scheduled|register_activation_hook"
+        expect: present
+        description: Registers WP-Cron for scheduled product sync
+      - pattern: "wc_get_products|get_price|get_permalink|is_in_stock"
+        expect: present
+        description: Uses WC product API methods to read product data
+      - pattern: "class_exists\\s*\\(\\s*['\"]WooCommerce"
+        expect: present
+        description: Checks WooCommerce is active before using wc_* functions
+
+  - id: abs-wc-002
+    skill: woocommerce
+    task: >
+      Implement attribution tracking in a WooCommerce plugin. When a customer
+      completes a checkout, capture a referral cookie into order meta, and on
+      order completion fire a webhook to an external attribution API.
+    assertions:
+      - pattern: "woocommerce_checkout_update_order_meta|update_post_meta.*_myapp_ref|update_post_meta.*_ref"
+        expect: present
+        description: Captures attribution cookie into order meta at checkout
+      - pattern: "sanitize_text_field\\s*\\(\\s*\\$_COOKIE"
+        expect: present
+        description: Sanitizes cookie value before storing in order meta
+      - pattern: "get_meta\\s*\\(\\s*['\"]_|order->get_meta"
+        expect: present
+        description: Reads attribution from order meta, not from cookie in order hook
+      - pattern: "wp_json_encode"
+        expect: present
+        description: Uses wp_json_encode instead of json_encode
+      - pattern: "woocommerce_order_refunded|orders.*refund|reverse.*attribution"
+        expect: present
+        description: Handles refund event to reverse attributions
+
+  - id: abs-cf-001
+    skill: cloudflare-dns
+    task: >
+      Write a function that verifies a customer's custom domain CNAME
+      configuration, and a Cloudflare Worker that splits traffic between an
+      old and a new API origin based on an environment variable percentage.
+    assertions:
+      - pattern: "dns\\.resolve|CNAME|endsWith.*expectedTarget"
+        expect: present
+        description: Verifies CNAME by programmatic DNS resolution
+      - pattern: "TRAFFIC_SPLIT_PCT|Math\\.random|NEW_API_ORIGIN|OLD_API_ORIGIN"
+        expect: present
+        description: Implements traffic splitting with percentage env variable
+      - pattern: "X-Backend|new.*legacy|useNew"
+        expect: present
+        description: Sets debug header to identify which backend served the request
+      - pattern: "domainVerified|customDomain|addCustomDomain"
+        expect: present
+        description: Updates domain verification state in database after DNS check
+      - pattern: "orange.*cloud|DNS.*only|proxy.*false|proxied.*false"
+        expect: present
+        description: Notes proxy mode implications for Heroku/custom domain SSL
+
+  - id: abs-cf-002
+    skill: cloudflare-dns
+    task: >
+      Configure DNS records for a SaaS application with marketing site,
+      admin panel, API, and docs subdomain. Document the correct proxy settings
+      and SSL configuration for each record type.
+    assertions:
+      - pattern: "CNAME|A.*record|subdomain"
+        expect: present
+        description: Defines A/CNAME records for application subdomains
+      - pattern: "Full.*Strict|SSL.*strict|TLS.*1\\.2"
+        expect: present
+        description: Specifies Full (Strict) SSL mode and minimum TLS version
+      - pattern: "orange.*cloud|gray.*cloud|DNS.*only|proxied"
+        expect: present
+        description: Differentiates between proxied and DNS-only records
+      - pattern: "TTL.*60|low.*TTL.*migrat|60s.*migration"
+        expect: present
+        description: Recommends short TTL during migrations for fast rollback
+      - pattern: "Cache.*Bypass|api.*bypass|no.*cache.*api"
+        expect: present
+        description: Configures cache bypass for API endpoints
+
+  - id: abs-heroku-001
+    skill: heroku-deploy
+    task: >
+      Write a Procfile, server entrypoint, and health check route for a
+      Bun + Hono API deployed to Heroku, including a release phase for
+      database migrations and a readiness probe that checks the database.
+    assertions:
+      - pattern: "web:\\s*bun|worker:\\s*bun|release:\\s*bun.*migrat"
+        expect: present
+        description: Procfile has web, worker, and release phases
+      - pattern: "process\\.env\\.PORT|parseInt.*PORT"
+        expect: present
+        description: Binds server to dynamic PORT from environment
+      - pattern: "/health|/ready|SELECT 1"
+        expect: present
+        description: Implements health and readiness endpoints with DB check
+      - pattern: "503|db.*error|not.*ready"
+        expect: present
+        description: Returns 503 on readiness check when database is unreachable
+      - pattern: "NODE_ENV.*production|heroku config:set"
+        expect: present
+        description: Sets NODE_ENV and other required config vars
+
+  - id: abs-heroku-002
+    skill: heroku-deploy
+    task: >
+      Set up a Heroku pipeline with staging and production stages, configure
+      the Redis addon, and document the correct database connection pooling
+      settings for a Bun app on Heroku standard dynos.
+    assertions:
+      - pattern: "heroku pipelines|staging|production.*manual.*promote"
+        expect: present
+        description: Creates pipeline with staging auto-deploy and manual production promote
+      - pattern: "heroku addons:create heroku-redis|REDIS_URL"
+        expect: present
+        description: Adds Redis via Heroku addon rather than external URL
+      - pattern: "connectionLimit|waitForConnections|pool"
+        expect: present
+        description: Configures connection pooling for database client
+      - pattern: "heroku buildpacks:set.*bun|heroku-buildpack-bun"
+        expect: present
+        description: Sets Bun buildpack explicitly
+      - pattern: "review.*app|ephemeral|PR.*app"
+        expect: present
+        description: Enables review apps for pull request environments
+
+  - id: abs-vp-001
+    skill: vitepress
+    task: >
+      Set up a VitePress documentation site for a tRPC API project. Create
+      the sidebar configuration, a landing page with hero layout, and an
+      architecture overview page that includes a Mermaid diagram.
+    assertions:
+      - pattern: "defineConfig|themeConfig.*sidebar|themeConfig.*nav"
+        expect: present
+        description: Uses VitePress defineConfig with sidebar and nav configuration
+      - pattern: "layout:\\s*home|hero:|features:"
+        expect: present
+        description: Uses VitePress home layout with hero and features frontmatter
+      - pattern: "```mermaid|graph TD|graph LR|sequenceDiagram"
+        expect: present
+        description: Includes Mermaid diagram in architecture documentation
+      - pattern: "title:|description:|frontmatter"
+        expect: present
+        description: Every doc page includes frontmatter with title and description
+      - pattern: ":::.*tip|:::.*warning|:::.*danger|:::.*info"
+        expect: present
+        description: Uses VitePress custom containers for callouts
+
+  - id: abs-vp-002
+    skill: vitepress
+    task: >
+      Write an API reference page for a REST API using VitePress conventions,
+      including a table of all endpoints with method, auth, and description
+      columns, plus language-specific code blocks with filenames.
+    assertions:
+      - pattern: "\\[.*\\.ts\\]|\\[.*\\.tsx\\]|\\[src/"
+        expect: present
+        description: Code blocks include filename annotations in brackets
+      - pattern: "\\|.*Method.*\\|.*Auth|\\|.*GET\\|\\|.*POST\\|"
+        expect: present
+        description: Uses markdown table for endpoint listing with columns
+      - pattern: "##\\s+|###\\s+"
+        expect: present
+        description: Uses heading hierarchy for major sections and subsections
+      - pattern: "bun run docs:dev|bun run docs:build|docs:preview"
+        expect: present
+        description: References VitePress dev/build commands
+      - pattern: "architecture/|guide/|api/|components/"
+        expect: present
+        description: Organizes docs into correct directory categories
+
+  # ── Frontend / Design ─────────────────────────────────────────────────────
+
+  - id: abs-uip-001
+    skill: ui-patterns
+    task: >
+      Build a data table component for a CRM contacts list with sortable
+      columns, bulk selection, inline loading skeletons, and an empty state
+      for when no contacts match the current filters.
+    assertions:
+      - pattern: "Skeleton|skeleton|shimmer"
+        expect: present
+        description: Uses skeleton screens instead of spinners for table loading
+      - pattern: "sticky|stickyHeader|position.*sticky"
+        expect: present
+        description: Implements sticky header on scroll
+      - pattern: "checkbox|bulk.*action|select.*all"
+        expect: present
+        description: Provides checkbox column for bulk operations
+      - pattern: "No.*match|No.*filter|adjust.*filter|clear.*filter"
+        expect: present
+        description: Empty state explains why list is empty and offers filter action
+      - pattern: "sort|sortable|sortDirection|aria-sort"
+        expect: present
+        description: Columns are sortable with visual sort indicator
+
+  - id: abs-uip-002
+    skill: ui-patterns
+    task: >
+      Create a multi-step onboarding flow for a new SaaS user. The flow
+      should collect role and use case, pre-fill demo data, show progress,
+      allow skipping non-essential steps, and allow returning to the flow later.
+    assertions:
+      - pattern: "step.*indicator|current.*step|totalSteps|StepIndicator"
+        expect: present
+        description: Shows total steps and current position in the flow
+      - pattern: "skip|optional|non-essential"
+        expect: present
+        description: Allows skipping non-essential steps
+      - pattern: "demo.*data|sample.*data|pre.*load|preload"
+        expect: present
+        description: Pre-loads demo or sample data instead of showing empty state
+      - pattern: "role|persona|intent|use.*case|personali"
+        expect: present
+        description: Asks for role/intent to personalize the onboarding flow
+      - pattern: "signup.*field|email.*password|3.*field|minimal.*field"
+        expect: present
+        description: Limits signup fields to essentials (3 or fewer)
+
+  - id: abs-uip-003
+    skill: ui-patterns
+    task: >
+      Implement a settings form with inline validation, proper error message
+      placement, a Danger Zone section for destructive actions, and an undo
+      toast for destructive operations instead of a confirmation dialog.
+    assertions:
+      - pattern: "onBlur|blur.*validat|validat.*blur"
+        expect: present
+        description: Validates on blur, not on every keystroke
+      - pattern: "aria-describedby|aria-invalid|role.*alert"
+        expect: present
+        description: Associates error messages with form fields via ARIA
+      - pattern: "Danger Zone|danger.*zone|destructive.*section"
+        expect: present
+        description: Groups destructive settings in a separate Danger Zone section
+      - pattern: "toast.*undo|undo.*toast|soft.*delete|setTimeout.*delete"
+        expect: present
+        description: Uses undo toast pattern instead of confirmation dialog
+      - pattern: "\\\"Email is already|specific.*error|plain.*language"
+        expect: present
+        description: Error messages are specific and actionable, not generic codes
+
+  - id: abs-vd-001
+    skill: visual-design
+    task: >
+      Create a typography system for a SaaS dashboard. Define a type scale,
+      specify appropriate line heights for each level, set up tabular figures
+      for numerical data columns, and document font pairing rules.
+    assertions:
+      - pattern: "1\\.333|1\\.25|1\\.618|Perfect Fourth|Major Third|Golden Ratio"
+        expect: present
+        description: Uses a named mathematical scale ratio for type sizes
+      - pattern: "line.*height.*1\\.[1-3]|lineHeight.*1\\.[1-3]|heading.*1\\.[12]"
+        expect: present
+        description: Sets tighter line height for headings (1.1-1.3x)
+      - pattern: "font-feature-settings.*tnum|tnum|tabular.*figures|tabular.*num"
+        expect: present
+        description: Enables tabular figures for numerical data alignment
+      - pattern: "Inter|Geist|Satoshi|Neue Montreal"
+        expect: present
+        description: Selects a named screen-optimized sans-serif from the reference list
+      - pattern: "5.*size|6.*size|7.*size|caption.*body.*heading|size.*scale"
+        expect: present
+        description: Limits scale to 5-7 sizes maximum
+
+  - id: abs-vd-002
+    skill: visual-design
+    task: >
+      Define a color palette for a fintech SaaS product including primary,
+      neutral, and semantic colors. Specify contrast ratios, document dark
+      mode surface elevation, and explain why pure grays should be avoided.
+    assertions:
+      - pattern: "OKHsl|OKLab|LCH|perceptually uniform|Radix"
+        expect: present
+        description: Builds palette in perceptually uniform color space
+      - pattern: "4\\.5.*:.*1|3.*:.*1|WCAG.*AA|contrast.*ratio"
+        expect: present
+        description: Documents WCAG AA contrast ratios for text and UI components
+      - pattern: "warm.*tint|cool.*tint|tinted.*gray|never.*pure.*gray"
+        expect: present
+        description: Specifies warm or cool tint for neutrals, rejects pure gray
+      - pattern: "surface.*lighter|elevation.*light|dark.*surface.*level"
+        expect: present
+        description: Documents dark mode elevation via surface lightness, not shadows
+      - pattern: "60.*30.*10|accent.*10%|accent.*sparingly|dominant.*secondary.*accent"
+        expect: present
+        description: Applies 60-30-10 color proportion rule
+
+  - id: abs-dc-001
+    skill: design-craft
+    task: >
+      Build an empty state component for a project management tool's task
+      list. The component should be context-aware (first-time user vs. no
+      search results vs. all tasks completed), include an illustration area,
+      and provide a specific CTA for each context.
+    assertions:
+      - pattern: "firstTime|emptySearch|allComplete|variant|context"
+        expect: present
+        description: Handles multiple empty state contexts with distinct messaging
+      - pattern: "IllustrationEmpty|illustration|svg|img.*empty"
+        expect: present
+        description: Includes an illustration area for visual personality
+      - pattern: "Create.*first|Add.*task|Clear.*filter|adjust.*search"
+        expect: present
+        description: Provides specific, contextual CTA instead of generic "Get started"
+      - pattern: "No.*items.*yet|Nothing.*here|blank"
+        expect: absent
+        description: Does not use generic "nothing here" copy as the primary message
+      - pattern: "Level [34]|actionable|delightful|inviting"
+        expect: present
+        description: Aims for Level 3+ empty state quality (actionable or delightful)
+
+  - id: abs-dc-002
+    skill: design-craft
+    task: >
+      Implement loading states for an AI analysis feature. The loading UI
+      should use skeleton screens, communicate what's happening, provide a
+      time estimate, and handle the dark mode surface elevation model correctly.
+    assertions:
+      - pattern: "Skeleton|skeleton.*h-|skeleton.*w-"
+        expect: present
+        description: Uses skeleton screens that match content shape, not spinners
+      - pattern: "Analyzing|Processing|Working|status.*message|loading.*context"
+        expect: present
+        description: Communicates what's happening during the loading state
+      - pattern: "seconds|usually.*takes|estimate|approximately"
+        expect: present
+        description: Sets time expectation for the user
+      - pattern: "surface[1-4]|#1a|#22|#2a|elevation.*dark|dark.*surface"
+        expect: present
+        description: Uses elevation-based surface colors for dark mode, not shadows
+      - pattern: "0\\.87|rgba.*255.*0\\.87|text.*opacity|high.*emphasis"
+        expect: present
+        description: Uses opacity-based white text hierarchy for dark mode
+
+  - id: abs-dc-003
+    skill: design-craft
+    task: >
+      Add celebration and success micro-interactions to a goal-tracking app.
+      Include confetti for milestone completions, a subtle checkmark animation
+      for routine saves, and calibrate the celebration to the achievement size.
+    assertions:
+      - pattern: "canvas-confetti|confetti\\(|particleCount"
+        expect: present
+        description: Uses canvas-confetti for major milestone celebrations
+      - pattern: "scale.*spring|bounce.*0\\.|spring.*bounce|motion.*spring"
+        expect: present
+        description: Uses spring physics for success badge animation
+      - pattern: "milestone|goal.*complete|first.*sale|onboarding.*done"
+        expect: present
+        description: Reserves confetti for genuine milestones, not routine saves
+      - pattern: "Saved|checkmark|✓|success.*badge|routine"
+        expect: present
+        description: Uses subtle checkmark/badge for routine save confirmations
+      - pattern: "prefersReducedMotion|useReducedMotion|prefers-reduced-motion"
+        expect: present
+        description: Respects reduced motion preference for all animations
+
+  - id: abs-ds-001
+    skill: design-system
+    task: >
+      Define a three-tier token architecture for a SaaS design system.
+      Create global, semantic, and component tokens for a Button component,
+      and document when to create a new token versus using an existing one.
+    assertions:
+      - pattern: "global.*token|tier.*1|raw.*value|color-blue-500|space-4"
+        expect: present
+        description: Defines Tier 1 global tokens with raw values
+      - pattern: "semantic.*token|tier.*2|color-primary|space-component"
+        expect: present
+        description: Defines Tier 2 semantic tokens that reference global tokens
+      - pattern: "component.*token|tier.*3|button-padding|button-radius"
+        expect: present
+        description: Defines Tier 3 component tokens that reference semantic tokens
+      - pattern: "3.*times|three.*times|appears.*multiple|appears.*3"
+        expect: present
+        description: Documents the 3-occurrence rule for extracting to semantic token
+      - pattern: "magic.*number|no.*hardcode|trace.*to.*scale"
+        expect: present
+        description: Explains no magic numbers outside the token scale
+
+  - id: abs-ds-002
+    skill: design-system
+    task: >
+      Build a Button component for a design system with variant and size
+      props, support for both controlled and uncontrolled loading state,
+      and all six interactive states properly implemented.
+    assertions:
+      - pattern: "variant.*primary|variant.*secondary|variant.*ghost|variant.*destructive"
+        expect: present
+        description: Exposes finite variant prop with named visual treatments
+      - pattern: "size.*sm|size.*md|size.*lg|size.*xs"
+        expect: present
+        description: Exposes size prop affecting padding, font, and icon proportionally
+      - pattern: "hover:|focus:|active:|disabled:|loading"
+        expect: present
+        description: Implements all six button states explicitly
+      - pattern: "scale.*0\\.9[5-9]|active.*scale|pressed.*scale"
+        expect: present
+        description: Active/pressed state scales down to simulate physical press
+      - pattern: "cursor.*not-allowed|opacity.*0\\.5|disabled.*muted"
+        expect: present
+        description: Disabled state uses reduced opacity with not-allowed cursor
+
+  - id: abs-im-001
+    skill: interaction-motion
+    task: >
+      Implement animated transitions for a modal dialog system. The modal
+      should scale in from 0.95, use spring physics, handle enter/exit with
+      AnimatePresence, and fall back gracefully for reduced-motion users.
+    assertions:
+      - pattern: "AnimatePresence|framer.*motion|motion\\."
+        expect: present
+        description: Uses Framer Motion AnimatePresence for enter/exit animations
+      - pattern: "scale.*0\\.95|initial.*scale.*0\\.9|scaleFrom"
+        expect: present
+        description: Modal scales from 0.95 on enter for depth effect
+      - pattern: "type.*spring|stiffness|damping"
+        expect: present
+        description: Uses spring physics for modal transition
+      - pattern: "prefers-reduced-motion|useReducedMotion|no-preference"
+        expect: present
+        description: Respects reduced motion preference
+      - pattern: "200|250|300.*ease.*out|ease-out"
+        expect: present
+        description: Uses appropriate 200-300ms duration for modal transitions
+
+  - id: abs-im-002
+    skill: interaction-motion
+    task: >
+      Build an optimistic UI for a todo list where items can be added and
+      deleted. Deletions should use an undo toast pattern with a 5-second
+      window. Use staggered entrance animations for list items.
+    assertions:
+      - pattern: "isPending|optimistic|setItems.*immediately|show.*immediately"
+        expect: present
+        description: Shows optimistic result immediately before server confirmation
+      - pattern: "toast.*undo|undo.*toast|setTimeout.*delete|soft.*delete"
+        expect: present
+        description: Implements undo toast with time window before hard delete
+      - pattern: "5.*second|5000|8.*second|8000|undo.*window"
+        expect: present
+        description: Undo window is 5-8 seconds before permanent deletion
+      - pattern: "stagger|delay.*index|transition-delay|staggerChildren"
+        expect: present
+        description: List items use staggered entrance animation
+      - pattern: "revert|rollback|filter.*id.*action|restore.*on.*error"
+        expect: present
+        description: Reverts optimistic update on server error
+
+  - id: abs-im-003
+    skill: interaction-motion
+    task: >
+      Add hover and micro-interaction states to a card component used in a
+      data dashboard. Cards should lift on hover, chart bars should animate
+      in on mount, and all animations should be no-motion-first.
+    assertions:
+      - pattern: "prefers-reduced-motion.*no-preference|no-motion-first|@media.*no-preference"
+        expect: present
+        description: Uses no-motion-first approach (animate only when no-preference)
+      - pattern: "translateY.*-2px|translateY\\(-2|hover.*shadow|hover.*lift"
+        expect: present
+        description: Cards lift slightly on hover with shadow increase
+      - pattern: "ease-out|cubic-bezier.*0\\.0.*0\\.2.*1|deceleration"
+        expect: present
+        description: Hover enter uses ease-out (deceleration) easing
+      - pattern: "500.*800.*ms|dur.*500|bar.*animate|chart.*transition"
+        expect: present
+        description: Chart bars animate in at 500-800ms ease-out on mount
+      - pattern: "150.*200.*ms|200ms|transition.*150|hover.*150"
+        expect: present
+        description: Card hover transitions use 150-200ms, not longer
+
+  - id: abs-svg-001
+    skill: svg-animation
+    task: >
+      Create an SVG background animation for a slide about data flowing
+      through a pipeline. Use SMIL animations with traveling particles along
+      paths, pulsing nodes at endpoints, and dashed flowing lines for
+      connections. Ensure the animation is conceptually driven, not decorative.
+    assertions:
+      - pattern: "animateMotion|mpath.*href|<mpath"
+        expect: present
+        description: Uses SMIL animateMotion with mpath for particle path travel
+      - pattern: "animate.*attributeName.*r.*values|puls|r.*8.*14.*8"
+        expect: present
+        description: Implements pulsing nodes with r value animation
+      - pattern: "stroke-dasharray|stroke-dashoffset|values.*0.*-"
+        expect: present
+        description: Uses dashed line with negative dashoffset for flow direction
+      - pattern: "opacity.*0\\.3[5-9]|opacity.*0\\.4|opacity.*0\\.5|0\\.35|0\\.6"
+        expect: present
+        description: Animation groups use 0.35-0.6 opacity to not compete with text
+      - pattern: "viewBox.*0 0 1440 900|preserveAspectRatio.*slice"
+        expect: present
+        description: Uses standard 1440x900 viewBox with slice aspect ratio
+
+  - id: abs-svg-002
+    skill: svg-animation
+    task: >
+      Build an SVG animation illustrating a feedback loop or cyclical process
+      for a presentation slide. Use orbiting elements, and ensure every
+      animated element is mapped to meaning in the concept.
+    assertions:
+      - pattern: "animateMotion.*dur|orbit|a100,100|circle.*path"
+        expect: present
+        description: Uses orbiting elements via animateMotion on circular path
+      - pattern: "repeatCount.*indefinite"
+        expect: present
+        description: Animation loops indefinitely using SMIL repeatCount
+      - pattern: "<defs>|<filter|<gradient|<clipPath"
+        expect: present
+        description: Uses SVG defs for reusable gradients, filters, or paths
+      - pattern: "Layer|landscape|structural|moving|label|<!--"
+        expect: present
+        description: SVG is structured in conceptual layers with comments
+      - pattern: "decorative|concept|metaphor|communicate|meaning"
+        expect: present
+        description: Comments or code references the conceptual meaning of each element
+
+  - id: abs-dp-001
+    skill: design-philosophy
+    task: >
+      Design a token system and visual identity for a new project management
+      SaaS. Choose a design archetype, define the five core constraints,
+      and explain how to differentiate from the default shadcn/Tailwind look.
+    assertions:
+      - pattern: "Precision.*Density|Warmth.*Approachable|Sophistication.*Trust|Boldness.*Clarity|archetype"
+        expect: present
+        description: Explicitly selects one of the four named SaaS design archetypes
+      - pattern: "4px.*base|8px.*base|spacing.*scale|spacing.*constraint"
+        expect: present
+        description: Defines spacing scale constraint with explicit base unit
+      - pattern: "OKHsl|LCH|perceptually uniform|constraint.*color"
+        expect: present
+        description: Specifies perceptually uniform color space as part of constraint
+      - pattern: "spring.*physics|150ms|100ms|animation.*constraint|easing.*constraint"
+        expect: present
+        description: Defines animation vocabulary as a named constraint
+      - pattern: "border.*radius|shadow|surface.*color|elevation.*model|constraint.*elevation"
+        expect: present
+        description: Chooses a single elevation model (surfaces, borders, or shadows)
+
+  - id: abs-dp-002
+    skill: design-philosophy
+    task: >
+      Audit a mockup that uses default shadcn/ui components with no
+      customization. Identify which patterns are "sacred" (must not change)
+      and which are "innovatable" (where differentiation should happen). Suggest
+      specific token changes to establish a distinct visual identity.
+    assertions:
+      - pattern: "sacred|never.*break|Jakob.*Law|familiar.*fresh"
+        expect: present
+        description: Distinguishes sacred (unchangeable) from innovatable patterns
+      - pattern: "nav.*position|form.*behavior|modal.*escape|keyboard.*nav|accessibility"
+        expect: present
+        description: Lists navigation, forms, and accessibility as sacred patterns
+      - pattern: "typeface|typography|font.*differenti|Inter.*Geist|custom.*font"
+        expect: present
+        description: Identifies typography as the highest-impact differentiator
+      - pattern: "50ms|trust.*penalty|visual.*shortcut|conversion|aesthetic.*usability"
+        expect: present
+        description: References the 50ms judgment window and its commercial impact
+      - pattern: "Linear|Stripe|Vercel|Raycast|reference.*company"
+        expect: present
+        description: References specific design-led companies as implementation examples
