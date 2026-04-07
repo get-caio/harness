@@ -6,20 +6,21 @@ You are an autonomous development agent working on a CAIO incubator project. Thi
 
 ## Project State
 
-| Purpose        | Location                                                  |
-| -------------- | --------------------------------------------------------- |
-| Master Spec    | `specs/SPEC.md` (read-only reference)                     |
-| Design System  | `specs/design/DESIGN.md` (colors, typography, components) |
-| Design Assets  | `specs/design/assets/` (logo, icons, brand files)         |
-| Figma Links    | `specs/design/FIGMA.md` (design file references)          |
-| Current Phase  | `specs/CURRENT_PHASE` (contains phase number)             |
-| Phase Tickets  | `specs/phases/PHASE-N-name.md`                            |
-| Spec Decisions | `specs/decisions/*.md` (ambiguities in spec)              |
-| Arch Decisions | `docs/decisions/*.md` (implementation choices)            |
-| Progress Log   | `progress/build-log.md`                                   |
-| Dead Ends      | `progress/dead-ends.md` (failed approaches log)           |
-| Conventions    | `progress/conventions.md` (established patterns)          |
-| Living Docs    | `docs/` (VitePress site — architecture, API, components)  |
+| Purpose        | Location                                                           |
+| -------------- | ------------------------------------------------------------------ |
+| Master Spec    | `specs/SPEC.md` (read-only reference)                              |
+| Design System  | `specs/design/DESIGN.md` (colors, typography, components)          |
+| Design Assets  | `specs/design/assets/` (logo, icons, brand files)                  |
+| Figma Links    | `specs/design/FIGMA.md` (design file references)                   |
+| Current Phase  | `specs/CURRENT_PHASE` (contains phase number)                      |
+| Phase Tickets  | `specs/phases/PHASE-N-name.md`                                     |
+| Type Manifests | `specs/phases/PHASE-N-type-manifest.md` (exported types per phase) |
+| Spec Decisions | `specs/decisions/*.md` (ambiguities in spec)                       |
+| Arch Decisions | `docs/decisions/*.md` (implementation choices)                     |
+| Progress Log   | `progress/build-log.md`                                            |
+| Dead Ends      | `progress/dead-ends.md` (failed approaches log)                    |
+| Conventions    | `progress/conventions.md` (established patterns)                   |
+| Living Docs    | `docs/` (VitePress site — architecture, API, components)           |
 
 ---
 
@@ -413,6 +414,8 @@ open_arch_decisions: 0
 28. **Run `product-critic` after UI phases** — product quality check: does the flow make sense? Is onboarding asking for things it doesn't use? Three clicks where one would work? Technically correct but nobody would use it?
 29. **Run `deployer` before every deploy** — pre-deploy checklist: migrations, env vars, webhook registrations, cron configs. Missed config = silent failure.
 30. **Run `refactorer` between phases** — codebase cleanup: copy-pasted patterns, missing utils, naming inconsistencies. Zero new behavior, just cleanup PRs.
+31. **Import, don't reinvent types** — before defining ANY Zod schema or TypeScript interface, grep `lib/**/types.ts` and the prior phase's `specs/phases/PHASE-(N-1)-type-manifest.md` for the concept. If a canonical type exists, import it. See Type Discipline section for the full rule.
+32. **Generate type manifest at phase end** — after the last ticket in a phase is DONE, run `/audit types` to write `specs/phases/PHASE-N-type-manifest.md` so the next phase knows what to import. This is mandatory before `/init-phase N+1`.
 
 ---
 
@@ -420,17 +423,18 @@ open_arch_decisions: 0
 
 These failures can end careers. The harness is designed to prevent them:
 
-| Failure Mode                  | Prevention                                 | Gate                 |
-| ----------------------------- | ------------------------------------------ | -------------------- |
-| **Data breach**               | Secrets detection hook, /red-team, /audit  | Pre-commit + Phase 1 |
-| **Production outage**         | /pre-ship rollback plan, deployer agent    | Pre-deploy           |
-| **GDPR/compliance violation** | data-protection skill, /pre-ship checklist | Phase 1 + Pre-deploy |
-| **Major bug in production**   | Mandatory tests, /audit, /red-team         | Every commit         |
-| **Can't debug production**    | observability skill, health endpoint       | Phase 1              |
-| **No rollback possible**      | /pre-ship migration check, deployer agent  | Pre-deploy           |
-| **Silent config failure**     | deployer agent: env vars, webhooks, crons  | Pre-deploy           |
-| **Product nobody uses**       | product-critic agent, /design-review       | End of UI phases     |
-| **Accumulated tech debt**     | auditor + refactorer between phases        | Phase boundaries     |
+| Failure Mode                  | Prevention                                    | Gate                 |
+| ----------------------------- | --------------------------------------------- | -------------------- |
+| **Data breach**               | Secrets detection hook, /red-team, /audit     | Pre-commit + Phase 1 |
+| **Production outage**         | /pre-ship rollback plan, deployer agent       | Pre-deploy           |
+| **GDPR/compliance violation** | data-protection skill, /pre-ship checklist    | Phase 1 + Pre-deploy |
+| **Major bug in production**   | Mandatory tests, /audit, /red-team            | Every commit         |
+| **Can't debug production**    | observability skill, health endpoint          | Phase 1              |
+| **No rollback possible**      | /pre-ship migration check, deployer agent     | Pre-deploy           |
+| **Silent config failure**     | deployer agent: env vars, webhooks, crons     | Pre-deploy           |
+| **Product nobody uses**       | product-critic agent, /design-review          | End of UI phases     |
+| **Accumulated tech debt**     | auditor + refactorer between phases           | Phase boundaries     |
+| **Duplicate/drifting types**  | Type Discipline rule, `/audit types` manifest | Phase boundaries     |
 
 **If any of these gates fail, DO NOT SHIP. Escalate to human.**
 
@@ -490,6 +494,34 @@ await db.insert(myTable).values(
   })),
 );
 ```
+
+---
+
+## Type Discipline — Import, Don't Reinvent
+
+Duplicate type/schema definitions are the #1 source of integration bugs. The same concept (e.g. "conditions", "user profile") gets a slightly different shape in `lib/`, the API route, and the UI component — then they drift, and a field added in one place silently disappears in another. **Before defining ANY Zod schema, TypeScript interface, or type alias:**
+
+1. **Grep first.** Search for the concept name in `lib/**/types.ts`, `lib/**/schemas.ts`, and the prior phase's type manifest at `specs/phases/PHASE-(N-1)-type-manifest.md`. Use both the singular and plural form, and any obvious synonyms.
+2. **If a canonical type exists, import it.** Do not redeclare. Do not "extend with one extra field" — add the field to the canonical type instead.
+3. **API route Zod schemas MUST be derived from `lib/**/types.ts`schemas.** Use`mySchema.pick()`, `.omit()`, `.extend()` — never rewrite the shape by hand.
+4. **UI component prop interfaces MUST import shared types from `lib/**/types.ts`.** A component that takes a `User`should`import type { User } from "@/lib/users/types"`— never redeclare`interface User { id: string; name: string }` locally.
+5. **Never define a local type that overlaps with an existing exported type.** If you find yourself writing `type X = { ...same fields as existing type... }`, stop and import instead.
+
+### Where canonical types live
+
+| Layer                      | Location                                                        | Purpose                                                                                 |
+| -------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Domain types & Zod schemas | `lib/<module>/types.ts`                                         | Single source of truth for one domain concept                                           |
+| Phase export manifest      | `specs/phases/PHASE-N-type-manifest.md`                         | Index of every exported type/schema from a completed phase                              |
+| DB models                  | `prisma/schema.prisma` (Prisma) or `lib/db/schema.ts` (Drizzle) | Database shape — derive runtime types via `Prisma.UserCreateInput` / `InferSelectModel` |
+
+### When you genuinely need a new type
+
+A new type is justified when (a) you grepped and found nothing, OR (b) the existing type represents a different concept that just shares some field names. In that case: **define it in `lib/<module>/types.ts`, not inline in the route or component.** This is what makes it discoverable to the next ticket.
+
+### Why this rule exists
+
+Past incident: Phase 2 defined `stepConditionsSchema` in `lib/orchestration/types.ts`. Phase 3 didn't grep for it, redefined a slightly different `conditionsSchema` inline in an API route, and the UI built against a third shape. Three weeks of integration debugging later, all three were merged. The cost of grepping first is < 30 seconds. The cost of skipping it is days.
 
 ---
 

@@ -14,6 +14,7 @@ Generate the ticket file for a specific phase based on the approved phase propos
 - `specs/SPEC.md` exists
 - Phase proposal approved by human
 - Previous phases complete (for N > 1)
+- **Prior phase type manifest exists** (for N > 1) — `specs/phases/PHASE-(N-1)-type-manifest.md` must be present. If missing, run `/audit types` against the prior phase first. Without this file, the new phase will reinvent existing types.
 
 ## Process
 
@@ -32,6 +33,22 @@ Reference the approved phase proposal or SPEC.md section to understand:
 - What features are in this phase
 - What the dependencies are
 - What the acceptance criteria are
+
+### 2a. Load Prior Phase Type Manifest (N > 1 only)
+
+For phase N > 1, read `specs/phases/PHASE-(N-1)-type-manifest.md` in full. This file lists every type, interface, Zod schema, and enum the previous phase exported, grouped by module. Treat it as a hard contract:
+
+- The new phase MUST import these types instead of redefining them.
+- The new phase's tickets MUST cite the manifest in their Technical Notes whenever they touch a concept that already exists.
+- If the manifest flags any "Possible Duplicates", note them in the new phase as cleanup tickets — do not extend a duplicate further.
+
+If the manifest does not exist:
+
+1. Stop. Do not generate the new phase's tickets.
+2. Run `/audit types` against the prior phase first to produce it.
+3. Then resume `/init-phase N`.
+
+If the manifest exists but is older than the most recent commit on the prior phase's last ticket, regenerate it with `/audit types` before proceeding.
 
 ### 3. Generate Phase Ticket File
 
@@ -65,6 +82,26 @@ Create `specs/phases/PHASE-N-name.md`:
 
 - Phase N-1 must be complete
 - [Any external dependencies: API keys, design assets, etc.]
+
+---
+
+## Existing Exports — Import, Don't Reinvent
+
+**(Auto-injected from `specs/phases/PHASE-(N-1)-type-manifest.md` — only present for N > 1)**
+
+Phase N-1 exported the following types and schemas. **Every ticket in this phase MUST import these instead of redefining them.** If a ticket touches a concept listed below and you find yourself writing a `type` or `interface` for it, stop and import.
+
+| Concept          | Kind       | Source                       | Import                                                            |
+| ---------------- | ---------- | ---------------------------- | ----------------------------------------------------------------- |
+| `User`           | type + Zod | `lib/users/types.ts`         | `import type { User } from "@/lib/users/types"`                   |
+| `userSchema`     | Zod        | `lib/users/types.ts`         | `import { userSchema } from "@/lib/users/types"`                  |
+| `StepConditions` | type + Zod | `lib/orchestration/types.ts` | `import type { StepConditions } from "@/lib/orchestration/types"` |
+
+[Render the actual contents of PHASE-(N-1)-type-manifest.md "Module: ..." sections here, condensed to one row per export. Truncate if > 50 rows and link to the manifest file for the full list.]
+
+### Possible Duplicates from Prior Phase (cleanup candidates)
+
+[If the prior manifest flagged any duplicates, list them here with a TODO ticket reference.]
 
 ---
 

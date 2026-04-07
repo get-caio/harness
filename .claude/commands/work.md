@@ -61,7 +61,8 @@ The environment is configured with `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=70` for aggr
 │           ↓                                              │
 │  3. Find next TODO ticket (respecting dependencies)      │
 │           ↓                                              │
-│  ┌─ No TODO tickets? ──→ Phase complete! Exit.          │
+│  ┌─ No TODO tickets? ──→ Run /audit + /audit types,     │
+│  │                       then exit. Phase complete!     │
 │  │                                                       │
 │  └─ Found ticket ──→ Continue                           │
 │           ↓                                              │
@@ -477,14 +478,18 @@ Phase is complete when:
 - All tests passing
 - Human sign-off received
 
-Then:
+Then, in this exact order:
 
 1. Update phase file status to COMPLETE
-2. Log phase completion to build-log.md
-3. **Run `/audit` to catch issues early** (especially after Phase 1 and 2)
-4. Run `/init-phase N+1` for next phase
+2. Log phase completion to `progress/build-log.md`
+3. **Run `/audit`** to catch issues early (especially after Phase 1 and 2)
+4. **Run `/audit types`** — MANDATORY. Generates `specs/phases/PHASE-N-type-manifest.md`. The next phase will not see this phase's exports without it. Do not skip even if the standard `/audit` was clean.
+5. Verify the manifest file exists at `specs/phases/PHASE-N-type-manifest.md` before continuing.
+6. Run `/init-phase N+1` for the next phase — it will read the manifest you just generated.
 
 **⚠️ AUDIT GATE:** Run `/audit` after completing Phase 1, Phase 2, and before any PR. Catching issues early prevents drift that compounds across phases.
+
+**⚠️ TYPE MANIFEST GATE:** `/audit types` is mandatory at every phase boundary. Skipping it causes the next phase to reinvent existing types, which is the single highest-cost integration bug pattern. The manifest takes 1-2 minutes to generate and prevents days of debugging.
 
 ---
 
