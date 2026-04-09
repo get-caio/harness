@@ -393,6 +393,78 @@ if [ "$i" = "$LIMIT" ]; then
 fi
 ```
 
+#### 5.1a Load-Based Rate Limit Testing (Optional — Artillery)
+
+The curl loop above is sequential and single-threaded. A real attacker sends concurrent bursts. If your rate limiter uses a sliding window or a distributed store (Redis, Upstash), sequential requests may not trip it at all — concurrent bursts will. Use Artillery when you need to:
+
+- Verify rate limits hold under concurrent load (not just serial)
+- Measure the 429 hit rate across a sustained burst
+- Probe DoS surface on expensive endpoints (AI calls, DB-heavy reports, file uploads)
+- Catch per-IP vs per-user limiting bugs
+
+**Install** (no lockfile changes — run via `bunx` or install globally):
+
+```bash
+bunx artillery@latest --version
+# or: npm install -g artillery
+```
+
+**Config — save as `red-team/artillery-rate-limit.yml`:**
+
+```yaml
+config:
+  target: "{{ $env.TARGET_URL }}"
+  phases:
+    - name: warmup
+      duration: 10
+      arrivalRate: 2
+    - name: burst
+      duration: 30
+      arrivalRate: 50 # 50 new virtual users per second
+  ensure:
+    # Fail the test if fewer than 50% of burst requests get 429
+    thresholds:
+      - "http.codes.429": 500
+  http:
+    timeout: 10
+
+scenarios:
+  - name: "Login brute force surface"
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test-{{ $randomNumber(1, 10000) }}@test.com"
+            password: "wrong-password"
+          expect:
+            - statusCode: [200, 401, 429]
+```
+
+**Run:**
+
+```bash
+TARGET_URL="http://localhost:3000" bunx artillery@latest run \
+  red-team/artillery-rate-limit.yml \
+  --output red-team/artillery-report.json
+
+bunx artillery@latest report red-team/artillery-report.json
+```
+
+**Interpret the results:**
+
+| Signal                                 | Meaning                                                                                                              |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `http.codes.429` high (>50% of burst)  | ✓ Rate limiter is working under load                                                                                 |
+| `http.codes.429` = 0                   | 🔴 Critical — no rate limiting. Attacker can brute force, spam, or exhaust paid API quotas                           |
+| `http.codes.200/401` dominant in burst | 🔴 Rate limiter is bypassable with concurrency — likely checks a local counter per process instead of a shared store |
+| `http.response_time.p95` > 5s          | ⚠️ Endpoint degrades under load — DoS surface even if rate limiter works                                             |
+| `http.codes.500` appears               | ⚠️ Rate limiter or downstream crashed under burst — leaks attack surface                                             |
+| Artillery `ensure` threshold failed    | ✓ CI can block merges when rate limiting regresses                                                                   |
+
+**Target other high-risk endpoints** by duplicating the scenario — any endpoint that (a) costs money per call (AI, SMS, email), (b) hits the database hard (reports, search), or (c) accepts unauthenticated input (signup, password reset, webhook ingestion).
+
+Keep the curl loop above as the zero-dependency smoke test; use Artillery when you need to trust the rate limiter under real load or want the check to run in CI.
+
 ### 5.2 CORS Verification
 
 ```bash
