@@ -2,7 +2,10 @@
   "name": "caio-build-harness",
   "version": "3.0.0",
   "description": "CAIO Build Harness — autonomous development framework with phased execution, multi-agent coordination, and safety gates for team projects.",
-  "author": "CAIO",
+  "author": {
+    "name": "CAIO",
+    "url": "https://github.com/get-caio"
+  },
   "license": "MIT",
   "claude_code_version": ">=1.0.0",
   "includes": {
