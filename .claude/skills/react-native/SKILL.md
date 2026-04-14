@@ -1,3 +1,9 @@
+---
+name: react-native
+description: Patterns for building React Native apps with Expo — navigation, offline support, notifications, and native modules.
+version: 1.0.0
+---
+
 # React Native / Expo Skill
 
 Patterns for building React Native apps with Expo. Reference this when building mobile features.
@@ -99,7 +105,7 @@ import { useLocalSearchParams, Stack } from 'expo-router'
 
 export default function WorkoutDetail() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  
+
   return (
     <>
       <Stack.Screen options={{ title: 'Workout' }} />
@@ -158,14 +164,14 @@ const styles = StyleSheet.create({
 // constants/theme.ts
 export const theme = {
   colors: {
-    primary: '#0066FF',
-    secondary: '#10B981',
-    background: '#F5F5F5',
-    surface: '#FFFFFF',
-    text: '#111111',
-    textSecondary: '#666666',
-    error: '#EF4444',
-    warning: '#F59E0B',
+    primary: "#0066FF",
+    secondary: "#10B981",
+    background: "#F5F5F5",
+    surface: "#FFFFFF",
+    text: "#111111",
+    textSecondary: "#666666",
+    error: "#EF4444",
+    warning: "#F59E0B",
   },
   spacing: {
     xs: 4,
@@ -180,7 +186,7 @@ export const theme = {
     lg: 16,
     full: 9999,
   },
-}
+};
 
 // Usage
 const styles = StyleSheet.create({
@@ -189,7 +195,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
   },
-})
+});
 ```
 
 ---
@@ -200,7 +206,7 @@ const styles = StyleSheet.create({
 
 ```typescript
 // lib/api.ts
-import { QueryClient } from '@tanstack/react-query'
+import { QueryClient } from "@tanstack/react-query";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -209,31 +215,31 @@ export const queryClient = new QueryClient({
       retry: 2,
     },
   },
-})
+});
 
 // API base
-const API_URL = process.env.EXPO_PUBLIC_API_URL
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export async function api<T>(
   endpoint: string,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<T> {
-  const token = await getAuthToken()
-  
+  const token = await getAuthToken();
+
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(token && { Authorization: `Bearer ${token}` }),
       ...options?.headers,
     },
-  })
-  
+  });
+
   if (!response.ok) {
-    throw new Error(`API error: ${response.status}`)
+    throw new Error(`API error: ${response.status}`);
   }
-  
-  return response.json()
+
+  return response.json();
 }
 ```
 
@@ -241,29 +247,29 @@ export async function api<T>(
 
 ```typescript
 // hooks/use-workouts.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 
 export function useWorkouts(date: string) {
   return useQuery({
-    queryKey: ['workouts', date],
+    queryKey: ["workouts", date],
     queryFn: () => api<Workout[]>(`/workouts?date=${date}`),
-  })
+  });
 }
 
 export function useCompleteWorkout() {
-  const queryClient = useQueryClient()
-  
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: (data: CompleteWorkoutData) =>
-      api('/workouts/complete', {
-        method: 'POST',
+      api("/workouts/complete", {
+        method: "POST",
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workouts'] })
+      queryClient.invalidateQueries({ queryKey: ["workouts"] });
     },
-  })
+  });
 }
 ```
 
@@ -275,51 +281,51 @@ export function useCompleteWorkout() {
 
 ```typescript
 // lib/storage.ts
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const storage = {
   async get<T>(key: string): Promise<T | null> {
-    const value = await AsyncStorage.getItem(key)
-    return value ? JSON.parse(value) : null
+    const value = await AsyncStorage.getItem(key);
+    return value ? JSON.parse(value) : null;
   },
-  
+
   async set<T>(key: string, value: T): Promise<void> {
-    await AsyncStorage.setItem(key, JSON.stringify(value))
+    await AsyncStorage.setItem(key, JSON.stringify(value));
   },
-  
+
   async remove(key: string): Promise<void> {
-    await AsyncStorage.removeItem(key)
+    await AsyncStorage.removeItem(key);
   },
-}
+};
 
 // Keys
 export const STORAGE_KEYS = {
-  AUTH_TOKEN: 'auth_token',
-  USER: 'user',
-  ONBOARDING_COMPLETE: 'onboarding_complete',
-  CACHED_WORKOUTS: 'cached_workouts',
-}
+  AUTH_TOKEN: "auth_token",
+  USER: "user",
+  ONBOARDING_COMPLETE: "onboarding_complete",
+  CACHED_WORKOUTS: "cached_workouts",
+};
 ```
 
 ### Secure Storage (for tokens)
 
 ```typescript
 // lib/secure-storage.ts
-import * as SecureStore from 'expo-secure-store'
+import * as SecureStore from "expo-secure-store";
 
 export const secureStorage = {
   async get(key: string): Promise<string | null> {
-    return SecureStore.getItemAsync(key)
+    return SecureStore.getItemAsync(key);
   },
-  
+
   async set(key: string, value: string): Promise<void> {
-    await SecureStore.setItemAsync(key, value)
+    await SecureStore.setItemAsync(key, value);
   },
-  
+
   async remove(key: string): Promise<void> {
-    await SecureStore.deleteItemAsync(key)
+    await SecureStore.deleteItemAsync(key);
   },
-}
+};
 ```
 
 ---
@@ -348,25 +354,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const segments = useSegments()
-  
+
   // Check auth on mount
   useEffect(() => {
     loadUser()
   }, [])
-  
+
   // Redirect based on auth state
   useEffect(() => {
     if (isLoading) return
-    
+
     const inAuthGroup = segments[0] === '(auth)'
-    
+
     if (!user && !inAuthGroup) {
       router.replace('/sign-in')
     } else if (user && inAuthGroup) {
       router.replace('/')
     }
   }, [user, segments, isLoading])
-  
+
   async function loadUser() {
     try {
       const token = await secureStorage.get('auth_token')
@@ -381,17 +387,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false)
     }
   }
-  
+
   async function signIn(token: string, user: User) {
     await secureStorage.set('auth_token', token)
     setUser(user)
   }
-  
+
   async function signOut() {
     await secureStorage.remove('auth_token')
     setUser(null)
   }
-  
+
   return (
     <AuthContext.Provider value={{ user, signIn, signOut, isLoading }}>
       {children}
@@ -414,81 +420,81 @@ export function useAuth() {
 
 ```typescript
 // lib/offline-queue.ts
-import NetInfo from '@react-native-community/netinfo'
-import { storage, STORAGE_KEYS } from './storage'
+import NetInfo from "@react-native-community/netinfo";
+import { storage, STORAGE_KEYS } from "./storage";
 
 interface QueuedAction {
-  id: string
-  type: 'COMPLETE_WORKOUT' | 'LOG_ACTIVITY' | 'SYNC_DATA'
-  payload: unknown
-  timestamp: number
+  id: string;
+  type: "COMPLETE_WORKOUT" | "LOG_ACTIVITY" | "SYNC_DATA";
+  payload: unknown;
+  timestamp: number;
 }
 
 class OfflineQueue {
-  private queue: QueuedAction[] = []
-  
+  private queue: QueuedAction[] = [];
+
   async init() {
-    this.queue = await storage.get(STORAGE_KEYS.OFFLINE_QUEUE) ?? []
-    
+    this.queue = (await storage.get(STORAGE_KEYS.OFFLINE_QUEUE)) ?? [];
+
     // Listen for connectivity
-    NetInfo.addEventListener(state => {
+    NetInfo.addEventListener((state) => {
       if (state.isConnected) {
-        this.processQueue()
+        this.processQueue();
       }
-    })
+    });
   }
-  
-  async add(action: Omit<QueuedAction, 'id' | 'timestamp'>) {
+
+  async add(action: Omit<QueuedAction, "id" | "timestamp">) {
     const queuedAction: QueuedAction = {
       ...action,
       id: crypto.randomUUID(),
       timestamp: Date.now(),
-    }
-    
-    this.queue.push(queuedAction)
-    await this.persist()
-    
+    };
+
+    this.queue.push(queuedAction);
+    await this.persist();
+
     // Try to process immediately
-    this.processQueue()
+    this.processQueue();
   }
-  
+
   private async processQueue() {
-    const state = await NetInfo.fetch()
-    if (!state.isConnected || this.queue.length === 0) return
-    
-    const toProcess = [...this.queue]
-    
+    const state = await NetInfo.fetch();
+    if (!state.isConnected || this.queue.length === 0) return;
+
+    const toProcess = [...this.queue];
+
     for (const action of toProcess) {
       try {
-        await this.execute(action)
-        this.queue = this.queue.filter(a => a.id !== action.id)
+        await this.execute(action);
+        this.queue = this.queue.filter((a) => a.id !== action.id);
       } catch {
         // Keep in queue for retry
-        break
+        break;
       }
     }
-    
-    await this.persist()
+
+    await this.persist();
   }
-  
+
   private async execute(action: QueuedAction) {
     switch (action.type) {
-      case 'COMPLETE_WORKOUT':
-        await api('/workouts/complete', {
-          method: 'POST',
+      case "COMPLETE_WORKOUT":
+        await api("/workouts/complete", {
+          method: "POST",
           body: JSON.stringify(action.payload),
-        })
-        break
+        });
+        break;
       // ... other action types
     }
   }
-  
+
   private async persist() {
-    await storage.set(STORAGE_KEYS.OFFLINE_QUEUE, this.queue)
+    await storage.set(STORAGE_KEYS.OFFLINE_QUEUE, this.queue);
   }
 }
 
-export const offlineQueue = new OfflineQueue()
+export const offlineQueue = new OfflineQueue();
 ```
 
 ---
@@ -499,9 +505,9 @@ export const offlineQueue = new OfflineQueue()
 
 ```typescript
 // lib/notifications.ts
-import * as Notifications from 'expo-notifications'
-import * as Device from 'expo-device'
-import { Platform } from 'react-native'
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import { Platform } from "react-native";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -509,38 +515,38 @@ Notifications.setNotificationHandler({
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
-})
+});
 
 export async function registerForPushNotifications() {
   if (!Device.isDevice) {
-    console.log('Push notifications require a physical device')
-    return null
+    console.log("Push notifications require a physical device");
+    return null;
   }
-  
-  const { status: existingStatus } = await Notifications.getPermissionsAsync()
-  let finalStatus = existingStatus
-  
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync()
-    finalStatus = status
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync();
+  let finalStatus = existingStatus;
+
+  if (existingStatus !== "granted") {
+    const { status } = await Notifications.requestPermissionsAsync();
+    finalStatus = status;
   }
-  
-  if (finalStatus !== 'granted') {
-    return null
+
+  if (finalStatus !== "granted") {
+    return null;
   }
-  
-  const token = await Notifications.getExpoPushTokenAsync()
-  
+
+  const token = await Notifications.getExpoPushTokenAsync();
+
   // Android channel setup
-  if (Platform.OS === 'android') {
-    Notifications.setNotificationChannelAsync('workouts', {
-      name: 'Workouts',
+  if (Platform.OS === "android") {
+    Notifications.setNotificationChannelAsync("workouts", {
+      name: "Workouts",
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-    })
+    });
   }
-  
-  return token.data
+
+  return token.data;
 }
 ```
 
@@ -570,17 +576,17 @@ function WorkoutList({ workouts }: { workouts: Workout[] }) {
 ```typescript
 import { memo, useCallback } from 'react'
 
-const WorkoutCard = memo(function WorkoutCard({ 
-  workout, 
-  onPress 
-}: { 
+const WorkoutCard = memo(function WorkoutCard({
+  workout,
+  onPress
+}: {
   workout: Workout
-  onPress: (id: string) => void 
+  onPress: (id: string) => void
 }) {
   const handlePress = useCallback(() => {
     onPress(workout.id)
   }, [workout.id, onPress])
-  
+
   return (
     <Pressable onPress={handlePress} style={styles.card}>
       <Text>{workout.title}</Text>
@@ -596,42 +602,42 @@ const WorkoutCard = memo(function WorkoutCard({
 ### Haptic Feedback
 
 ```typescript
-import * as Haptics from 'expo-haptics'
+import * as Haptics from "expo-haptics";
 
 // Light tap for buttons
-await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
 // Medium for important actions
-await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
 // Success notification
-await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
 // Error notification
-await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 ```
 
 ### Audio Cues (for workouts)
 
 ```typescript
-import { Audio } from 'expo-av'
+import { Audio } from "expo-av";
 
 const sounds = {
-  intervalStart: require('@/assets/sounds/beep-start.mp3'),
-  intervalEnd: require('@/assets/sounds/beep-end.mp3'),
-  workoutComplete: require('@/assets/sounds/complete.mp3'),
-}
+  intervalStart: require("@/assets/sounds/beep-start.mp3"),
+  intervalEnd: require("@/assets/sounds/beep-end.mp3"),
+  workoutComplete: require("@/assets/sounds/complete.mp3"),
+};
 
 export async function playSound(sound: keyof typeof sounds) {
-  const { sound: audioSound } = await Audio.Sound.createAsync(sounds[sound])
-  await audioSound.playAsync()
-  
+  const { sound: audioSound } = await Audio.Sound.createAsync(sounds[sound]);
+  await audioSound.playAsync();
+
   // Unload after playing
-  audioSound.setOnPlaybackStatusUpdate(status => {
+  audioSound.setOnPlaybackStatusUpdate((status) => {
     if (status.isLoaded && status.didJustFinish) {
-      audioSound.unloadAsync()
+      audioSound.unloadAsync();
     }
-  })
+  });
 }
 ```
 
@@ -651,16 +657,16 @@ describe('WorkoutCard', () => {
     duration: 45,
     sport: 'RUNNING',
   }
-  
+
   it('renders workout title', () => {
     render(<WorkoutCard workout={mockWorkout} onPress={() => {}} />)
     expect(screen.getByText('Easy Run')).toBeTruthy()
   })
-  
+
   it('calls onPress with workout id', () => {
     const onPress = jest.fn()
     render(<WorkoutCard workout={mockWorkout} onPress={onPress} />)
-    
+
     fireEvent.press(screen.getByText('Easy Run'))
     expect(onPress).toHaveBeenCalledWith('1')
   })
