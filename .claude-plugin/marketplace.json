@@ -1,13 +1,17 @@
 {
   "$schema": "https://claude.ai/schemas/marketplace.json",
-  "name": "CAIO Build Harness Marketplace",
+  "name": "caio-build-harness-marketplace",
   "description": "Private marketplace for CAIO team build harness distribution.",
+  "owner": {
+    "name": "CAIO",
+    "url": "https://github.com/get-caio"
+  },
   "plugins": [
     {
       "name": "caio-build-harness",
       "version": "3.0.0",
       "description": "Autonomous development framework with phased execution, multi-agent coordination, and safety gates.",
-      "path": ".",
+      "source": ".",
       "tags": ["development", "agents", "team", "full-stack"]
     }
   ]
