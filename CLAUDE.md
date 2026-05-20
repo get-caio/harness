@@ -365,6 +365,26 @@ On resume, the agent re-reads phase state, build log, and conventions to pick up
 
 ---
 
+## Working Principles
+
+> Cross-cutting rules for how agents should approach work. These are not phase-specific and apply to every ticket.
+
+- **State assumptions before coding.** Before implementing anything non-trivial, state the assumptions you're acting on (what the user means, what edge cases are in/out of scope, what the data shape will be). If an assumption is load-bearing and unverified, surface it instead of guessing. The cost of one clarifying sentence beats the cost of a wrong direction.
+
+- **Simplicity first — no speculative abstractions.** Build what the ticket requires. No "we might need this later" config flags, base classes, or generic wrappers. Three similar lines is better than a premature abstraction. If a future ticket needs flexibility, add it then, with the real second use case in hand.
+
+- **Surgical modifications.** Change only what the ticket requires. Don't reformat, rename, or "while I'm here" refactor nearby code — those changes belong in a separate refactor PR (see `refactorer` agent). Opportunistic edits balloon diffs, hide the real change in review, and break unrelated tests.
+
+- **Define "done" before starting.** Before writing code, write down the success criteria — what passing tests must assert, what the user should be able to do, what specifically would make this ticket DONE. Stop when those are met. Don't loop past them looking for more work; don't stop short of them because the happy path works.
+
+- **Use the model for judgment, code for determinism.** LLM calls are for classification, extraction, summarization, drafting — tasks where there isn't a deterministic right answer. Routing, retries, status code handling, data transformations, and anything with a defined input→output mapping must be code. If `if/switch/map` can answer it, don't ask the model.
+
+- **Expose conflicts, don't average them.** If the codebase has two patterns for the same thing (two error formats, two date utilities, two auth helpers), pick one and use it — don't invent a third that blends both. If it's unclear which is canonical, add an entry to `progress/conventions.md` to lock it in, or create an arch decision if the choice is non-obvious.
+
+- **Fail loudly, never silently.** Catching an error and returning `null`, skipping a record without logging, or swallowing an exception to "keep things working" is a career-ending bug waiting to happen. Throw, log structured errors via `pino`, and return non-2xx status codes. "Successfully processed 86% of records" is not a success — it's a partial outage you hid.
+
+---
+
 ## Current State
 
 <!-- UPDATED BY AGENT AFTER EACH TICKET -->
