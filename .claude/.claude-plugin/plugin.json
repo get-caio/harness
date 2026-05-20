@@ -12,6 +12,7 @@
     "skills": [
       "skills/aeo-geo",
       "skills/ai-integration",
+      "skills/anti-slop",
       "skills/auth",
       "skills/bun-runtime",
       "skills/ci-cd",

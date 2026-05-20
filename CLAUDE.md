@@ -248,6 +248,7 @@ Reference these before implementing related features:
 | `seo-foundations`          | Keyword research, on-page, technical SEO, content, links      |
 | `local-seo`                | GBP, map pack, citations, reviews, competitor intel, DBA      |
 | `aeo-geo`                  | AI visibility — llms.txt, TL;DR blocks, AI mentions, GEO      |
+| `anti-slop`                | Detect AI tells in copy — openers, buzzwords, bumper-stickers |
 | `seo-agent-playbook`       | SEO agent workflows, Helm cards, autonomy, onboarding         |
 | `seo-integrations`         | DataForSEO, Google APIs, BrightLocal, connectors, cost model  |
 | `context-engineering`      | Context window management, progressive disclosure, compaction |
