@@ -116,8 +116,8 @@ cases:
     not_expected: [react-native, wordpress-plugin, local-seo]
 
   - id: ret-022
-    task: "Build a REST API using the Hono framework with middleware for auth and logging"
-    expected: [hono, security, observability]
+    task: "Build a type-safe API layer with middleware for auth and request logging"
+    expected: [trpc, security, observability]
     not_expected: [shopify-remix, vitepress, svg-animation]
 
   - id: ret-023
@@ -141,7 +141,7 @@ cases:
   - id: ret-026
     task: "Implement GDPR cookie consent banner with granular preferences and a data export endpoint"
     expected: [gdpr-consent, data-protection]
-    not_expected: [turborepo, hono, pinecone]
+    not_expected: [turborepo, shopify-remix, pinecone]
 
   # ── Email ──
   - id: ret-027

@@ -46,16 +46,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then npx tsc --noEmit 2>&1 | head -20 || true; fi",
-            "timeout": 60
-          },
-          {
-            "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then bun test --passWithNoTests 2>&1 | tail -20 || true; fi",
-            "timeout": 120
-          },
-          {
-            "type": "command",
             "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if git diff --cached --name-only | grep -qE '(auth|api|action|middleware|webhook)'; then echo '⚠️  SECURITY-SENSITIVE FILES IN COMMIT - verify: auth checks, input validation, no secrets'; fi; fi",
             "timeout": 5
           },
@@ -110,6 +100,16 @@
             "type": "command",
             "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if command -v gitleaks >/dev/null 2>&1; then gitleaks protect --staged --no-banner 2>&1 || (echo '❌ BLOCKED: gitleaks detected secrets in staged changes.' >&2 && exit 1); else if git diff --cached | grep -qiE '(api[_-]?key|secret[_-]?key|password|token|credential|private[_-]?key|client[_-]?secret|access[_-]?token|auth[_-]?token|bearer|jwt[_-]?secret|signing[_-]?key|encryption[_-]?key|database[_-]?url.*@|mongodb\\+srv://|postgres://|mysql://)\\s*[=:]'; then echo '❌ BLOCKED: Potential secret detected in commit. Remove hardcoded credentials.' >&2 && exit 1; fi; fi; fi; exit 0",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if command -v gh >/dev/null 2>&1; then branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null); state=$(gh pr view \"$branch\" --json state --jq .state 2>/dev/null); if [ \"$state\" = \"MERGED\" ]; then echo \"❌ BLOCKED: The PR for branch '$branch' is already MERGED. Do not pile commits onto a merged PR — start a new branch: git checkout -b <new-branch>\" >&2; exit 1; fi; fi; fi; exit 0",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if git diff --cached --name-only | grep -qE '\\.(ts|tsx|js|jsx)$'; then if ! npx tsc --noEmit 1>&2; then echo '❌ BLOCKED: TypeScript errors — fix before committing.' >&2; exit 1; fi; if ! bun test --passWithNoTests 1>&2; then echo '❌ BLOCKED: Tests failing — fix before committing.' >&2; exit 1; fi; fi; fi; exit 0",
+            "timeout": 180
           },
           {
             "type": "command",

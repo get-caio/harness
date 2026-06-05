@@ -234,22 +234,20 @@ Task tool call:
     Commit with: [PN-TXXX] [description]
 ```
 
-**For parallel independent tickets — use coordinator:**
+**For parallel independent tickets — use `/coordinate` (deterministic):**
 
-When 3+ independent tickets have no file overlap, spawn the coordinator agent:
+When 3+ independent tickets have no file overlap, run `/coordinate` instead of hand-rolling
+parallel spawns. It invokes the `coordinate-phase` workflow, which derives dependency-ordered,
+file-disjoint waves, cuts each worktree from the correct base, merges between waves, and runs
+the gate — none of which can be forgotten or done out of order:
 
 ```
-Task tool call:
-  subagent_type: coordinator (custom agent)
-  prompt: |
-    Coordinate parallel work on these independent tickets:
-    - PN-TXXX: [title] (files: src/components/auth/*)
-    - PN-TXXX: [title] (files: src/components/dashboard/*)
-    - PN-TXXX: [title] (files: prisma/*, src/lib/db.ts)
-
-    Phase file: specs/phases/PHASE-N-*.md
-    Max 3 parallel agents. Respect file ownership.
+Workflow({ name: 'coordinate-phase', args: { phase: N, maxParallel: 3 } })
 ```
+
+Prefer this over spawning the `coordinator` agent. That agent now defers to this workflow and
+only hand-rolls git worktrees as an error-prone fallback — the same fallback that previously
+caused agents to branch from a stale base commit.
 
 **Test First:**
 
