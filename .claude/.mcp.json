@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "coordinate": {
+      "command": "bun",
+      "args": ["run", "${CLAUDE_PLUGIN_ROOT}/mcp/coordinate-server.ts"],
+      "description": "Deterministic phase-coordination planner. Exposes plan_waves: dependency-ordered, file-disjoint waves with cascading blockage. Dependency-free; ${CLAUDE_PLUGIN_ROOT} resolves to the installed plugin root (the .claude directory)."
+    }
+  }
+}

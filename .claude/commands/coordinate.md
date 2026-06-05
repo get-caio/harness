@@ -1,18 +1,18 @@
 ---
 name: coordinate
-description: Run a phase's independent tickets in parallel via the deterministic coordinate-phase workflow — dependency-ordered waves, file-disjoint parallelism, merge-and-gate between waves.
+description: Run a phase's independent TODO tickets in parallel — a deterministic planner (bundled MCP `plan_waves` tool, or the coordinate-phase workflow) builds dependency-ordered, file-disjoint waves; feature agents execute them with merge-and-gate between waves.
 ---
 
 # /coordinate — Parallel Phase Execution (Deterministic)
 
-Run the independent TODO tickets in the current phase as parallel `feature` agents,
-coordinated by the **`coordinate-phase` workflow** rather than hand-rolled orchestration.
+Run the independent TODO tickets in the current phase as parallel `feature` agents, with the
+hard part — dependency-ordered, file-disjoint wave planning with cascading blockage — done by a
+**deterministic, tested planner** instead of improvised orchestration.
 
-This replaces the old pattern of spawning the `coordinator` agent and having it
-improvise `git worktree add` + `Task` spawns. That improvisation caused a real bug
-(agents branching from a stale base commit). The workflow makes worktree base commits,
-file ownership, merge order, and the quality gate **structural** — they cannot be
-forgotten or done out of order.
+This replaces the old pattern of spawning the `coordinator` agent and having it improvise
+`git worktree add` + `Task` spawns, which caused a real bug (agents branching from a stale base
+commit). There are two execution modes below; both use the **same** planning core. Prefer
+**Mode A** (the bundled MCP tool) — it works for installed-plugin users with no setup.
 
 ## When to Use
 
@@ -36,55 +36,57 @@ Same as `/work`:
 /coordinate 2 2        # Phase 2, max 2 parallel agents
 ```
 
-## Setup (one-time per project)
+## Mode A — MCP planner + Task execution (default; ships with the plugin)
 
-The `Workflow` tool resolves `name:` only against workflow scripts in the **project's own**
-`.claude/workflows/` directory. Claude Code plugins cannot yet auto-distribute workflow
-scripts (no `workflows` include key; `${CLAUDE_PLUGIN_ROOT}` does not expand in command
-markdown — see anthropics/claude-code#9354). So if you installed this harness as a plugin,
-copy the workflow into your project once:
+The harness bundles an MCP server (`coordinate`) exposing the deterministic **`plan_waves`**
+tool. This needs no per-project setup — installed-plugin users get it automatically. The
+agent loop drives execution around the planner:
+
+1. **Parse** — read `specs/CURRENT_PHASE` and `specs/phases/PHASE-N-*.md`; build the ticket
+   list: `id`, `size`, `status`, `dependsOn` (blocked-by ids), `files` (directory-granular
+   ownership the ticket will write — err toward overlap when unsure), `blockedByDecision`.
+2. **Plan (deterministic — call the tool, do not eyeball it):**
+   ```
+   mcp__coordinate__plan_waves({ tickets: [ ...parsed... ], maxParallel: 3 })
+   ```
+   Returns `{ waves, deferredByDependency }`. Each wave is a set of **file-disjoint** tickets
+   safe to run in parallel (≤ maxParallel, capped at 3). Dependency order is enforced across
+   waves; blockage **cascades** to dependents; DONE / cross-phase deps count as satisfied.
+3. **Execute wave by wave — the order is load-bearing, do not reorder or overlap:**
+   For each wave in `waves`, in order:
+   - **a.** Spawn one `feature` agent per ticket **in parallel** via `Task`, each
+     `isolation: worktree`, each told it owns only its declared `files` and must NOT create
+     its own worktree or branch off any other ref. Each commits once and reports its branch.
+   - **b.** **Wait for the entire wave**, then merge each branch onto the working branch in
+     order and run the repo's gate scripts (`npm run typecheck` / `npm test` / `npm run lint`
+     — whichever exist in package.json; a missing script is N/A, not a failure).
+   - **c.** **Only on a green gate**: set the merged tickets to DONE and append to
+     `progress/build-log.md`. **On a red gate: STOP** — do not start the next wave and do not
+     mark anything DONE; leave statuses for a human to triage.
+     Merging each wave before spawning the next is what guarantees later worktrees branch from a
+     HEAD that already contains earlier work (this is the bug the planner+discipline prevent).
+4. **Report** — completed / deferred-by-dependency / decision-blocked / failed.
+
+## Mode B — coordinate-phase Workflow (optional; stronger determinism)
+
+If the `Workflow` tool is available AND `.claude/workflows/coordinate-phase.js` exists in the
+project, run the whole thing as one script — execution sequencing (merge-before-next-wave,
+halt-on-red) is then enforced **structurally**, not by the Mode-A instructions above:
+
+```
+Workflow({ name: 'coordinate-phase', args: { phase: N, maxParallel: 3 } })
+```
+
+Plugins can't auto-distribute workflow scripts (no `workflows` include key; `${CLAUDE_PLUGIN_ROOT}`
+doesn't expand in command markdown — anthropics/claude-code#9354), so for plugin installs copy
+it once:
 
 ```bash
-mkdir -p .claude/workflows
-# adjust the source path to wherever the harness is installed/cloned:
-cp <harness>/.claude/workflows/coordinate-phase.js .claude/workflows/
+mkdir -p .claude/workflows && cp <harness>/.claude/workflows/coordinate-phase.js .claude/workflows/
 ```
 
-If you're working inside the harness repo itself, the file is already at
-`.claude/workflows/coordinate-phase.js` — no copy needed.
-
-## Execution
-
-Once `coordinate-phase.js` exists in `.claude/workflows/`, invoke it from the main loop
-(subagents cannot call Workflow):
-
-```
-Workflow({
-  name: 'coordinate-phase',
-  args: { phase: <N or omit for CURRENT_PHASE>, maxParallel: <1-3, default 3> },
-})
-```
-
-The workflow runs in the background and reports a `<task-notification>` on completion.
-Watch live progress with `/workflows`.
-
-## What the workflow does (so you know what you're delegating)
-
-1. **Parse** — one agent reads the phase file into a structured ticket graph
-   (id, size, status, `dependsOn`, file-ownership globs, blocking decision).
-2. **Plan (deterministic JS)** — topological layering by `dependsOn`, then packs each
-   layer into waves of ≤`maxParallel` **file-disjoint** tickets. No two agents in a
-   wave can touch the same file.
-3. **Per wave: implement → integrate** —
-   - Implement: parallel `feature` agents, each in an isolated worktree cut from
-     current HEAD, each owning only its declared files, each committing once.
-   - Integrate: an `implementer` agent merges the wave's branches onto the working
-     branch and runs the full gate (`bun test && lint && typecheck`).
-   - **Waves are sequential**: wave N is merged before wave N+1's worktrees are cut,
-     so later agents always branch from a HEAD that contains earlier work.
-   - **Halt on red gate**: if the gate fails after a merge, the workflow stops rather
-     than building more work on a broken base.
-4. **Report** — coordination report (completed / blocked / failures) + build-log update.
+Both modes share the **same** planning algorithm: the workflow's inline planner is parity-tested
+against the MCP server's `.claude/mcp/wave-planner.ts`, so they cannot drift.
 
 ## After Completion
 
