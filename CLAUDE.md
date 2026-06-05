@@ -319,7 +319,7 @@ The main session runs `opus` for maximum reasoning quality. Subagents use the mo
 
 ### Parallel Coordination
 
-When 3+ independent tickets have no file overlap, spawn the `coordinator` agent. It manages parallel feature agents in separate worktrees with file ownership rules to prevent merge conflicts. Max 3 parallel agents.
+When 3+ independent tickets have no file overlap, run **`/coordinate`** — it invokes the deterministic `coordinate-phase` workflow (dependency-ordered, file-disjoint waves; correct worktree base; merge-and-gate between waves; max 3 parallel). Prefer this over spawning the `coordinator` agent directly; the agent now defers to the workflow and only hand-rolls git worktrees as an error-prone fallback.
 
 ### Documentation Updates
 
@@ -427,7 +427,7 @@ open_arch_decisions: 0
 20. **Run /design-review after Phase 2** — verify visual polish, empty states, loading states, animations
 21. **Update docs after every ticket** — spawn a `doc-writer` agent (haiku, cheap) to update `docs/`. Skip for test-only changes.
 22. **Never stop between tickets** — after committing a ticket, immediately pick up the next TODO. Only stop when the phase is complete, all tickets are blocked, or the human interrupts.
-23. **Delegate by ticket size** — S/M tickets: work inline. L/XL tickets: spawn `feature` agent in worktree. 3+ independent tickets: spawn `coordinator` for parallel execution.
+23. **Delegate by ticket size** — S/M tickets: work inline. L/XL tickets: spawn `feature` agent in worktree. 3+ independent tickets: run `/coordinate` (the deterministic `coordinate-phase` workflow) for parallel execution.
 24. **Read `git-workflow` skill** before creating branches or PRs on multi-engineer projects.
 25. **Read `database-migrations` skill** before any schema changes — follow expand-contract for zero-downtime.
 26. **Read `ci-cd` skill** when setting up or modifying GitHub Actions workflows.

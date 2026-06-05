@@ -30,7 +30,8 @@ function estimateCost(
   model: string,
   tokens: { input: number; output: number },
 ): number {
-  const rates = COST_PER_MTOK[model] ?? COST_PER_MTOK.default;
+  const rates = COST_PER_MTOK[model] ??
+    COST_PER_MTOK.default ?? { input: 0, output: 0 };
   return (
     (tokens.input / 1_000_000) * rates.input +
     (tokens.output / 1_000_000) * rates.output
@@ -66,7 +67,8 @@ function extractTokens(response: Anthropic.Messages.Message): TokenUsage {
 }
 
 function extractText(response: Anthropic.Messages.Message): string {
-  return response.content[0].type === "text" ? response.content[0].text : "";
+  const block = response.content[0];
+  return block?.type === "text" ? block.text : "";
 }
 
 // ── Retry with exponential backoff ──

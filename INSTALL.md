@@ -128,7 +128,24 @@ git submodule update --remote .harness
 
 ### Option C: Marketplace
 
-Updates are automatic when the marketplace repo is updated. Engineers get new versions on next session start.
+Updates are **not** fully automatic for a private/third-party marketplace like this one. Three
+things must line up before an installed project sees a new version:
+
+1. **Changes are merged to `main`** — the marketplace tracks the `main` branch, so PR branches are
+   invisible until merged.
+2. **The version is bumped** — update detection is version-gated. Bump `version` in **both**
+   `.claude/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` to the **same** new
+   value on every release (the `plugin.json` value wins silently, so a stale one masks the
+   marketplace entry).
+3. **The engineer pulls the update** — auto-update is **off by default** for third-party
+   marketplaces. Either:
+   - enable it once: set `"autoUpdate": true` on this marketplace in `.claude/settings.json`
+     `extraKnownMarketplaces` (then updates are fetched at session start and activated with
+     `/reload-plugins`), or
+   - update manually: `/plugin marketplace update caio-build-harness` then `/reload-plugins`.
+
+Engineers who installed via **Option A (`cp -r`)** never receive updates — they hold a frozen copy.
+**Option B (symlink)** updates only when the linked harness clone is `git pull`ed.
 
 ---
 

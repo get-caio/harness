@@ -75,8 +75,8 @@ Respond with JSON:
     "judge",
   );
 
-  const text =
-    response.content[0].type === "text" ? response.content[0].text : "{}";
+  const judgeBlock = response.content[0];
+  const text = judgeBlock?.type === "text" ? judgeBlock.text : "{}";
 
   try {
     // Strip markdown code fences if present

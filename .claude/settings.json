@@ -46,16 +46,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then npx tsc --noEmit 2>&1 | head -20 || true; fi",
-            "timeout": 60
-          },
-          {
-            "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then bun test --passWithNoTests 2>&1 | tail -20 || true; fi",
-            "timeout": 120
-          },
-          {
-            "type": "command",
             "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if git diff --cached --name-only | grep -qE '(auth|api|action|middleware|webhook)'; then echo '⚠️  SECURITY-SENSITIVE FILES IN COMMIT - verify: auth checks, input validation, no secrets'; fi; fi",
             "timeout": 5
           },
@@ -113,6 +103,16 @@
           },
           {
             "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if command -v gh >/dev/null 2>&1; then branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null); state=$(gh pr view \"$branch\" --json state --jq .state 2>/dev/null); if [ \"$state\" = \"MERGED\" ]; then echo \"❌ BLOCKED: The PR for branch '$branch' is already MERGED. Do not pile commits onto a merged PR — start a new branch: git checkout -b <new-branch>\" >&2; exit 1; fi; fi; fi; exit 0",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if git diff --cached --name-only | grep -qE '\\.(ts|tsx|js|jsx)$'; then if [ -f package.json ] && jq -e '.scripts.typecheck' package.json >/dev/null 2>&1; then if ! npm run --silent typecheck 1>&2; then echo '❌ BLOCKED: typecheck failed — fix before committing.' >&2; exit 1; fi; elif [ -f tsconfig.json ]; then if ! npx tsc --noEmit 1>&2; then echo '❌ BLOCKED: TypeScript errors — fix before committing.' >&2; exit 1; fi; fi; if [ -f package.json ] && jq -e '.scripts.test' package.json >/dev/null 2>&1; then if ! npm test --silent 1>&2; then echo '❌ BLOCKED: tests failing — fix before committing.' >&2; exit 1; fi; fi; fi; fi; exit 0",
+            "timeout": 180
+          },
+          {
+            "type": "command",
             "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git push.*(prod|origin.*prod)'; then echo '❌ BLOCKED: Cannot push to prod branch. Production deploys are human-only.' >&2 && exit 1; fi; exit 0",
             "timeout": 5
           },
@@ -128,7 +128,7 @@
           },
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git push'; then echo '🔍 Running pre-push checks...' && npm run lint && npm run build || (echo '❌ BLOCKED: Fix lint/build errors before pushing' >&2 && exit 1); fi; exit 0",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git push'; then if [ -f package.json ]; then if jq -e '.scripts.lint' package.json >/dev/null 2>&1; then echo '🔍 Running lint...'; if ! npm run --silent lint 1>&2; then echo '❌ BLOCKED: Fix lint errors before pushing' >&2; exit 1; fi; fi; if jq -e '.scripts.build' package.json >/dev/null 2>&1; then echo '🔍 Running build...'; if ! npm run --silent build 1>&2; then echo '❌ BLOCKED: Fix build errors before pushing' >&2; exit 1; fi; fi; fi; fi; exit 0",
             "timeout": 300
           }
         ]

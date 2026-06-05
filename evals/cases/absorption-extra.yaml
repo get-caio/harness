@@ -96,54 +96,9 @@ cases:
         expect: absent
         description: "Does not use Node's fs.readFile — uses Bun.file() instead"
 
-  - id: abs-hono-001
-    skill: hono
-    task: >
-      Build a Hono API with route groups for /api/v1/posts and authentication
-      middleware. The middleware should validate a Bearer token from the
-      Authorization header, set userId on context, and reject unauthenticated
-      requests with 401. The posts route should use zValidator for request body
-      validation on POST.
-    assertions:
-      - pattern: "createMiddleware|c\\.set\\(['\"]userId"
-        expect: present
-        description: "Auth middleware uses createMiddleware and sets userId on context with c.set()"
-      - pattern: "c\\.get\\(['\"]userId"
-        expect: present
-        description: "Route handler reads userId from context with c.get()"
-      - pattern: "zValidator\\s*\\("
-        expect: present
-        description: "POST route uses zValidator for request body validation at the edge"
-      - pattern: "app\\.route\\s*\\("
-        expect: present
-        description: "Route groups are mounted with app.route() not app.all()"
-      - pattern: "await next\\(\\)"
-        expect: present
-        description: "Middleware calls await next() to pass control down the chain"
-
-  - id: abs-hono-002
-    skill: hono
-    task: >
-      Implement a global error handler for a Hono app that distinguishes between
-      known AppError subtypes (NotFoundError, ForbiddenError) and unexpected
-      errors, returning structured JSON with an error message and code in both
-      cases.
-    assertions:
-      - pattern: "class.*AppError.*extends Error|AppError"
-        expect: present
-        description: "Defines or references a typed AppError class hierarchy"
-      - pattern: "statusCode|status.*code"
-        expect: present
-        description: "AppError carries an HTTP status code"
-      - pattern: "app\\.onError\\s*\\("
-        expect: present
-        description: "Global error handler is registered with app.onError()"
-      - pattern: "instanceof AppError"
-        expect: present
-        description: "Error handler checks instanceof AppError to distinguish known errors"
-      - pattern: "INTERNAL_ERROR|internal.*error|500"
-        expect: present
-        description: "Unexpected errors fall through to a generic 500 response"
+  # NOTE: abs-hono-001/002 removed — the `hono` skill has no SKILL.md on disk, so the
+  # absorption runner's loadSkill('hono') would throw. If a Hono skill is intended, restore
+  # .claude/skills/hono/SKILL.md and re-add these cases (see git history).
 
   - id: abs-turborepo-001
     skill: turborepo

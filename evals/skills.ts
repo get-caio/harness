@@ -8,15 +8,15 @@ const SKILLS_DIR = join(import.meta.dir, "../.claude/skills");
 function extractDescription(content: string): string {
   // Try YAML frontmatter
   const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  if (fmMatch) {
+  if (fmMatch?.[1]) {
     const descMatch = fmMatch[1].match(/description:\s*["']?(.*?)["']?\s*$/m);
-    if (descMatch) return descMatch[1];
+    if (descMatch?.[1]) return descMatch[1];
   }
 
   // Fall back to first paragraph after the title
   const lines = content.split("\n");
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = (lines[i] ?? "").trim();
     if (line && !line.startsWith("#") && !line.startsWith("---")) {
       return line.slice(0, 200);
     }
