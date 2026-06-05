@@ -108,7 +108,7 @@
           },
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if git diff --cached --name-only | grep -qE '\\.(ts|tsx|js|jsx)$'; then if ! npx tsc --noEmit 1>&2; then echo '❌ BLOCKED: TypeScript errors — fix before committing.' >&2; exit 1; fi; if ! bun test --passWithNoTests 1>&2; then echo '❌ BLOCKED: Tests failing — fix before committing.' >&2; exit 1; fi; fi; fi; exit 0",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if git diff --cached --name-only | grep -qE '\\.(ts|tsx|js|jsx)$'; then if [ -f package.json ] && jq -e '.scripts.typecheck' package.json >/dev/null 2>&1; then if ! npm run --silent typecheck 1>&2; then echo '❌ BLOCKED: typecheck failed — fix before committing.' >&2; exit 1; fi; elif [ -f tsconfig.json ]; then if ! npx tsc --noEmit 1>&2; then echo '❌ BLOCKED: TypeScript errors — fix before committing.' >&2; exit 1; fi; fi; if [ -f package.json ] && jq -e '.scripts.test' package.json >/dev/null 2>&1; then if ! npm test --silent 1>&2; then echo '❌ BLOCKED: tests failing — fix before committing.' >&2; exit 1; fi; fi; fi; fi; exit 0",
             "timeout": 180
           },
           {

@@ -166,22 +166,28 @@ function filesOverlap(a, b) {
   return false;
 }
 
-// Topological layering by dependsOn. Returns layers of ticket ids; throws on cycle.
-function topoLayers(tickets) {
+// Topological layering by dependsOn over a candidate set. A dependency is "satisfied"
+// if it is already DONE (in doneIds) or refers to a ticket outside this phase entirely
+// (cross-phase — assumed already shipped). Dependencies on another candidate resolve
+// layer by layer. Throws on cycle. Callers must pre-filter so every unsatisfiable
+// in-phase dependency has already cascaded out (see buildWavePlan).
+function topoLayers(tickets, doneIds, inPhaseIds) {
   const byId = new Map(tickets.map((t) => [t.id, t]));
-  const done = new Set();
+  const satisfied = new Set(doneIds);
   const layers = [];
   let remaining = tickets.map((t) => t.id);
   while (remaining.length) {
-    const ready = remaining.filter(
-      (id) => byId.get(id).dependsOn.every((d) => done.has(d) || !byId.has(d)), // unknown deps treated as satisfied (cross-phase)
+    const ready = remaining.filter((id) =>
+      byId
+        .get(id)
+        .dependsOn.every((d) => satisfied.has(d) || !inPhaseIds.has(d)),
     );
     if (!ready.length)
       throw new Error(
         `Dependency cycle or unmet deps among: ${remaining.join(", ")}`,
       );
     layers.push(ready);
-    ready.forEach((id) => done.add(id));
+    ready.forEach((id) => satisfied.add(id));
     remaining = remaining.filter((id) => !ready.includes(id));
   }
   return layers;
@@ -202,20 +208,48 @@ function packIntoWaves(layerTickets, maxParallel) {
   return waves;
 }
 
-// Build the full ordered wave plan from the parsed graph.
+// Build the ordered wave plan. Blockage CASCADES: a TODO ticket whose dependency is an
+// in-phase ticket that is neither DONE nor itself schedulable this run is deferred — it
+// cannot be worked until that dependency lands. The fixpoint loop propagates this through
+// chains (A blocked → B that needs A dropped → C that needs B dropped). Returns the plan
+// plus the tickets dropped for an unsatisfiable dependency, so the report can surface them.
 function buildWavePlan(tickets, maxParallel) {
-  const workable = tickets.filter(
+  const inPhaseIds = new Set(tickets.map((t) => t.id));
+  const doneIds = new Set(
+    tickets.filter((t) => t.status === "DONE").map((t) => t.id),
+  );
+
+  let candidates = tickets.filter(
     (t) => t.status === "TODO" && !t.blockedByDecision,
   );
-  const byId = new Map(workable.map((t) => [t.id, t]));
-  const layers = topoLayers(workable);
+
+  const blockedByDep = [];
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const candidateIds = new Set(candidates.map((c) => c.id));
+    const survivors = [];
+    for (const c of candidates) {
+      const badDep = c.dependsOn.find(
+        (d) => inPhaseIds.has(d) && !doneIds.has(d) && !candidateIds.has(d),
+      );
+      if (badDep) {
+        blockedByDep.push({ id: c.id, dependsOn: badDep });
+        changed = true;
+      } else survivors.push(c);
+    }
+    candidates = survivors;
+  }
+
+  const byId = new Map(candidates.map((t) => [t.id, t]));
+  const layers = topoLayers(candidates, doneIds, inPhaseIds);
   const plan = [];
   for (const layer of layers) {
     const layerTickets = layer.map((id) => byId.get(id)).filter(Boolean);
     for (const wave of packIntoWaves(layerTickets, maxParallel))
       plan.push(wave);
   }
-  return plan;
+  return { plan, blockedByDep };
 }
 
 // ── Phase 0: parse the phase file into a structured graph (judgment → agent) ──
@@ -242,15 +276,22 @@ const graph = await agent(
 const blocked = graph.tickets.filter(
   (t) => t.status === "TODO" && t.blockedByDecision,
 );
-const wavePlan = buildWavePlan(graph.tickets, MAX_PARALLEL);
+const { plan: wavePlan, blockedByDep } = buildWavePlan(
+  graph.tickets,
+  MAX_PARALLEL,
+);
 const totalToWork = wavePlan.flat().length;
 log(
   `Phase ${graph.phase}: ${totalToWork} workable ticket(s) across ${wavePlan.length} wave(s); ` +
-    `${blocked.length} blocked on decisions; max ${MAX_PARALLEL} parallel.`,
+    `${blocked.length} blocked on decisions; ${blockedByDep.length} blocked by an unfinished dependency; max ${MAX_PARALLEL} parallel.`,
 );
 if (blocked.length)
   log(
-    `Blocked (skipped): ${blocked.map((t) => `${t.id}→${t.blockedByDecision}`).join(", ")}`,
+    `Blocked on decisions (skipped): ${blocked.map((t) => `${t.id}→${t.blockedByDecision}`).join(", ")}`,
+  );
+if (blockedByDep.length)
+  log(
+    `Deferred — dependency not DONE: ${blockedByDep.map((b) => `${b.id}→needs ${b.dependsOn}`).join(", ")}`,
   );
 
 // ── Waves: implement (parallel, isolated worktrees) → integrate (merge + gate) ──
@@ -281,7 +322,9 @@ for (let w = 0; w < wavePlan.length; w++) {
 
            Read first: progress/conventions.md, progress/dead-ends.md, and the relevant docs/ pages
            and skills for what this ticket touches (see CLAUDE.md mappings). Follow TDD — failing test
-           first. Run the quality gate (bun test/lint/typecheck) before committing.
+           first. Before committing, run whichever quality-gate scripts this repo actually defines in
+           package.json (e.g. \`npm run typecheck\`, \`npm test\`, \`npm run lint\`) — check the scripts
+           block first; do not invoke a runner the repo hasn't configured.
 
            Commit exactly once: "[${t.id}] <description>". Then run \`git branch --show-current\`
            and report that branch name. If a PENDING decision or hard blocker stops you, do NOT
@@ -324,10 +367,19 @@ for (let w = 0; w < wavePlan.length; w++) {
      so merges should be clean — if one conflicts, abort that merge, record the conflicting paths,
      and continue with the rest (do not force-resolve).
 
-     After merging, run the FULL quality gate: bun test && bun lint && bun typecheck.
-     Then update each merged ticket's status to DONE in the phase file and append a line per ticket
-     to progress/build-log.md (id, title, files, tests, commit, today's date via \`date\`).
-     Report the merge outcomes and whether the gate passed.`,
+     After merging, run the FULL quality gate using whichever scripts this repo defines in
+     package.json (check the scripts block — typically \`npm run typecheck\` and \`npm test\`, and
+     \`npm run lint\` if present). Do not invoke a runner the repo hasn't configured, and treat a
+     missing script as "not applicable", not a failure.
+
+     ORDER MATTERS — only record success on a green gate:
+     - If the gate PASSES: set each successfully-merged ticket's status to DONE in the phase file
+       and append one line per ticket to progress/build-log.md (id, title, files, tests, commit,
+       today's date via \`date\`). Set gatePassed=true.
+     - If the gate FAILS: do NOT mark any ticket DONE. Leave the merged tickets' statuses unchanged
+       (the workflow will halt and a human will triage the broken merge). Set gatePassed=false and
+       put the failing output in gateOutput.
+     Report the merge outcomes and the gate result.`,
     {
       label: `integrate:w${w + 1}`,
       phase: "Integrate",
@@ -363,6 +415,7 @@ for (let w = 0; w < wavePlan.length; w++) {
         ticket: t.id,
         decision: t.blockedByDecision,
       })),
+      deferredByDependency: blockedByDep,
       wavesPlanned: wavePlan.length,
       wavesRun: w + 1,
     };
@@ -379,8 +432,10 @@ const report = await agent(
    - Completed & merged: ${JSON.stringify(completed)}
    - Failures/blocked-during-work: ${JSON.stringify(failures)}
    - Blocked on decisions (never started): ${JSON.stringify(blocked.map((t) => ({ id: t.id, decision: t.blockedByDecision })))}
+   - Deferred — dependency not DONE (never started): ${JSON.stringify(blockedByDep)}
    - Waves run: ${wavePlan.length}
-   Then state the next action: if any tickets remain blocked, list the decisions a human must resolve;
+   Then state the next action: if tickets are blocked on decisions, list those for a human to resolve;
+   if tickets are deferred behind an unfinished dependency, name the dependency that must land first;
    if the phase is fully DONE, recommend running /audit then /audit types.`,
   { label: "report", phase: "Report" },
 );
@@ -393,6 +448,7 @@ return {
     ticket: t.id,
     decision: t.blockedByDecision,
   })),
+  deferredByDependency: blockedByDep,
   wavesRun: wavePlan.length,
   report,
 };
