@@ -128,7 +128,7 @@
           },
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git push'; then echo '🔍 Running pre-push checks...' && npm run lint && npm run build || (echo '❌ BLOCKED: Fix lint/build errors before pushing' >&2 && exit 1); fi; exit 0",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git push'; then if [ -f package.json ]; then if jq -e '.scripts.lint' package.json >/dev/null 2>&1; then echo '🔍 Running lint...'; if ! npm run --silent lint 1>&2; then echo '❌ BLOCKED: Fix lint errors before pushing' >&2; exit 1; fi; fi; if jq -e '.scripts.build' package.json >/dev/null 2>&1; then echo '🔍 Running build...'; if ! npm run --silent build 1>&2; then echo '❌ BLOCKED: Fix build errors before pushing' >&2; exit 1; fi; fi; fi; fi; exit 0",
             "timeout": 300
           }
         ]

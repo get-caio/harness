@@ -88,7 +88,6 @@
       "commands/design-review.md",
       "commands/clarify.md"
     ],
-    "workflows": ["workflows/coordinate-phase.js"],
     "agents": [
       "agents/architect.md",
       "agents/auditor.md",

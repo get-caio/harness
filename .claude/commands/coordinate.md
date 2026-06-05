@@ -36,9 +36,27 @@ Same as `/work`:
 /coordinate 2 2        # Phase 2, max 2 parallel agents
 ```
 
+## Setup (one-time per project)
+
+The `Workflow` tool resolves `name:` only against workflow scripts in the **project's own**
+`.claude/workflows/` directory. Claude Code plugins cannot yet auto-distribute workflow
+scripts (no `workflows` include key; `${CLAUDE_PLUGIN_ROOT}` does not expand in command
+markdown — see anthropics/claude-code#9354). So if you installed this harness as a plugin,
+copy the workflow into your project once:
+
+```bash
+mkdir -p .claude/workflows
+# adjust the source path to wherever the harness is installed/cloned:
+cp <harness>/.claude/workflows/coordinate-phase.js .claude/workflows/
+```
+
+If you're working inside the harness repo itself, the file is already at
+`.claude/workflows/coordinate-phase.js` — no copy needed.
+
 ## Execution
 
-Invoke the workflow from the main loop (subagents cannot call Workflow):
+Once `coordinate-phase.js` exists in `.claude/workflows/`, invoke it from the main loop
+(subagents cannot call Workflow):
 
 ```
 Workflow({
