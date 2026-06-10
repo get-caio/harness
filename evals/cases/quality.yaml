@@ -69,58 +69,10 @@ cases:
       performance: "Uses indexes for filtered columns. Avoids N+1 queries. Pagination implemented for large result sets."
       security: "No raw SQL with user input interpolation. All user-supplied values are parameterized."
 
-  # ══════════════════════════════════
-  # OBSERVABILITY — Quality
-  # ══════════════════════════════════
-  - id: qual-obs-001
-    skill: observability
-    task: >
-      Add observability to a Next.js API route that processes file uploads:
-      accepts file, validates type/size, uploads to S3, creates database record,
-      returns URL. Add structured logging, error tracking, and performance metrics.
-    rubric:
-      logging: "Structured JSON logs with request ID, timestamp, level. Logs entry, success, and error for each stage. No sensitive data (file contents, auth tokens) in logs."
-      error_tracking: "Errors include stack trace and context. Distinguishes expected errors (bad file type) from unexpected (S3 failure). Error categorization for alerting."
-      metrics: "Tracks upload duration, file size distribution, success/failure rates. Metrics are labeled (route, status, file_type)."
-      health_signals: "S3 connectivity checked. Database latency measured. Degraded state surfaced to health endpoint."
-
-  # ══════════════════════════════════
-  # AUTH — Quality
-  # ══════════════════════════════════
-  - id: qual-auth-001
-    skill: auth
-    task: >
-      Implement a complete authentication system for a Next.js app:
-      - Email/password signup with email verification
-      - Login with session management
-      - Protected API middleware
-      - Password reset flow
-      - Role-based access control (user, editor, admin)
-      Use BetterAuth or NextAuth.
-    rubric:
-      security: "Passwords hashed with bcrypt/argon2. Sessions use httpOnly secure cookies. CSRF protection implemented. Rate limiting on auth endpoints."
-      completeness: "All five features implemented (signup, login, middleware, reset, RBAC). Email verification actually blocks access until verified."
-      session_management: "Sessions have configurable expiry. Refresh token rotation implemented. Logout invalidates session server-side."
-      role_system: "Roles stored in database. Middleware checks roles. Role hierarchy respected (admin > editor > user)."
-
-  # ══════════════════════════════════
-  # STRIPE BILLING — Quality
-  # ══════════════════════════════════
-  - id: qual-pay-001
-    skill: stripe-billing
-    task: >
-      Build a complete Stripe subscription system:
-      - Pricing page with monthly/yearly toggle
-      - Checkout session creation
-      - Webhook handler for lifecycle events
-      - Customer portal redirect
-      - Subscription status display in user settings
-      - Handle payment failures with retry logic
-    rubric:
-      webhook_security: "Webhook signature verified. Raw body used for verification. Idempotency handled (duplicate events don't cause duplicate updates)."
-      billing_correctness: "Subscription status synced to database. Trial periods handled. Prorated upgrades/downgrades work. Cancellation sets end-of-period, not immediate."
-      error_handling: "Payment failures create user notifications. Failed webhook processing doesn't crash the app. Stripe API errors caught and logged."
-      ux_completeness: "Pricing toggle works. Loading states during checkout redirect. Subscription status reflects actual Stripe state. Portal link functional."
+  # NOTE: qual-obs-001, qual-auth-001, and qual-pay-001 removed — the `observability`, `auth`,
+  # and `stripe-billing` skills were retired in the 2026-06 Fable 5 / Sonnet 4.6 revalidation
+  # (zero absorption delta on three model generations; non-obvious rules live in CLAUDE.md
+  # "Compressed Skill Rules"). Stripe coverage continues via the `payments` skill.
 
   # ══════════════════════════════════
   # TRPC — Quality

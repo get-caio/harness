@@ -7,7 +7,6 @@ maxTurns: 40
 skills:
   - ci-cd
   - security
-  - observability
   - database-migrations
 ---
 

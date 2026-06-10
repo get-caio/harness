@@ -35,10 +35,10 @@ const { values } = parseArgs({
   options: {
     tier: { type: "string", default: "all", short: "t" },
     skill: { type: "string", short: "s" },
-    model: { type: "string", default: "claude-sonnet-4-20250514", short: "m" },
+    model: { type: "string", default: "claude-sonnet-4-6", short: "m" },
     "judge-model": {
       type: "string",
-      default: "claude-haiku-4-5-20251001",
+      default: "claude-haiku-4-5",
     },
     limit: { type: "string", short: "l" },
     "dry-run": { type: "boolean", default: false },
@@ -57,8 +57,8 @@ Usage: bun run evals/run.ts [options]
 Options:
   -t, --tier <tier>        Eval tier: all, retrieval, absorption, quality (default: all)
   -s, --skill <name>       Filter to a single skill (absorption/quality tiers only)
-  -m, --model <id>         Model for code generation (default: claude-sonnet-4-20250514)
-      --judge-model <id>   Model for LLM-as-Judge (default: claude-haiku-4-5-20251001)
+  -m, --model <id>         Model for code generation (default: claude-sonnet-4-6)
+      --judge-model <id>   Model for LLM-as-Judge (default: claude-haiku-4-5)
   -l, --limit <n>          Max cases per tier
       --dry-run            Show what would run without API calls
       --save-baseline      Save results as baseline for regression detection

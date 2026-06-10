@@ -223,7 +223,6 @@ Reference these before implementing related features:
 | -------------------------- | ------------------------------------------------------------- |
 | `nextjs-bun-prisma`        | Project structure, API routes, database                       |
 | `react-best-practices`     | React/Next.js performance patterns, bundle optimization       |
-| `auth`                     | Authentication, sessions, OAuth                               |
 | `trpc`                     | Type-safe API, routers, client setup                          |
 | `ai-integration`           | Claude API, prompts, tool use, streaming                      |
 | `react-native`             | Mobile app, Expo, offline, notifications                      |
@@ -234,7 +233,6 @@ Reference these before implementing related features:
 | `code-quality`             | Complexity limits, refactoring                                |
 | `code-audit`               | Security scanning, dependency audit, codebase health          |
 | `red-team`                 | Adversarial testing against running app, OWASP coverage       |
-| `observability`            | Logging, monitoring, health checks, debugging                 |
 | `incident-response`        | Production incidents, rollback, post-mortems                  |
 | `data-protection`          | GDPR, CCPA, privacy, data handling compliance                 |
 | `design-routing`           | **Read first for UI work** — which design skills to combine   |
@@ -248,7 +246,6 @@ Reference these before implementing related features:
 | `seo-foundations`          | Keyword research, on-page, technical SEO, content, links      |
 | `local-seo`                | GBP, map pack, citations, reviews, competitor intel, DBA      |
 | `aeo-geo`                  | AI visibility — llms.txt, TL;DR blocks, AI mentions, GEO      |
-| `anti-slop`                | Detect AI tells in copy — openers, buzzwords, bumper-stickers |
 | `seo-agent-playbook`       | SEO agent workflows, Helm cards, autonomy, onboarding         |
 | `seo-integrations`         | DataForSEO, Google APIs, BrightLocal, connectors, cost model  |
 | `context-engineering`      | Context window management, progressive disclosure, compaction |
@@ -372,6 +369,13 @@ On resume, the agent re-reads phase state, build log, and conventions to pick up
 
 > These rules are extracted from skills that showed zero absorption delta in evals.
 > The model already knows the general patterns; only these specific rules add value.
+>
+> The `auth`, `observability`, and `stripe-billing` skills were **removed entirely** in the
+> 2026-06 revalidation against Fable 5 and Sonnet 4.6 (zero delta on three model generations) —
+> their rules below remain authoritative. `testing`, `trpc`, and `shadcn-tailwind` still show
+> positive delta on Sonnet 4.6 subagents and were kept; their rules here are a supplement, not
+> a replacement. Re-run `bun run eval:absorption` against both consumer models before removing
+> any further skills.
 
 - **testing**: Meaningless assertions are banned — `expect(true).toBe(true)` or `expect(result).toBeDefined()` do not count as tests; every assertion must verify a real acceptance criterion behavior. Also: configure MSW with `onUnhandledRequest: "error"` so forgotten mocks fail loudly instead of silently passing.
 - **auth**: The default CAIO stack uses **BetterAuth**, not NextAuth — check SPEC.md before wiring auth. When using NextAuth, always add `user.id` to the session in the `session` callback; it is not included by default and every protected action depends on it.

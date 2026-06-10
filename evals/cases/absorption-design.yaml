@@ -1,49 +1,13 @@
-# Absorption cases for the 5 design/content skills that previously had no coverage:
-# anti-slop, design-taste-frontend, design-brutalist, design-minimalist, design-redesign.
+# Absorption cases for the 4 design skills that previously had no coverage:
+# design-taste-frontend, design-brutalist, design-minimalist, design-redesign.
 # Each assertion targets a CONCRETE rule the skill teaches that the base model tends to
 # violate by default (Inter, AI-purple gradients, h-screen, "Elevate", window.alert, etc.),
 # so a positive absorption delta means the skill actually changed behavior.
 # Patterns are compiled with the "im" flags (case-insensitive) — no need for (?i).
 cases:
-  # ══════════════════════════════════
-  # ANTI-SLOP  (user-facing copy)
-  # ══════════════════════════════════
-  # NOTE: anti-slop's primary mechanism is INJECTING ANTI_SLOP_PROMPT_RULES into a
-  # generation system prompt, which an absorption eval (load-as-context) cannot fully
-  # measure. These cases use long, open briefs that tempt the base model toward the
-  # subtler tells (rhetorical-question openers, em-dash overuse, bumper-sticker closes)
-  # where retrieved knowledge can still move the needle.
-  - id: abs-slop-001
-    skill: anti-slop
-    task: >
-      Write a ~150-word 'About Us' section for a B2B analytics product that helps finance
-      teams close the books faster. Engaging, marketing-style prose.
-    assertions:
-      - pattern: "(ever wondered|what if|imagine a|picture this|let'?s face it|here'?s the thing|in a world)"
-        expect: absent
-        description: "No rhetorical-question / 'imagine a world' opener crime"
-      - pattern: "—[^—\\n]{1,80}—[^—\\n]{1,80}—"
-        expect: absent
-        description: "No em-dash overuse (3+ em-dashes signalling AI cadence)"
-      - pattern: "it'?s not just .{1,40}? it'?s|isn'?t just .{1,40}? it'?s"
-        expect: absent
-        description: "No 'it's not just X, it's Y' bumper-sticker construction"
-
-  - id: abs-slop-002
-    skill: anti-slop
-    task: >
-      Write a ~120-word blog post introduction about improving remote-team productivity.
-      Make it compelling.
-    assertions:
-      - pattern: "\\b(in the world of|when it comes to|at the end of the day|that said|look no further|the truth is|let'?s be honest)\\b"
-        expect: absent
-        description: "Avoids filler clichés"
-      - pattern: "\\b(studies show|research shows|experts agree|\\d{2,3}% of (people|teams|workers|companies))\\b"
-        expect: absent
-        description: "No unsourced authority/stat ('studies show', vague %)"
-      - pattern: "\\b(synergy|leverage our|best.?in.?class|next.?gen|paradigm|supercharge)\\b"
-        expect: absent
-        description: "Avoids corporate jargon"
+  # NOTE: abs-slop-001/002 (anti-slop) removed — the skill was retired in the 2026-06
+  # Fable 5 / Sonnet 4.6 revalidation: both models pass every slop assertion natively
+  # (zero delta on both), so the skill content no longer changes behavior.
 
   # ══════════════════════════════════
   # DESIGN-TASTE-FRONTEND  (premium React/Tailwind UI)
