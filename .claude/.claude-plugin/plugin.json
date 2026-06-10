@@ -1,6 +1,6 @@
 {
   "name": "caio-build-harness",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "description": "CAIO Build Harness — autonomous development framework with phased execution, multi-agent coordination, and safety gates for team projects.",
   "author": {
     "name": "CAIO",
@@ -12,8 +12,6 @@
     "skills": [
       "skills/aeo-geo",
       "skills/ai-integration",
-      "skills/anti-slop",
-      "skills/auth",
       "skills/bun-runtime",
       "skills/ci-cd",
       "skills/cloudflare-dns",
@@ -48,7 +46,6 @@
       "skills/multi-agent-coordination",
       "skills/mysql-planetscale",
       "skills/nextjs-bun-prisma",
-      "skills/observability",
       "skills/payments",
       "skills/pinecone",
       "skills/react-best-practices",
@@ -63,7 +60,6 @@
       "skills/seo-routing",
       "skills/shadcn-tailwind",
       "skills/shopify-remix",
-      "skills/stripe-billing",
       "skills/svg-animation",
       "skills/testing",
       "skills/trpc",
