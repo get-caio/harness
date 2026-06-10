@@ -321,6 +321,22 @@ The main session runs `opus` for maximum reasoning quality. Subagents use the mo
 
 When 3+ independent tickets have no file overlap, run **`/coordinate`** — it invokes the deterministic `coordinate-phase` workflow (dependency-ordered, file-disjoint waves; correct worktree base; merge-and-gate between waves; max 3 parallel). Prefer this over spawning the `coordinator` agent directly; the agent now defers to the workflow and only hand-rolls git worktrees as an error-prone fallback.
 
+### Deterministic Workflows
+
+`.claude/workflows/` ships deterministic multi-agent scripts, run via the `Workflow` tool. Prefer these over hand-orchestrating the equivalent agents — fan-out, adversarial verification, ordering, and verdicts are enforced by code, not memory:
+
+| Workflow           | When to Run                                    | Replaces                                                                                   |
+| ------------------ | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `coordinate-phase` | 3+ independent TODO tickets                    | hand-rolled `coordinator` orchestration                                                    |
+| `phase-gate`       | every phase boundary, before `/init-phase N+1` | the remembered auditor / product-critic / refactorer / `/audit` checklist + `/audit types` |
+| `check-decisions`  | after `/init-phase N`, before `/work`          | single-context `/check-decisions` scan                                                     |
+| `review-ticket`    | after a ticket commit / before human PR review | single-lens `reviewer` pass                                                                |
+| `design-review`    | after UI phases, before `/pre-ship`            | single-context `/design-review`                                                            |
+| `pre-ship`         | last gate before human production deploy       | single-context `/pre-ship` checklist                                                       |
+| `doc-sync`         | end of phase, or when docs drift is suspected  | accumulated per-ticket `doc-writer` nags                                                   |
+
+Invoke as `Workflow({ name: "<name>", args: { ... } })`. If the `Workflow` tool is unavailable, fall back to the corresponding command/agents — the command markdown remains the reference each workflow's lenses are aligned to. Plugin installs must copy the scripts once: `mkdir -p .claude/workflows && cp <harness>/.claude/workflows/*.js .claude/workflows/`.
+
 ### Documentation Updates
 
 After each ticket, spawn a `doc-writer` agent (haiku model — cheap and fast) to update the relevant docs. Skip for test-only changes.

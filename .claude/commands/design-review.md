@@ -12,6 +12,20 @@ Check UI against design standards before shipping. Complements `/audit` (code) w
 
 ---
 
+## Workflow Mode (preferred when available)
+
+If the `Workflow` tool is available and `.claude/workflows/design-review.js` exists, run the review structurally — a global static scan plus three design lenses (visual foundations / UX patterns + a11y / state coverage + delight) over every route, with critical/high findings adversarially verified:
+
+```
+Workflow({ name: 'design-review' })
+Workflow({ name: 'design-review', args: { page: '/dashboard' } })
+Workflow({ name: 'design-review', args: { maxRoutes: 20 } })
+```
+
+The report lands in `progress/design-review-report.md`. The process below is the fallback, and the reference the workflow's lenses and report template are aligned to.
+
+---
+
 ## The Review Process
 
 ### 1. Read Design System

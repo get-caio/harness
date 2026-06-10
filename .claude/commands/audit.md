@@ -35,6 +35,8 @@ Read .claude/skills/code-audit/SKILL.md
 
 **`types` mode is a fast, narrow scan** — it does not run security or quality checks. It only enumerates exported types/schemas for the next phase to consume. Run it in addition to (not instead of) the standard quick scan at phase boundaries.
 
+> **Phase boundaries:** the `phase-gate` workflow (`Workflow({ name: 'phase-gate' })`) runs the quick audit, the product critique, the refactor pass, AND this type manifest in one structurally-enforced gate. Prefer it when the `Workflow` tool is available; `/audit` + `/audit types` is the fallback.
+
 ### 3. Execute Phases
 
 **Quick Scan:** Phases 1, 2, 3 (partial)
