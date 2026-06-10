@@ -223,7 +223,6 @@ Reference these before implementing related features:
 | -------------------------- | ------------------------------------------------------------- |
 | `nextjs-bun-prisma`        | Project structure, API routes, database                       |
 | `react-best-practices`     | React/Next.js performance patterns, bundle optimization       |
-| `auth`                     | Authentication, sessions, OAuth                               |
 | `trpc`                     | Type-safe API, routers, client setup                          |
 | `ai-integration`           | Claude API, prompts, tool use, streaming                      |
 | `react-native`             | Mobile app, Expo, offline, notifications                      |
@@ -234,7 +233,6 @@ Reference these before implementing related features:
 | `code-quality`             | Complexity limits, refactoring                                |
 | `code-audit`               | Security scanning, dependency audit, codebase health          |
 | `red-team`                 | Adversarial testing against running app, OWASP coverage       |
-| `observability`            | Logging, monitoring, health checks, debugging                 |
 | `incident-response`        | Production incidents, rollback, post-mortems                  |
 | `data-protection`          | GDPR, CCPA, privacy, data handling compliance                 |
 | `design-routing`           | **Read first for UI work** — which design skills to combine   |
@@ -248,7 +246,6 @@ Reference these before implementing related features:
 | `seo-foundations`          | Keyword research, on-page, technical SEO, content, links      |
 | `local-seo`                | GBP, map pack, citations, reviews, competitor intel, DBA      |
 | `aeo-geo`                  | AI visibility — llms.txt, TL;DR blocks, AI mentions, GEO      |
-| `anti-slop`                | Detect AI tells in copy — openers, buzzwords, bumper-stickers |
 | `seo-agent-playbook`       | SEO agent workflows, Helm cards, autonomy, onboarding         |
 | `seo-integrations`         | DataForSEO, Google APIs, BrightLocal, connectors, cost model  |
 | `context-engineering`      | Context window management, progressive disclosure, compaction |
@@ -321,6 +318,22 @@ The main session runs `opus` for maximum reasoning quality. Subagents use the mo
 
 When 3+ independent tickets have no file overlap, run **`/coordinate`** — it invokes the deterministic `coordinate-phase` workflow (dependency-ordered, file-disjoint waves; correct worktree base; merge-and-gate between waves; max 3 parallel). Prefer this over spawning the `coordinator` agent directly; the agent now defers to the workflow and only hand-rolls git worktrees as an error-prone fallback.
 
+### Deterministic Workflows
+
+`.claude/workflows/` ships deterministic multi-agent scripts, run via the `Workflow` tool. Prefer these over hand-orchestrating the equivalent agents — fan-out, adversarial verification, ordering, and verdicts are enforced by code, not memory:
+
+| Workflow           | When to Run                                    | Replaces                                                                                   |
+| ------------------ | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `coordinate-phase` | 3+ independent TODO tickets                    | hand-rolled `coordinator` orchestration                                                    |
+| `phase-gate`       | every phase boundary, before `/init-phase N+1` | the remembered auditor / product-critic / refactorer / `/audit` checklist + `/audit types` |
+| `check-decisions`  | after `/init-phase N`, before `/work`          | single-context `/check-decisions` scan                                                     |
+| `review-ticket`    | after a ticket commit / before human PR review | single-lens `reviewer` pass                                                                |
+| `design-review`    | after UI phases, before `/pre-ship`            | single-context `/design-review`                                                            |
+| `pre-ship`         | last gate before human production deploy       | single-context `/pre-ship` checklist                                                       |
+| `doc-sync`         | end of phase, or when docs drift is suspected  | accumulated per-ticket `doc-writer` nags                                                   |
+
+Invoke as `Workflow({ name: "<name>", args: { ... } })`. If the `Workflow` tool is unavailable, fall back to the corresponding command/agents — the command markdown remains the reference each workflow's lenses are aligned to. Plugin installs must copy the scripts once: `mkdir -p .claude/workflows && cp <harness>/.claude/workflows/*.js .claude/workflows/`.
+
 ### Documentation Updates
 
 After each ticket, spawn a `doc-writer` agent (haiku model — cheap and fast) to update the relevant docs. Skip for test-only changes.
@@ -356,6 +369,13 @@ On resume, the agent re-reads phase state, build log, and conventions to pick up
 
 > These rules are extracted from skills that showed zero absorption delta in evals.
 > The model already knows the general patterns; only these specific rules add value.
+>
+> The `auth`, `observability`, and `stripe-billing` skills were **removed entirely** in the
+> 2026-06 revalidation against Fable 5 and Sonnet 4.6 (zero delta on three model generations) —
+> their rules below remain authoritative. `testing`, `trpc`, and `shadcn-tailwind` still show
+> positive delta on Sonnet 4.6 subagents and were kept; their rules here are a supplement, not
+> a replacement. Re-run `bun run eval:absorption` against both consumer models before removing
+> any further skills.
 
 - **testing**: Meaningless assertions are banned — `expect(true).toBe(true)` or `expect(result).toBeDefined()` do not count as tests; every assertion must verify a real acceptance criterion behavior. Also: configure MSW with `onUnhandledRequest: "error"` so forgotten mocks fail loudly instead of silently passing.
 - **auth**: The default CAIO stack uses **BetterAuth**, not NextAuth — check SPEC.md before wiring auth. When using NextAuth, always add `user.id` to the session in the `session` callback; it is not included by default and every protected action depends on it.

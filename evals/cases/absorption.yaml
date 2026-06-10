@@ -89,56 +89,10 @@ cases:
         expect: present
         description: "Tests invalid inputs"
 
-  # ══════════════════════════════════
-  # AUTH
-  # ══════════════════════════════════
-  - id: abs-auth-001
-    skill: auth
-    task: >
-      Create a middleware for Next.js App Router that protects all /dashboard/*
-      routes, redirecting unauthenticated users to /login. Also create a
-      role-based wrapper that restricts /admin/* to users with the admin role.
-    assertions:
-      - pattern: "middleware|NextResponse\\.redirect"
-        expect: present
-        description: "Implements Next.js middleware"
-      - pattern: "session|token|getServerSession|auth\\(\\)"
-        expect: present
-        description: "Checks session/auth state"
-      - pattern: "role|admin|isAdmin|hasRole"
-        expect: present
-        description: "Implements role-based access control"
-      - pattern: "matcher|config.*matcher"
-        expect: present
-        description: "Uses Next.js matcher config for route matching"
-      - pattern: "redirect.*login|login.*redirect"
-        expect: present
-        description: "Redirects to login page"
-
-  # ══════════════════════════════════
-  # OBSERVABILITY
-  # ══════════════════════════════════
-  - id: abs-obs-001
-    skill: observability
-    task: >
-      Build a /api/health endpoint for a Next.js app that checks database
-      connectivity and returns system status. Add structured logging to the endpoint.
-    assertions:
-      - pattern: "database|db|postgres|connection"
-        expect: present
-        description: "Checks database connectivity"
-      - pattern: "status.*healthy|status.*ok|status.*degraded"
-        expect: present
-        description: "Returns meaningful health status"
-      - pattern: "uptime|version|timestamp|memory"
-        expect: present
-        description: "Includes system metadata"
-      - pattern: "structuredLog|logger|log.*\\{|JSON\\.stringify.*level"
-        expect: present
-        description: "Uses structured logging (not plain console.log)"
-      - pattern: "try.*catch|error"
-        expect: present
-        description: "Handles dependency check failures gracefully"
+  # NOTE: abs-auth-001 and abs-obs-001 removed — the `auth` and `observability` skills were
+  # retired in the 2026-06 Fable 5 / Sonnet 4.6 revalidation (zero absorption delta on three
+  # model generations; their non-obvious rules live in CLAUDE.md "Compressed Skill Rules").
+  # Restore the skills and cases from git history if they're ever reinstated.
 
   # ══════════════════════════════════
   # CODE QUALITY
@@ -260,28 +214,7 @@ cases:
         expect: present
         description: "Uses component variants"
 
-  # ══════════════════════════════════
-  # STRIPE / PAYMENTS
-  # ══════════════════════════════════
-  - id: abs-pay-001
-    skill: stripe-billing
-    task: >
-      Write a Next.js webhook handler for Stripe that processes subscription
-      events: checkout.session.completed, invoice.payment_succeeded,
-      invoice.payment_failed, and customer.subscription.deleted.
-    assertions:
-      - pattern: "constructEvent|stripe\\.webhooks\\.constructEvent"
-        expect: present
-        description: "Verifies webhook signature"
-      - pattern: "STRIPE_WEBHOOK_SECRET|whsec_|endpointSecret"
-        expect: present
-        description: "Uses webhook signing secret"
-      - pattern: "checkout\\.session\\.completed"
-        expect: present
-        description: "Handles checkout completion event"
-      - pattern: "customer\\.subscription\\.deleted|subscription.*cancel"
-        expect: present
-        description: "Handles subscription cancellation"
-      - pattern: "getRawBody|raw|buffer|text\\(\\)"
-        expect: present
-        description: "Reads raw request body for signature verification"
+  # NOTE: abs-pay-001 (stripe-billing) removed — the `stripe-billing` skill was retired in the
+  # 2026-06 Fable 5 / Sonnet 4.6 revalidation (zero absorption delta on three model generations;
+  # the raw-body webhook rule lives in CLAUDE.md "Compressed Skill Rules"). Stripe coverage
+  # continues via the `payments` skill cases in absorption-extra.yaml.

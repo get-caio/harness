@@ -19,10 +19,15 @@ import type {
 
 const CASES_DIR = join(import.meta.dir, "cases");
 
-// ── Cost constants (per million tokens) ──
+// ── Cost constants (per million tokens, from platform.claude.com pricing) ──
 const COST_PER_MTOK: Record<string, { input: number; output: number }> = {
+  "claude-fable-5": { input: 10, output: 50 },
+  "claude-opus-4-8": { input: 5, output: 25 },
+  "claude-sonnet-4-6": { input: 3, output: 15 },
+  "claude-haiku-4-5": { input: 1, output: 5 },
+  "claude-haiku-4-5-20251001": { input: 1, output: 5 },
+  // Deprecated (retires June 2026) — kept for comparing against old baselines
   "claude-sonnet-4-20250514": { input: 3, output: 15 },
-  "claude-haiku-4-5-20251001": { input: 0.8, output: 4 },
   default: { input: 3, output: 15 },
 };
 

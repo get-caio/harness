@@ -2,12 +2,12 @@ cases:
   # ── Auth & Security ──
   - id: ret-001
     task: "Add Google OAuth login and email/password signup to the Next.js app"
-    expected: [auth, security]
+    expected: [security]
     not_expected: [payments, seo-foundations, redis-caching, svg-animation]
 
   - id: ret-002
     task: "Protect API routes so only authenticated users with admin role can access them"
-    expected: [auth, security, trpc]
+    expected: [security, trpc]
     not_expected: [design-craft, local-seo, pinecone]
 
   # ── Data Layer ──
@@ -36,7 +36,7 @@ cases:
   - id: ret-007
     task: "Create empty states, loading skeletons, and error boundaries for the dashboard"
     expected: [design-craft, ui-patterns, shadcn-tailwind]
-    not_expected: [drizzle-orm, ci-cd, stripe-billing]
+    not_expected: [drizzle-orm, ci-cd, redis-caching]
 
   - id: ret-008
     task: "Design the color palette, typography scale, and spacing system for the app"
@@ -46,12 +46,12 @@ cases:
   # ── Payments ──
   - id: ret-009
     task: "Integrate Stripe for monthly subscriptions with a customer portal"
-    expected: [stripe-billing, payments, security]
+    expected: [payments, security]
     not_expected: [react-native, vitepress, svg-animation]
 
   - id: ret-010
     task: "Handle Stripe webhooks for subscription lifecycle events"
-    expected: [stripe-billing, payments, security]
+    expected: [payments, security]
     not_expected: [design-craft, local-seo, pinecone]
 
   # ── AI ──
@@ -71,15 +71,13 @@ cases:
     expected: [ci-cd, testing, e2e-testing]
     not_expected: [design-craft, svg-animation, payments]
 
-  - id: ret-014
-    task: "Add structured logging, health check endpoint, and error tracking"
-    expected: [observability]
-    not_expected: [design-philosophy, shopify-remix, local-seo]
+  # ret-014 removed — its only expected skill (observability) was retired after the
+  # 2026-06 Fable/Sonnet-4.6 revalidation (zero absorption delta on three model generations).
 
   - id: ret-015
     task: "Deploy the Next.js app to Vercel with preview environments per PR"
     expected: [ci-cd]
-    not_expected: [react-native, pinecone, stripe-billing]
+    not_expected: [react-native, pinecone, woocommerce]
 
   # ── Mobile ──
   - id: ret-016
@@ -101,7 +99,7 @@ cases:
   # ── Testing ──
   - id: ret-019
     task: "Write Playwright E2E tests for the complete auth flow including OAuth"
-    expected: [e2e-testing, testing, auth]
+    expected: [e2e-testing, testing, security]
     not_expected: [svg-animation, design-philosophy, pinecone]
 
   - id: ret-020
@@ -117,7 +115,7 @@ cases:
 
   - id: ret-022
     task: "Build a type-safe API layer with middleware for auth and request logging"
-    expected: [trpc, security, observability]
+    expected: [trpc, security]
     not_expected: [shopify-remix, vitepress, svg-animation]
 
   - id: ret-023
@@ -129,7 +127,7 @@ cases:
   - id: ret-024
     task: "Build an MCP server that exposes database query and file search tools to AI agents"
     expected: [mcp-server, ai-integration]
-    not_expected: [stripe-billing, woocommerce, visual-design]
+    not_expected: [payments, woocommerce, visual-design]
 
   # ── Data/Migration ──
   - id: ret-025
@@ -170,17 +168,17 @@ cases:
   - id: ret-031
     task: "Set up a branching strategy for a 4-person team with feature branches, PR reviews, and release flow"
     expected: [git-workflow, ci-cd]
-    not_expected: [react-native, stripe-billing, pinecone]
+    not_expected: [react-native, payments, pinecone]
 
   # ── Debugging/Incident ──
   - id: ret-032
     task: "Debug why authenticated API requests intermittently return 401 in production"
-    expected: [debug, observability, auth]
+    expected: [debug, security]
     not_expected: [svg-animation, design-craft, shopify-remix]
 
   - id: ret-033
     task: "Write an incident response runbook for database failover with rollback procedures"
-    expected: [incident-response, observability, database-migrations]
+    expected: [incident-response, database-migrations]
     not_expected: [design-philosophy, local-seo, react-native]
 
   # ── Security Testing ──
@@ -204,7 +202,7 @@ cases:
   - id: ret-037
     task: "Integrate DataForSEO and Google Search Console APIs to build an SEO dashboard"
     expected: [seo-integrations, seo-foundations]
-    not_expected: [auth, stripe-billing, react-native]
+    not_expected: [payments, react-native, drizzle-orm]
 
   # ── Agent/Eval Meta ──
   - id: ret-038
@@ -215,7 +213,7 @@ cases:
   - id: ret-039
     task: "Architect a multi-agent system where a coordinator spawns specialized subagents for parallel work"
     expected: [multi-agent-coordination, context-engineering, evaluation]
-    not_expected: [local-seo, stripe-billing, woocommerce]
+    not_expected: [local-seo, payments, woocommerce]
 
   # ── Routing Meta-Skills ──
   - id: ret-040
@@ -226,7 +224,7 @@ cases:
   - id: ret-041
     task: "Determine the right SEO skill stack for a local plumber's website"
     expected: [seo-routing, local-seo, seo-foundations]
-    not_expected: [react-native, stripe-billing, ai-integration]
+    not_expected: [react-native, payments, ai-integration]
 
   # ── Orchestration ──
   - id: ret-042

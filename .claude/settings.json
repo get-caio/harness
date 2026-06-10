@@ -31,7 +31,7 @@
           },
           {
             "type": "command",
-            "command": "file_path=$(jq -r '.tool_input.file_path // .tool_input.path // empty'); if echo \"$file_path\" | grep -qE 'CURRENT_PHASE$'; then echo '🔄 PHASE BOUNDARY DETECTED — Run these before starting the next phase:'; echo '  1. Spawn auditor agent — full product audit (dead endpoints, schema-UI gaps, pattern inconsistencies)'; echo '  2. Spawn product-critic agent — product quality check (flows, UX, spec fidelity)'; echo '  3. Spawn refactorer agent — codebase cleanup (dedup, naming, dead code)'; echo '  4. Run /audit for security and code quality review'; echo 'Complete all four before proceeding to next phase tickets.'; fi",
+            "command": "file_path=$(jq -r '.tool_input.file_path // .tool_input.path // empty'); if echo \"$file_path\" | grep -qE 'CURRENT_PHASE$'; then echo '🔄 PHASE BOUNDARY DETECTED — run the phase-gate workflow before starting the next phase:'; echo '  Workflow({ name: \"phase-gate\" }) — auditor + product-critic + code-audit in parallel, adversarial verification, type manifest, refactor pass, gate verdict'; echo 'Fallback (no Workflow tool or script): 1. spawn auditor agent  2. spawn product-critic agent  3. spawn refactorer agent  4. run /audit, then /audit types.'; echo 'Do not start next-phase tickets until the gate passes.'; fi",
             "timeout": 10
           },
           {

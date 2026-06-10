@@ -15,6 +15,20 @@ This is the last gate before human deploys to production. Run after all phases c
 
 ---
 
+## Workflow Mode (preferred when available)
+
+If the `Workflow` tool is available and `.claude/workflows/pre-ship.js` exists, run the checklist structurally — every category below becomes its own agent with a forced pass/warn/fail schema, blockers are adversarially verified (demoted only on unanimous refutation), and the ship/no-ship verdict is computed in code:
+
+```
+Workflow({ name: 'pre-ship' })                                              # full
+Workflow({ name: 'pre-ship', args: { quick: true } })                       # hotfix mode
+Workflow({ name: 'pre-ship', args: { appUrl: 'http://localhost:3000' } })   # + live red-team probes
+```
+
+The report lands in `progress/pre-ship-report.md`. The manual checklist below is the fallback, and the reference the workflow's lenses are aligned to section-by-section.
+
+---
+
 ## The Checklist
 
 ### 0. Infrastructure Verification (Deployer Agent)

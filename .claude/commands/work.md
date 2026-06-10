@@ -179,17 +179,17 @@ to:
 
 Then, based on ticket content, read applicable skills:
 
-| Ticket involves... | Read...                        |
-| ------------------ | ------------------------------ |
-| **Any UI work**    | `specs/design/DESIGN.md` first |
-| Database/Prisma    | `skills/nextjs-bun-prisma`     |
-| Authentication     | `skills/auth`                  |
-| API routes/tRPC    | `skills/trpc`                  |
-| Claude API         | `skills/ai-integration`        |
-| React Native       | `skills/react-native`          |
-| Stripe/payments    | `skills/payments`              |
-| Tests              | `skills/testing`               |
-| User input/auth    | `skills/security`              |
+| Ticket involves... | Read...                                                       |
+| ------------------ | ------------------------------------------------------------- |
+| **Any UI work**    | `specs/design/DESIGN.md` first                                |
+| Database/Prisma    | `skills/nextjs-bun-prisma`                                    |
+| Authentication     | CLAUDE.md "Compressed Skill Rules" (auth) + `skills/security` |
+| API routes/tRPC    | `skills/trpc`                                                 |
+| Claude API         | `skills/ai-integration`                                       |
+| React Native       | `skills/react-native`                                         |
+| Stripe/payments    | `skills/payments`                                             |
+| Tests              | `skills/testing`                                              |
+| User input/auth    | `skills/security`                                             |
 
 **For UI tickets:** Always check `specs/design/DESIGN.md` for colors, typography, spacing, and component patterns before implementing. Reference `specs/design/assets/` for logo and icon paths.
 

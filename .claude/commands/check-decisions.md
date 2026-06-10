@@ -8,11 +8,23 @@ Scan the current phase's tickets and SPEC.md to identify ambiguities that need h
 - Before starting `/work` on a new phase
 - When encountering unclear requirements during work
 
+## Workflow Mode (preferred when available)
+
+If the `Workflow` tool is available and `.claude/workflows/check-decisions.js` exists, run the scan structurally — one ambiguity scanner per ticket (the long tail gets the same attention as ticket 1), cross-ticket clustering so one underlying question becomes one decision file, and a single writer so sequential numbering cannot collide:
+
+```
+Workflow({ name: 'check-decisions' })                    # phase from specs/CURRENT_PHASE
+Workflow({ name: 'check-decisions', args: { phase: 2 } })
+```
+
+The process below is the fallback, and the source of the decision-file template the workflow's writer uses.
+
 ## Process
 
 ### 1. Load Context
 
 Read:
+
 - `specs/CURRENT_PHASE` — Get phase number
 - `specs/phases/PHASE-N-*.md` — Get tickets for current phase
 - `specs/SPEC.md` — Reference specification
@@ -23,25 +35,30 @@ Read:
 For each ticket in the current phase, check for:
 
 **Technology Choices Not Specified:**
+
 - Which library/framework to use?
 - Which third-party service?
 - Which API version?
 
 **Business Logic Unclear:**
+
 - What happens in edge case X?
 - What are the validation rules?
 - What are the limits/thresholds?
 
 **Contradictions in Spec:**
+
 - Section A says X, section B says Y
 - Data model doesn't match described behavior
 
 **Missing Information:**
+
 - Referenced feature not defined
 - External dependency not documented
 - Required configuration not specified
 
 **Scope Ambiguity:**
+
 - Is feature X in this phase or later?
 - How much of feature Y is needed now?
 
@@ -66,6 +83,7 @@ For each ambiguity found, create a decision document in `specs/decisions/`:
 [Why this matters. What the spec says or doesn't say.]
 
 **From SPEC.md:**
+
 > [Relevant quote if applicable]
 
 **The ambiguity:**
@@ -78,12 +96,15 @@ For each ambiguity found, create a decision document in `specs/decisions/`:
 [Description]
 
 **Pros:**
+
 - ...
 
 **Cons:**
+
 - ...
 
 **Implications:**
+
 - If we choose this, then...
 
 ### Option B: [Name]
@@ -91,12 +112,15 @@ For each ambiguity found, create a decision document in `specs/decisions/`:
 [Description]
 
 **Pros:**
+
 - ...
 
 **Cons:**
+
 - ...
 
 **Implications:**
+
 - If we choose this, then...
 
 ## Recommendation
@@ -142,14 +166,15 @@ Output a summary:
 
 ## Decisions Needing Resolution
 
-| ID | Title | Blocks |
-|----|-------|--------|
-| SD-001 | Auth provider choice | P1-T006, P1-T007 |
-| SD-002 | Vector database selection | P3-T015 |
+| ID     | Title                     | Blocks           |
+| ------ | ------------------------- | ---------------- |
+| SD-001 | Auth provider choice      | P1-T006, P1-T007 |
+| SD-002 | Vector database selection | P3-T015          |
 
 ## Ready to Proceed
 
 The following tickets can proceed without decisions:
+
 - P1-T001: Initialize Next.js project
 - P1-T002: Configure Prisma
 - ...
@@ -159,6 +184,7 @@ The following tickets can proceed without decisions:
 Please resolve the PENDING decisions in `specs/decisions/` before running `/work`.
 
 To resolve a decision:
+
 1. Open the decision file
 2. Choose an option
 3. Fill in "Decision" and "Rationale" sections
@@ -182,6 +208,7 @@ Use sequential numbering across all phases.
 ## Common Spec Decision Categories
 
 ### Technology Choices
+
 - Auth provider (BetterAuth, NextAuth, Clerk)
 - Database (Supabase, Railway, PlanetScale)
 - Vector DB (Pinecone, pgvector, Upstash)
@@ -189,17 +216,20 @@ Use sequential numbering across all phases.
 - File storage (R2, S3, Uploadthing)
 
 ### Architecture
+
 - Monorepo vs separate repos
 - Shared code between web and mobile
 - API structure (tRPC, REST, GraphQL)
 
 ### Business Logic
+
 - Pricing tiers and limits
 - Trial period length
 - Feature flags and rollout strategy
 - Data retention policies
 
 ### Integrations
+
 - Which OAuth providers to support
 - API versions for third-party services
 - Webhook vs polling for data sync
@@ -218,6 +248,7 @@ Use sequential numbering across all phases.
 ## Re-running Check
 
 If you run `/check-decisions` again:
+
 - Don't duplicate existing decisions
 - Only create new decisions for new ambiguities
 - Update report with current state

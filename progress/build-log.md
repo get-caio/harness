@@ -109,3 +109,21 @@ Template for session end:
 2026-02-06 21:41 - Dependency installed: bun add -D vitepress
 2026-02-06 21:47 - Dependency installed: bun add -D vitepress-plugin-mermaid mermaid
 2026-03-19 11:34 - Dependency installed: bun add @anthropic-ai/sdk yaml
+
+## 2026-06-10 — Skill revalidation against Fable 5 / Sonnet 4.6
+
+Re-ran the absorption eval suite (127 cases) against both skill consumers: `claude-fable-5`
+(main loop, ~$47) and `claude-sonnet-4-6` (subagents, ~$14, saved as the new regression
+baseline). The prior baseline was 2026-03-19 on `claude-sonnet-4-20250514`.
+
+- **Removed** (zero delta on three model generations; rules preserved in CLAUDE.md
+  Compressed Skill Rules): `auth`, `observability`, `stripe-billing`. Also removed
+  `anti-slop` — both models pass every slop assertion natively.
+- **Kept — old verdict reversed**: `nextjs-bun-prisma` (+0.3/+0.3), `vitepress` (+0.5/+0.5),
+  `ui-patterns`, `seo-foundations` were negative on Sonnet 4 but positive on the new models.
+  Do not prune on a stale baseline.
+- **Kept despite zeros**: routing/procedural skills (`design-routing`, `seo-routing`,
+  `council`, `code-audit`, `red-team`, `seo-agent-playbook`) — absorption regexes can't
+  measure them; they're load-bearing references in agents/commands/workflows.
+- Eval runner defaults updated: model `claude-sonnet-4-6`, judge `claude-haiku-4-5`,
+  current pricing table.
