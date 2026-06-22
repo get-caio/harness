@@ -46,17 +46,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if git diff --cached --name-only | grep -qE '(auth|api|action|middleware|webhook)'; then echo '⚠️  SECURITY-SENSITIVE FILES IN COMMIT - verify: auth checks, input validation, no secrets'; fi; fi",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '(^|[;&| ])git commit'; then if git diff --cached --name-only | grep -qE '(auth|api|action|middleware|webhook)'; then echo '⚠️  SECURITY-SENSITIVE FILES IN COMMIT - verify: auth checks, input validation, no secrets'; fi; fi",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then changed=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null | grep -E '\\.(ts|tsx|js|jsx)$' | grep -vE '\\.(test|spec)\\.' | head -20); if [ -n \"$changed\" ]; then echo '🔍 POST-COMMIT: Run /simplify to review changed code for reuse, quality, and efficiency:'; echo \"$changed\"; fi; fi",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '(^|[;&| ])git commit'; then changed=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null | grep -E '\\.(ts|tsx|js|jsx)$' | grep -vE '\\.(test|spec)\\.' | head -20); if [ -n \"$changed\" ]; then echo '🔍 POST-COMMIT: Run /simplify to review changed code for reuse, quality, and efficiency:'; echo \"$changed\"; fi; fi",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit.*\\[P[0-9]+-T[0-9]+\\]'; then changed=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null | grep -vE '\\.(test|spec)\\.' | head -10); has_test_only=true; for f in $changed; do echo \"$f\" | grep -qE '\\.(test|spec)\\.' || { has_test_only=false; break; }; done; if [ \"$has_test_only\" = false ]; then echo '📝 POST-COMMIT: Spawn a doc-writer agent (haiku model) to update docs/ for the changes in this ticket commit.'; fi; fi",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '(^|[;&| ])git commit.*\\[P[0-9]+-T[0-9]+\\]'; then changed=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null | grep -vE '\\.(test|spec)\\.' | head -10); has_test_only=true; for f in $changed; do echo \"$f\" | grep -qE '\\.(test|spec)\\.' || { has_test_only=false; break; }; done; if [ \"$has_test_only\" = false ]; then echo '📝 POST-COMMIT: Spawn a doc-writer agent (haiku model) to update docs/ for the changes in this ticket commit.'; fi; fi",
             "timeout": 10
           },
           {
@@ -76,7 +76,7 @@
           },
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if [ -d src ]; then src_files=$(find src -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' 2>/dev/null | grep -vcE '\\.(test|spec)\\.' || echo 0); src_loc=$(find src -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' 2>/dev/null | grep -vE '\\.(test|spec)\\.' | xargs cat 2>/dev/null | wc -l | tr -d ' '); echo \"📊 Codebase: $src_files source files, $src_loc LOC (excluding tests)\"; fi; fi",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '(^|[;&| ])git commit'; then if [ -d src ]; then src_files=$(find src -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' 2>/dev/null | grep -vcE '\\.(test|spec)\\.' || echo 0); src_loc=$(find src -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' 2>/dev/null | grep -vE '\\.(test|spec)\\.' | xargs cat 2>/dev/null | wc -l | tr -d ' '); echo \"📊 Codebase: $src_files source files, $src_loc LOC (excluding tests)\"; fi; fi",
             "timeout": 15
           }
         ]
@@ -98,22 +98,27 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if command -v gitleaks >/dev/null 2>&1; then gitleaks protect --staged --no-banner 2>&1 || (echo '❌ BLOCKED: gitleaks detected secrets in staged changes.' >&2 && exit 1); else if git diff --cached | grep -qiE '(api[_-]?key|secret[_-]?key|password|token|credential|private[_-]?key|client[_-]?secret|access[_-]?token|auth[_-]?token|bearer|jwt[_-]?secret|signing[_-]?key|encryption[_-]?key|database[_-]?url.*@|mongodb\\+srv://|postgres://|mysql://)\\s*[=:]'; then echo '❌ BLOCKED: Potential secret detected in commit. Remove hardcoded credentials.' >&2 && exit 1; fi; fi; fi; exit 0",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '(^|[;&| ])git commit'; then if command -v gitleaks >/dev/null 2>&1; then gitleaks protect --staged --no-banner 2>&1 || (echo '❌ BLOCKED: gitleaks detected secrets in staged changes.' >&2 && exit 1); else if git diff --cached | grep -qiE '(api[_-]?key|secret[_-]?key|password|token|credential|private[_-]?key|client[_-]?secret|access[_-]?token|auth[_-]?token|bearer|jwt[_-]?secret|signing[_-]?key|encryption[_-]?key|database[_-]?url.*@|mongodb\\+srv://|postgres://|mysql://)\\s*[=:]'; then echo '❌ BLOCKED: Potential secret detected in commit. Remove hardcoded credentials.' >&2 && exit 1; fi; fi; fi; exit 0",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if command -v gh >/dev/null 2>&1; then branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null); state=$(gh pr view \"$branch\" --json state --jq .state 2>/dev/null); if [ \"$state\" = \"MERGED\" ]; then echo \"❌ BLOCKED: The PR for branch '$branch' is already MERGED. Do not pile commits onto a merged PR — start a new branch: git checkout -b <new-branch>\" >&2; exit 1; fi; fi; fi; exit 0",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '(^|[;&| ])git commit'; then if command -v gh >/dev/null 2>&1; then branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null); state=$(gh pr view \"$branch\" --json state --jq .state 2>/dev/null); if [ \"$state\" = \"MERGED\" ]; then echo \"❌ BLOCKED: The PR for branch '$branch' is already MERGED. Do not pile commits onto a merged PR — start a new branch: git checkout -b <new-branch> origin/main\" >&2; exit 1; fi; fi; fi; exit 0",
             "timeout": 15
           },
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git commit'; then if git diff --cached --name-only | grep -qE '\\.(ts|tsx|js|jsx)$'; then if [ -f package.json ] && jq -e '.scripts.typecheck' package.json >/dev/null 2>&1; then if ! npm run --silent typecheck 1>&2; then echo '❌ BLOCKED: typecheck failed — fix before committing.' >&2; exit 1; fi; elif [ -f tsconfig.json ]; then if ! npx tsc --noEmit 1>&2; then echo '❌ BLOCKED: TypeScript errors — fix before committing.' >&2; exit 1; fi; fi; if [ -f package.json ] && jq -e '.scripts.test' package.json >/dev/null 2>&1; then if ! npm test --silent 1>&2; then echo '❌ BLOCKED: tests failing — fix before committing.' >&2; exit 1; fi; fi; fi; fi; exit 0",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); echo \"$cmd\" | grep -qE 'git( +-C +[^ ]+)? +push' || exit 0; dir=$(echo \"$cmd\" | grep -oE -- '-C +[^ ]+' | head -1 | sed -E 's/^-C +//'); if [ -n \"$dir\" ] && [ -d \"$dir\" ]; then cd \"$dir\"; fi; command -v gh >/dev/null 2>&1 || exit 0; branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null); [ -z \"$branch\" ] && exit 0; state=$(gh pr view \"$branch\" --json state --jq .state 2>/dev/null); if [ \"$state\" = \"MERGED\" ]; then echo \"❌ BLOCKED: branch '$branch' already has a MERGED PR. Do not push follow-ups to a merged branch — cut a fresh branch off the default branch and open a NEW PR: git checkout -b <new-branch> origin/main\" >&2; exit 1; fi; exit 0",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '(^|[;&| ])git commit'; then if git diff --cached --name-only | grep -qE '\\.(ts|tsx|js|jsx)$'; then if [ -f package.json ] && jq -e '.scripts.typecheck' package.json >/dev/null 2>&1; then if ! npm run --silent typecheck 1>&2; then echo '❌ BLOCKED: typecheck failed — fix before committing.' >&2; exit 1; fi; elif [ -f tsconfig.json ]; then if ! npx tsc --noEmit 1>&2; then echo '❌ BLOCKED: TypeScript errors — fix before committing.' >&2; exit 1; fi; fi; if [ -f package.json ] && jq -e '.scripts.test' package.json >/dev/null 2>&1; then if ! npm test --silent 1>&2; then echo '❌ BLOCKED: tests failing — fix before committing.' >&2; exit 1; fi; fi; fi; fi; exit 0",
             "timeout": 180
           },
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git push.*(prod|origin.*prod)'; then echo '❌ BLOCKED: Cannot push to prod branch. Production deploys are human-only.' >&2 && exit 1; fi; exit 0",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '(^|[;&| ])git push.*(prod|origin.*prod)'; then echo '❌ BLOCKED: Cannot push to prod branch. Production deploys are human-only.' >&2 && exit 1; fi; exit 0",
             "timeout": 5
           },
           {
@@ -128,7 +133,7 @@
           },
           {
             "type": "command",
-            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '^git push'; then if [ -f package.json ]; then if jq -e '.scripts.lint' package.json >/dev/null 2>&1; then echo '🔍 Running lint...'; if ! npm run --silent lint 1>&2; then echo '❌ BLOCKED: Fix lint errors before pushing' >&2; exit 1; fi; fi; if jq -e '.scripts.build' package.json >/dev/null 2>&1; then echo '🔍 Running build...'; if ! npm run --silent build 1>&2; then echo '❌ BLOCKED: Fix build errors before pushing' >&2; exit 1; fi; fi; fi; fi; exit 0",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '(^|[;&| ])git push'; then if [ -f package.json ]; then if jq -e '.scripts.lint' package.json >/dev/null 2>&1; then echo '🔍 Running lint...'; if ! npm run --silent lint 1>&2; then echo '❌ BLOCKED: Fix lint errors before pushing' >&2; exit 1; fi; fi; if jq -e '.scripts.build' package.json >/dev/null 2>&1; then echo '🔍 Running build...'; if ! npm run --silent build 1>&2; then echo '❌ BLOCKED: Fix build errors before pushing' >&2; exit 1; fi; fi; fi; fi; exit 0",
             "timeout": 300
           }
         ]
