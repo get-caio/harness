@@ -1,6 +1,6 @@
 {
   "name": "caio-build-harness",
-  "version": "3.4.0",
+  "version": "3.4.1",
   "description": "CAIO Build Harness — autonomous development framework with phased execution, multi-agent coordination, and safety gates for team projects.",
   "author": {
     "name": "CAIO",
