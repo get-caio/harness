@@ -24,7 +24,7 @@ Automated version of the manual flow: ping Codex for a review, act on the feedba
 3. **Act on the returned `status`:**
    - `mergeable` — report the iteration log and stop. **Merging stays human** (Approval Levels).
    - `human-steps-remaining` — report `humanItems` and `gate.humanOnlySteps` as a punch list and stop.
-   - `checkin-required` — the cadence gate. Use AskUserQuestion: summarize `iterationLog` + `humanItems`, offer **Continue** (re-invoke with `args.startIteration = <nextIteration>` so the iteration count carries on), **Stop here**, or **Adjust** (different `checkinEvery`, or hand items to the human list). Never continue past the gate without the human's answer.
+   - `checkin-required` — the cadence gate. Use AskUserQuestion: summarize `iterationLog` + `humanItems`, offer **Continue**, **Stop here**, or **Adjust** (different `checkinEvery`, or hand items to the human list). To continue, re-invoke forwarding ALL of the previous result's loop state — `args: { pr, startIteration: <nextIteration>, seenCounts: <seenCounts>, humanItems: <humanItems> }` — otherwise the convergence counts and accumulated human list reset and escalation breaks. Never continue past the gate without the human's answer.
    - `blocked` — report `problem`/the failing iteration and stop; this needs the human (dirty tree, wrong branch, codex CLI failure, fixer couldn't land a commit).
 
 4. **Report at the end, whatever the exit:** iterations run, commits made, findings applied vs rejected, and the human punch list.

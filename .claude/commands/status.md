@@ -118,14 +118,13 @@ From progress/build-log.md:
 
 ## Data Sources
 
-| Data            | Source                              |
-| --------------- | ----------------------------------- |
-| Phase number    | `specs/CURRENT_PHASE`               |
-| Phase details   | `specs/phases/PHASE-N-*.md`         |
-| Spec decisions  | `specs/decisions/*.md`              |
-| Arch decisions  | `docs/decisions/*.md`               |
-| Activity log    | `progress/build-log.md`             |
-| CLAUDE.md state | `CLAUDE.md` (Current State section) |
+| Data           | Source                      |
+| -------------- | --------------------------- |
+| Phase number   | `specs/CURRENT_PHASE`       |
+| Phase details  | `specs/phases/PHASE-N-*.md` |
+| Spec decisions | `specs/decisions/*.md`      |
+| Arch decisions | `docs/decisions/*.md`       |
+| Activity log   | `progress/build-log.md`     |
 
 ---
 
@@ -144,17 +143,6 @@ Next: P1-T003 (TODO)
 
 ---
 
-## Update CLAUDE.md State
+## State Lives in the Source Files
 
-After generating status, update the Current State section in CLAUDE.md:
-
-```yaml
-current_phase: 1
-current_ticket: P1-T006
-blocked_on: SD-001
-last_completed: P1-T005
-tickets_done: 5
-tickets_in_phase: 12
-open_spec_decisions: 1
-open_arch_decisions: 0
-```
+`/status` is read-only. The authoritative state is `specs/CURRENT_PHASE`, the phase ticket files, and the decision files — there is no separate state block to update after reporting (the former CLAUDE.md "Current State" YAML was removed as a drift-prone duplicate).

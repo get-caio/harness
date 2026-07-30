@@ -3,7 +3,7 @@ export const meta = {
   description:
     "External-reviewer loop — Codex (Sol) reviews the branch/PR, Claude vets and applies the feedback, commits, and re-reviews, until the PR is mergeable or only human steps remain. Pauses for a human check-in every N iterations (default 5).",
   whenToUse:
-    "After a PR is created or new commits are pushed to one — the automated version of the manual 'ping Codex, act on feedback, repeat' flow. Pass { pr: 123 } for a PR loop (fix commits are pushed), nothing for a local-branch loop (commits stay local). Options: { checkinEvery: 5, startIteration: 1, base: 'main' }. Invoked via /codex-review, which owns the human check-in between runs.",
+    "After a PR is created or new commits are pushed to one — the automated version of the manual 'ping Codex, act on feedback, repeat' flow. Pass { pr: 123 } for a PR loop (fix commits are pushed), nothing for a local-branch loop (commits stay local). Options: { checkinEvery: 5, base: 'main' }; to continue after a check-in, forward the prior result's { startIteration: nextIteration, seenCounts, humanItems }. Invoked via /codex-review, which owns the human check-in between runs.",
   phases: [
     { title: "Scope", detail: "resolve branch, base, and PR state" },
     {
@@ -199,8 +199,10 @@ const guardrails = `GUARDRAILS (non-negotiable):
 
 // ── Iterations ──
 
-const seen = new Map(); // finding key -> times seen (convergence guard)
-const humanItems = []; // accumulated human-only findings
+// Rehydrated from a prior run's result when /codex-review continues after a
+// check-in — otherwise the convergence counts and human list would reset.
+const seen = new Map(Object.entries(args?.seenCounts ?? {})); // finding key -> times seen
+const humanItems = Array.isArray(args?.humanItems) ? [...args.humanItems] : [];
 const iterationLog = [];
 let status = "checkin-required"; // default if we exhaust the batch
 let gate = null;
@@ -215,7 +217,8 @@ for (let n = 0; n < checkinEvery; n++) {
 
 Run one Codex review of this branch and report the findings, vetted and classified.
 
-1. Run: \`codex exec review --base ${scope.base} --color never 2>&1\` from the repo root
+1. Run: \`codex exec --color never review --base ${scope.base} 2>&1\` from the repo root
+   (\`--color\` is an \`exec\` option and must precede the \`review\` subcommand)
    (non-interactive; the model gpt-5.6-sol comes from ~/.codex/config.toml). Give it time.
 2. If the command itself fails, set reviewRan=false with failureNote and stop.
 3. Parse every distinct issue Codex raises. For each, READ THE CODE IT POINTS AT and judge it:
@@ -292,11 +295,30 @@ ${scope.pr ? `Then push to the branch (the pre-push hooks run lint/build — fix
     { label: `fix:${i}`, phase: iterPhase, schema: FIX_SCHEMA },
   );
 
-  if (!fix || !fix.committed) {
+  // Rejecting every finding is a legitimate outcome, not a failure: nothing to commit.
+  const rejectedAll =
+    fix &&
+    !fix.committed &&
+    (fix.applied?.length ?? 0) === 0 &&
+    (fix.rejected?.length ?? 0) > 0;
+  const pushFailed = Boolean(scope.pr && fix?.committed && !fix.pushed);
+  if (
+    !fix ||
+    (!fix.committed && !rejectedAll) ||
+    pushFailed ||
+    fix.testsPassed === false
+  ) {
     status = "blocked";
-    iterationLog[iterationLog.length - 1].error =
-      fix?.notes ?? "fixer failed to commit";
-    log(`Iteration ${i}: fixer did not land a commit — stopping for a human.`);
+    iterationLog[iterationLog.length - 1].error = !fix
+      ? "fixer agent failed"
+      : pushFailed
+        ? "fix commit landed but push failed — the remote PR is stale"
+        : fix.testsPassed === false
+          ? `tests failing after fixes: ${fix.notes ?? "see fixer output"}`
+          : (fix.notes ?? "fixer failed to commit");
+    log(
+      `Iteration ${i}: ${iterationLog[iterationLog.length - 1].error} — stopping for a human.`,
+    );
     break;
   }
   for (const r of fix.rejected ?? []) {
@@ -309,6 +331,13 @@ ${scope.pr ? `Then push to the branch (the pre-push hooks run lint/build — fix
         actionable: "human",
         humanReason: `fixer rejected the finding: ${r.reason}`,
       });
+  }
+  if (rejectedAll) {
+    log(
+      `Iteration ${i}: fixer rejected all ${fix.rejected.length} finding(s) after reading the code — nothing to change. Checking the gate.`,
+    );
+    status = "review-clean";
+    break;
   }
   iterationLog[iterationLog.length - 1].commit = fix.commitMessage;
   iterationLog[iterationLog.length - 1].testsPassed = fix.testsPassed;
@@ -323,18 +352,24 @@ if (status === "review-clean" || status === "checkin-required") {
     scope.pr
       ? `Read-only gate check for PR #${scope.pr}:
 \`gh pr view ${scope.pr} --json mergeable,mergeStateStatus,reviewDecision,statusCheckRollup\`.
-List failing/pending required checks, and spell out humanOnlySteps — approval, merge, and anything
-on this list a bot must not do: ${JSON.stringify(humanItems.map((h) => h.title))}. Change nothing.`
+List failing/pending required checks, and spell out humanOnlySteps — anything a human must do
+BEYOND the final approval and merge (never list those two; they are always human and implied),
+e.g. failing checks only a human can fix and the items on this list: ${JSON.stringify(humanItems.map((h) => h.title))}.
+An empty humanOnlySteps means "nothing left but approve and merge". Change nothing.`
       : `Local mode gate: no PR exists. mergeable=null; humanOnlySteps = ["open a PR when ready",
 plus a human review of: ${JSON.stringify(humanItems.map((h) => h.title))}]. Read-only.`,
     { label: "gate", phase: "Gate", schema: GATE_SCHEMA },
   );
   if (status === "review-clean") {
-    const humanBlocked =
-      (gate?.humanOnlySteps?.length ?? 0) > 0 || humanItems.length > 0;
+    // Defense in depth: approval/merge are always human and must not block the
+    // "mergeable" verdict even if the gate agent lists them anyway.
+    const realSteps = (gate?.humanOnlySteps ?? []).filter(
+      (s) => !/\b(approv\w*|merg\w*)\b/i.test(s),
+    );
+    const humanBlocked = realSteps.length > 0 || humanItems.length > 0;
     status =
       scope.pr && gate?.mergeable && !humanBlocked
-        ? "mergeable"
+        ? "mergeable" // = nothing left but the human's approve + merge
         : "human-steps-remaining";
   }
 }
@@ -349,13 +384,18 @@ return {
   status, // mergeable | human-steps-remaining | checkin-required | blocked
   scope: { branch: scope.branch, base: scope.base, pr: scope.pr },
   iterationsRun: iterationLog.length,
-  nextIteration, // pass back as startIteration to continue after a check-in
+  // To continue after a check-in, /codex-review must pass ALL THREE back as args:
+  // { startIteration: nextIteration, seenCounts, humanItems } — otherwise the
+  // convergence counts and accumulated human list reset.
+  nextIteration,
+  seenCounts: Object.fromEntries(seen),
   iterationLog,
   humanItems: humanItems.map((h) => ({
+    key: h.key,
     title: h.title,
     severity: h.severity,
     file: h.file ?? null,
-    reason: h.humanReason ?? h.detail,
+    reason: h.humanReason ?? h.detail ?? h.reason ?? null,
   })),
   gate,
 };
