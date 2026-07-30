@@ -2,6 +2,8 @@
 
 Automated version of the manual flow: ping Codex for a review, act on the feedback, repeat until the PR is mergeable or only human steps remain. Codex CLI (`codex exec review`, model `gpt-5.6-sol` from `~/.codex/config.toml`) is the reviewer; Claude vets every finding against the code and applies only what holds up.
 
+**This loop is MANDATORY on every PR** (see the Codex Review Gate in `/work` and CLAUDE.md Notes for Agents #33): run it after `gh pr create` and after pushing new commits to an open PR, and drive it to a terminal state before picking up the next ticket. Local mode (no PR) remains optional.
+
 ## Usage
 
 ```

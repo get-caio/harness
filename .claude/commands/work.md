@@ -487,6 +487,8 @@ Then, in this exact order:
 
 **⚠️ AUDIT GATE:** Run `/audit` after completing Phase 1, Phase 2, and before any PR. Catching issues early prevents drift that compounds across phases.
 
+**⚠️ CODEX REVIEW GATE (mandatory on every PR):** Immediately after `gh pr create`, and again after pushing new commits to an open PR, run `/codex-review <PR#>` and drive the loop to a terminal state — `mergeable`, `human-steps-remaining`, or `blocked` — before picking up the next ticket. Do not leave a PR un-reviewed because the loop "can run later": later never comes, and the human ends up doing the review Codex should have batched. The loop's human check-in every 5 iterations is part of the gate, not an obstacle to route around.
+
 **⚠️ TYPE MANIFEST GATE:** `/audit types` is mandatory at every phase boundary. Skipping it causes the next phase to reinvent existing types, which is the single highest-cost integration bug pattern. The manifest takes 1-2 minutes to generate and prevents days of debugging.
 
 ---
