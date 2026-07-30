@@ -101,43 +101,7 @@ Repeat until phase complete or all blocked
 - Spec references something undefined
 - Scope is ambiguous
 
-**Format:**
-
-```markdown
-# [NNN] Decision Title
-
-**Status:** PENDING | DECIDED
-**Phase:** N (which phase this blocks)
-**Created:** YYYY-MM-DD
-
-## Question
-
-What specific clarification is needed from the spec?
-
-## Context
-
-Why this matters. What does the spec say (or not say)?
-
-## Options
-
-### Option A: [Name]
-
-- Pros: ...
-- Cons: ...
-
-### Option B: [Name]
-
-- Pros: ...
-- Cons: ...
-
-## Decision
-
-<!-- Human fills this in -->
-
-## Rationale
-
-<!-- Human explains why -->
-```
+**Format:** Use the template in `/decision` (`.claude/commands/decision.md`).
 
 ### Architecture Decisions (`docs/decisions/`)
 
@@ -217,44 +181,7 @@ _Modify per project as specified in SPEC.md_
 
 ## Available Skills
 
-Reference these before implementing related features:
-
-| Skill                      | Use For                                                       |
-| -------------------------- | ------------------------------------------------------------- |
-| `nextjs-bun-prisma`        | Project structure, API routes, database                       |
-| `react-best-practices`     | React/Next.js performance patterns, bundle optimization       |
-| `trpc`                     | Type-safe API, routers, client setup                          |
-| `ai-integration`           | Claude API, prompts, tool use, streaming                      |
-| `react-native`             | Mobile app, Expo, offline, notifications                      |
-| `payments`                 | Stripe, subscriptions, webhooks                               |
-| `testing`                  | Vitest, unit tests, component tests, MSW mocking              |
-| `e2e-testing`              | Playwright, browser tests, visual regression, a11y            |
-| `security`                 | Input validation, auth checks, secrets                        |
-| `code-quality`             | Complexity limits, refactoring                                |
-| `code-audit`               | Security scanning, dependency audit, codebase health          |
-| `red-team`                 | Adversarial testing against running app, OWASP coverage       |
-| `incident-response`        | Production incidents, rollback, post-mortems                  |
-| `data-protection`          | GDPR, CCPA, privacy, data handling compliance                 |
-| `design-routing`           | **Read first for UI work** — which design skills to combine   |
-| `visual-design`            | Hierarchy, typography, color, spacing, layout, iconography    |
-| `ui-patterns`              | Heuristics, IA, forms, tables, modals, feedback, responsive   |
-| `interaction-motion`       | Motion, timing/easing, micro-interactions, drag-drop, charts  |
-| `design-system`            | Tokens, component API, variant/size, platform conventions     |
-| `svg-animation`            | SMIL animations, concept-driven SVG visuals, particle paths   |
-| `design-craft`             | Empty states, loading states, emotional design, delight       |
-| `seo-routing`              | **Read first for SEO work** — which SEO skills to combine     |
-| `seo-foundations`          | Keyword research, on-page, technical SEO, content, links      |
-| `local-seo`                | GBP, map pack, citations, reviews, competitor intel, DBA      |
-| `aeo-geo`                  | AI visibility — llms.txt, TL;DR blocks, AI mentions, GEO      |
-| `seo-agent-playbook`       | SEO agent workflows, Helm cards, autonomy, onboarding         |
-| `seo-integrations`         | DataForSEO, Google APIs, BrightLocal, connectors, cost model  |
-| `context-engineering`      | Context window management, progressive disclosure, compaction |
-| `multi-agent-coordination` | Subagent patterns, token economics, coordination strategies   |
-| `evaluation`               | Agent quality rubrics, LLM-as-judge, test set design          |
-| `vitepress`                | Documentation site, markdown conventions, sidebar config      |
-| `ci-cd`                    | GitHub Actions, PR checks, preview/prod deploy pipelines      |
-| `git-workflow`             | Multi-engineer branch strategy, PR conventions, conflicts     |
-| `database-migrations`      | Prisma migrations, zero-downtime changes, rollback strategy   |
+Skill names and descriptions load automatically each session — read the relevant skill before implementing a related feature. For UI work, read `design-routing` first; for SEO work, read `seo-routing` first — each says which skills to combine.
 
 ---
 
@@ -322,15 +249,16 @@ When 3+ independent tickets have no file overlap, run **`/coordinate`** — it i
 
 `.claude/workflows/` ships deterministic multi-agent scripts, run via the `Workflow` tool. Prefer these over hand-orchestrating the equivalent agents — fan-out, adversarial verification, ordering, and verdicts are enforced by code, not memory:
 
-| Workflow           | When to Run                                    | Replaces                                                                                   |
-| ------------------ | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `coordinate-phase` | 3+ independent TODO tickets                    | hand-rolled `coordinator` orchestration                                                    |
-| `phase-gate`       | every phase boundary, before `/init-phase N+1` | the remembered auditor / product-critic / refactorer / `/audit` checklist + `/audit types` |
-| `check-decisions`  | after `/init-phase N`, before `/work`          | single-context `/check-decisions` scan                                                     |
-| `review-ticket`    | after a ticket commit / before human PR review | single-lens `reviewer` pass                                                                |
-| `design-review`    | after UI phases, before `/pre-ship`            | single-context `/design-review`                                                            |
-| `pre-ship`         | last gate before human production deploy       | single-context `/pre-ship` checklist                                                       |
-| `doc-sync`         | end of phase, or when docs drift is suspected  | accumulated per-ticket `doc-writer` nags                                                   |
+| Workflow            | When to Run                                                   | Replaces                                                                                                                |
+| ------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `coordinate-phase`  | 3+ independent TODO tickets                                   | hand-rolled `coordinator` orchestration                                                                                 |
+| `phase-gate`        | every phase boundary, before `/init-phase N+1`                | the remembered auditor / product-critic / refactorer / `/audit` checklist + `/audit types`                              |
+| `check-decisions`   | after `/init-phase N`, before `/work`                         | single-context `/check-decisions` scan                                                                                  |
+| `review-ticket`     | after a ticket commit / before human PR review                | single-lens `reviewer` pass                                                                                             |
+| `design-review`     | after UI phases, before `/pre-ship`                           | single-context `/design-review`                                                                                         |
+| `pre-ship`          | last gate before human production deploy                      | single-context `/pre-ship` checklist                                                                                    |
+| `doc-sync`          | end of phase, or when docs drift is suspected                 | accumulated per-ticket `doc-writer` nags                                                                                |
+| `codex-review-loop` | after `gh pr create` / `git push` to an open PR (hook nudges) | the manual "ping Codex (Sol), apply feedback, repeat" loop — run via `/codex-review`, human check-in every 5 iterations |
 
 Invoke as `Workflow({ name: "<name>", args: { ... } })`. If the `Workflow` tool is unavailable, fall back to the corresponding command/agents — the command markdown remains the reference each workflow's lenses are aligned to. Plugin installs must copy the scripts once: `mkdir -p .claude/workflows && cp <harness>/.claude/workflows/*.js .claude/workflows/`.
 
@@ -403,23 +331,6 @@ On resume, the agent re-reads phase state, build log, and conventions to pick up
 - **Expose conflicts, don't average them.** If the codebase has two patterns for the same thing (two error formats, two date utilities, two auth helpers), pick one and use it — don't invent a third that blends both. If it's unclear which is canonical, add an entry to `progress/conventions.md` to lock it in, or create an arch decision if the choice is non-obvious.
 
 - **Fail loudly, never silently.** Catching an error and returning `null`, skipping a record without logging, or swallowing an exception to "keep things working" is a career-ending bug waiting to happen. Throw, log structured errors via `pino`, and return non-2xx status codes. "Successfully processed 86% of records" is not a success — it's a partial outage you hid.
-
----
-
-## Current State
-
-<!-- UPDATED BY AGENT AFTER EACH TICKET -->
-
-```yaml
-current_phase: 1
-current_ticket: null
-blocked_on: null
-last_completed: null
-tickets_done: 0
-tickets_in_phase: 0
-open_spec_decisions: 0
-open_arch_decisions: 0
-```
 
 ---
 
