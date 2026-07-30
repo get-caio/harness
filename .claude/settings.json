@@ -78,6 +78,11 @@
             "type": "command",
             "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '(^|[;&| ])git commit'; then if [ -d src ]; then src_files=$(find src -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' 2>/dev/null | grep -vcE '\\.(test|spec)\\.' || echo 0); src_loc=$(find src -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' 2>/dev/null | grep -vE '\\.(test|spec)\\.' | xargs cat 2>/dev/null | wc -l | tr -d ' '); echo \"📊 Codebase: $src_files source files, $src_loc LOC (excluding tests)\"; fi; fi",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '(^|[;&| ])gh pr create|(^|[;&| ])git( +-C +[^ ]+)? +push'; then command -v gh >/dev/null 2>&1 || exit 0; git log -1 --format=%s 2>/dev/null | grep -q '^\\[codex-review\\]' && exit 0; branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null); [ -z \"$branch\" ] && exit 0; pr=$(gh pr view \"$branch\" --json number,state --jq 'select(.state==\"OPEN\") | .number' 2>/dev/null); if [ -n \"$pr\" ]; then echo \"🤖 PR #$pr has new commits — run /codex-review $pr to start the Codex (Sol) review loop: review → vet → fix → repeat until mergeable or only human steps remain (human check-in every 5 iterations).\"; fi; fi",
+            "timeout": 15
           }
         ]
       }
