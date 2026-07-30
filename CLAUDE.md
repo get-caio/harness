@@ -249,16 +249,16 @@ When 3+ independent tickets have no file overlap, run **`/coordinate`** — it i
 
 `.claude/workflows/` ships deterministic multi-agent scripts, run via the `Workflow` tool. Prefer these over hand-orchestrating the equivalent agents — fan-out, adversarial verification, ordering, and verdicts are enforced by code, not memory:
 
-| Workflow            | When to Run                                                   | Replaces                                                                                                                |
-| ------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `coordinate-phase`  | 3+ independent TODO tickets                                   | hand-rolled `coordinator` orchestration                                                                                 |
-| `phase-gate`        | every phase boundary, before `/init-phase N+1`                | the remembered auditor / product-critic / refactorer / `/audit` checklist + `/audit types`                              |
-| `check-decisions`   | after `/init-phase N`, before `/work`                         | single-context `/check-decisions` scan                                                                                  |
-| `review-ticket`     | after a ticket commit / before human PR review                | single-lens `reviewer` pass                                                                                             |
-| `design-review`     | after UI phases, before `/pre-ship`                           | single-context `/design-review`                                                                                         |
-| `pre-ship`          | last gate before human production deploy                      | single-context `/pre-ship` checklist                                                                                    |
-| `doc-sync`          | end of phase, or when docs drift is suspected                 | accumulated per-ticket `doc-writer` nags                                                                                |
-| `codex-review-loop` | after `gh pr create` / `git push` to an open PR (hook nudges) | the manual "ping Codex (Sol), apply feedback, repeat" loop — run via `/codex-review`, human check-in every 5 iterations |
+| Workflow            | When to Run                                                                                                | Replaces                                                                                                                                                           |
+| ------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `coordinate-phase`  | 3+ independent TODO tickets                                                                                | hand-rolled `coordinator` orchestration                                                                                                                            |
+| `phase-gate`        | every phase boundary, before `/init-phase N+1`                                                             | the remembered auditor / product-critic / refactorer / `/audit` checklist + `/audit types`                                                                         |
+| `check-decisions`   | after `/init-phase N`, before `/work`                                                                      | single-context `/check-decisions` scan                                                                                                                             |
+| `review-ticket`     | after a ticket commit / before human PR review                                                             | single-lens `reviewer` pass                                                                                                                                        |
+| `design-review`     | after UI phases, before `/pre-ship`                                                                        | single-context `/design-review`                                                                                                                                    |
+| `pre-ship`          | last gate before human production deploy                                                                   | single-context `/pre-ship` checklist                                                                                                                               |
+| `doc-sync`          | end of phase, or when docs drift is suspected                                                              | accumulated per-ticket `doc-writer` nags                                                                                                                           |
+| `codex-review-loop` | **MANDATORY on every PR** — after `gh pr create` and after pushing new commits to an open PR (hook nudges) | the manual "ping Codex (Sol), apply feedback, repeat" loop — run via `/codex-review` to a terminal state before the next ticket; human check-in every 5 iterations |
 
 Invoke as `Workflow({ name: "<name>", args: { ... } })`. If the `Workflow` tool is unavailable, fall back to the corresponding command/agents — the command markdown remains the reference each workflow's lenses are aligned to. Plugin installs must copy the scripts once: `mkdir -p .claude/workflows && cp <harness>/.claude/workflows/*.js .claude/workflows/`.
 
@@ -368,6 +368,7 @@ On resume, the agent re-reads phase state, build log, and conventions to pick up
 30. **Run `refactorer` between phases** — codebase cleanup: copy-pasted patterns, missing utils, naming inconsistencies. Zero new behavior, just cleanup PRs.
 31. **Import, don't reinvent types** — before defining ANY Zod schema or TypeScript interface, grep `lib/**/types.ts` and the prior phase's `specs/phases/PHASE-(N-1)-type-manifest.md` for the concept. If a canonical type exists, import it. See Type Discipline section for the full rule.
 32. **Generate type manifest at phase end** — after the last ticket in a phase is DONE, run `/audit types` to write `specs/phases/PHASE-N-type-manifest.md` so the next phase knows what to import. This is mandatory before `/init-phase N+1`.
+33. **Codex review is mandatory on every PR** — after `gh pr create`, and after pushing new commits to an open PR, run `/codex-review <PR#>` and drive the loop to a terminal state (`mergeable`, `human-steps-remaining`, or `blocked`) before starting the next ticket. The every-5-iterations human check-in is part of the gate.
 
 ---
 
