@@ -146,7 +146,7 @@ describe("codex-review-loop state machine", () => {
     expect(result.status).toBe("human-steps-remaining");
   });
 
-  it("BLOCKED state with zero failing checks = awaiting approval = mergeable", async () => {
+  it("BLOCKED is never treated as approval-only — branch protection can block on more", async () => {
     const { result } = await runLoop({ pr: 123 }, (label) => {
       if (label === "scope") return SCOPE_PR;
       if (label === "review:1") return review();
@@ -154,7 +154,34 @@ describe("codex-review-loop state machine", () => {
         return { ...GATE_GREEN, mergeStateStatus: "BLOCKED" };
       throw new Error(`unexpected agent call: ${label}`);
     });
-    expect(result.status).toBe("mergeable");
+    expect(result.status).toBe("human-steps-remaining");
+  });
+
+  it("missing gate evidence fails closed: no failingChecks array means unverified", async () => {
+    const { result } = await runLoop({ pr: 123 }, (label) => {
+      if (label === "scope") return SCOPE_PR;
+      if (label === "review:1") return review();
+      if (label === "gate")
+        return {
+          mergeable: true,
+          mergeStateStatus: "CLEAN",
+          reviewDecision: null,
+          humanOnlySteps: [],
+          // failingChecks omitted — must NOT default to "CI is green"
+        };
+      throw new Error(`unexpected agent call: ${label}`);
+    });
+    expect(result.status).toBe("human-steps-remaining");
+  });
+
+  it("a failed gate agent (null result) fails closed", async () => {
+    const { result } = await runLoop({ pr: 123 }, (label) => {
+      if (label === "scope") return SCOPE_PR;
+      if (label === "review:1") return review();
+      if (label === "gate") return null;
+      throw new Error(`unexpected agent call: ${label}`);
+    });
+    expect(result.status).toBe("human-steps-remaining");
   });
 
   it("approve/merge listed in humanOnlySteps does not block mergeable", async () => {

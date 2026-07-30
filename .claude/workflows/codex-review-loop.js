@@ -136,7 +136,16 @@ const FIX_SCHEMA = {
 
 const GATE_SCHEMA = {
   type: "object",
-  required: ["mergeable"],
+  // Every field is required: the mergeable verdict fails CLOSED, so omitted
+  // evidence (no failingChecks array, no humanOnlySteps) must be impossible at
+  // the schema layer and is additionally treated as unverified in the code.
+  required: [
+    "mergeable",
+    "mergeStateStatus",
+    "reviewDecision",
+    "failingChecks",
+    "humanOnlySteps",
+  ],
   properties: {
     mergeable: {
       type: ["boolean", "null"],
@@ -372,15 +381,24 @@ plus a human review of: ${JSON.stringify(humanItems.map((h) => h.title))}]. Read
       (s) => !/\b(approv\w*|merg\w*)\b/i.test(s),
     );
     const humanBlocked = realSteps.length > 0 || humanItems.length > 0;
-    // CI must actually be green: zero failing/pending checks AND a merge state
-    // that isn't hiding a problem (UNSTABLE/DIRTY/BEHIND/DRAFT never qualify).
-    // BLOCKED qualifies only because failingChecks must be empty too — then it
-    // just means the always-human approval hasn't happened yet.
+    // The mergeable verdict FAILS CLOSED: every piece of gate evidence must be
+    // present and concrete — a missing array or status is unverified, not clean.
+    const gateComplete =
+      typeof gate?.mergeable === "boolean" &&
+      typeof gate?.mergeStateStatus === "string" &&
+      Array.isArray(gate?.failingChecks) &&
+      Array.isArray(gate?.humanOnlySteps);
+    // Only CLEAN and HAS_HOOKS establish passing status. BLOCKED is GitHub's
+    // generic "merge blocked" — branch protection can require reviews, resolved
+    // conversations, deployments, or custom rules, so it can never be assumed
+    // to be approval-only; a BLOCKED PR reports human-steps-remaining with the
+    // gate data saying why.
     const ciClean =
-      (gate?.failingChecks?.length ?? 0) === 0 &&
-      ["CLEAN", "HAS_HOOKS", "BLOCKED"].includes(gate?.mergeStateStatus ?? "");
+      gateComplete &&
+      gate.failingChecks.length === 0 &&
+      ["CLEAN", "HAS_HOOKS"].includes(gate.mergeStateStatus);
     status =
-      scope.pr && gate?.mergeable && ciClean && !humanBlocked
+      scope.pr && gate?.mergeable === true && ciClean && !humanBlocked
         ? "mergeable" // = nothing left but the human's approve + merge
         : "human-steps-remaining";
   }
