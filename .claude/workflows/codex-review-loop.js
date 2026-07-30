@@ -144,7 +144,12 @@ const GATE_SCHEMA = {
     },
     mergeStateStatus: { type: ["string", "null"] },
     reviewDecision: { type: ["string", "null"] },
-    failingChecks: { type: "array", items: { type: "string" } },
+    failingChecks: {
+      type: "array",
+      items: { type: "string" },
+      description:
+        "every FAILING or still-PENDING required check — an empty array asserts CI is fully green",
+    },
     humanOnlySteps: {
       type: "array",
       items: { type: "string" },
@@ -367,8 +372,15 @@ plus a human review of: ${JSON.stringify(humanItems.map((h) => h.title))}]. Read
       (s) => !/\b(approv\w*|merg\w*)\b/i.test(s),
     );
     const humanBlocked = realSteps.length > 0 || humanItems.length > 0;
+    // CI must actually be green: zero failing/pending checks AND a merge state
+    // that isn't hiding a problem (UNSTABLE/DIRTY/BEHIND/DRAFT never qualify).
+    // BLOCKED qualifies only because failingChecks must be empty too — then it
+    // just means the always-human approval hasn't happened yet.
+    const ciClean =
+      (gate?.failingChecks?.length ?? 0) === 0 &&
+      ["CLEAN", "HAS_HOOKS", "BLOCKED"].includes(gate?.mergeStateStatus ?? "");
     status =
-      scope.pr && gate?.mergeable && !humanBlocked
+      scope.pr && gate?.mergeable && ciClean && !humanBlocked
         ? "mergeable" // = nothing left but the human's approve + merge
         : "human-steps-remaining";
   }
@@ -384,10 +396,12 @@ return {
   status, // mergeable | human-steps-remaining | checkin-required | blocked
   scope: { branch: scope.branch, base: scope.base, pr: scope.pr },
   iterationsRun: iterationLog.length,
-  // To continue after a check-in, /codex-review must pass ALL THREE back as args:
-  // { startIteration: nextIteration, seenCounts, humanItems } — otherwise the
-  // convergence counts and accumulated human list reset.
+  // To continue after a check-in, /codex-review must pass the whole continuation
+  // set back as args: { pr, base, checkinEvery, startIteration: nextIteration,
+  // seenCounts, humanItems } — otherwise convergence counts, the human list, or
+  // the requested cadence silently reset.
   nextIteration,
+  checkinEvery,
   seenCounts: Object.fromEntries(seen),
   iterationLog,
   humanItems: humanItems.map((h) => ({
