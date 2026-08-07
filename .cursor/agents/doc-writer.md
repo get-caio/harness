@@ -1,6 +1,6 @@
 ---
 name: doc-writer
-description: Documentation update specialist. Spawned after ticket completion to update VitePress docs. Cheap and fast — uses haiku model for structured documentation updates.
+description: Documentation update specialist. Spawned after ticket completion to update VitePress docs. Cheap and fast — model inherit (follows Grok parent).
 model: inherit
 ---
 

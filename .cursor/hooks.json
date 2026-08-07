@@ -4,7 +4,7 @@
     "beforeShellExecution": [
       {
         "command": ".cursor/hooks/block-prod-push.sh",
-        "matcher": "git\\s+(push|merge)",
+        "matcher": "git",
         "timeout": 15,
         "failClosed": true
       },
@@ -18,7 +18,7 @@
     "preToolUse": [
       {
         "command": ".cursor/hooks/protect-env.sh",
-        "matcher": "Write|Edit",
+        "matcher": "Write|Edit|Delete",
         "timeout": 10,
         "failClosed": true
       }

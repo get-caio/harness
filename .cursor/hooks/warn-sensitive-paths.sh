@@ -10,11 +10,11 @@ if [ -n "$p" ]; then
   paths="$p"
 fi
 
-# git commit in shell — inspect staged names
+# After git commit, staged index is empty — inspect the commit that just landed
 cmd=$(printf '%s' "$input" | jq -r '.command // empty')
-if echo "$cmd" | grep -qE '(^|[;&|[:space:]])git[[:space:]]+commit([[:space:]]|$)'; then
-  staged=$(git diff --cached --name-only 2>/dev/null || true)
-  paths="$paths"$'\n'"$staged"
+if echo "$cmd" | grep -qE '(^|[;&|[:space:]])git([[:space:]]+(-C[[:space:]]+[^[:space:]]+|-[a-zA-Z@]+))*[[:space:]]+commit([[:space:]]|$)'; then
+  committed=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || true)
+  paths="$paths"$'\n'"$committed"
 fi
 
 sensitive=$(printf '%s\n' "$paths" | grep -iE '(^|/)(\.env|auth|middleware|webhook|payment|stripe|schema\.prisma|drizzle|.*/api/)' || true)
@@ -24,9 +24,4 @@ if [ -n "$sensitive" ]; then
   printf '%s\n' "$sensitive" | sort -u | head -30 >&2
 fi
 
-# Non-blocking: empty or allow JSON depending on hook type
-if printf '%s' "$input" | jq -e '.command' >/dev/null 2>&1; then
-  # afterShellExecution — no required output
-  exit 0
-fi
 exit 0

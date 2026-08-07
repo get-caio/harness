@@ -172,9 +172,9 @@ Engineers who installed via **Option A (`cp -r`)** never receive updates — the
 
 ## What's Included
 
-### 24 Skills
+### Domain skills (~59 in `.claude/skills/`)
 
-Full-stack development knowledge covering: Next.js/Bun/Prisma, React, Auth, tRPC, AI integration, React Native, Payments, Testing, E2E Testing, Security, Code Quality, Code Audit, Red Team, Observability, Incident Response, Data Protection, Design Craft, Context Engineering, Multi-Agent Coordination, Evaluation, VitePress, CI/CD, Git Workflow, Database Migrations.
+Prefer the allowlist (`testing`, `security`, `database-migrations`, `git-workflow`, `payments`, `design-routing`, stack skills). Do not auto-load marketplace platforms (Shopify/Woo/WP/Heroku/…). See `HARNESS.md` → Available Skills.
 
 ### 11 Commands
 

@@ -37,7 +37,7 @@ If `/check-decisions` creates new PENDING files, **stop coding** those tickets. 
 | ----------------------------------- | ----------------------------------------------------------------------- |
 | Grind tickets                       | `/work` or “implement next TODO”                                        |
 | Single clear ticket (M)             | Spawn `implementer` (`inherit` → Grok)                                  |
-| Large / multi-file (L/XL)           | Spawn `feature` (`inherit`, worktree)                                   |
+| Large / multi-file (L/XL)           | Spawn `feature` (`inherit`); use `/coordinate`/worktree when isolation needed |
 | Ambiguous design / schema / tenancy | Spawn `architect` (Opus; Fable if allowed) → PENDING decision if needed |
 | Requirements mushy                  | Spawn `interviewer` (Opus)                                              |
 | 3+ independent TODOs                | `/coordinate` (prefer workflow over hand-rolled `coordinator`)          |

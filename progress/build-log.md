@@ -142,3 +142,9 @@ baseline). The prior baseline was 2026-03-19 on `claude-sonnet-4-20250514`.
 **Change:** Expanded skill allowlist / situational / do-not-auto-load in `HARNESS.md` + `harness.mdc`; full Cursor day playbook in `docs/guide/cursor-harness.md`; AGENTS.md overrides.
 **Branch:** `cursor/cursor-harness-ca82`
 
+
+## 2026-08-07 — Sol review fixes (PR #10)
+
+**Change:** Hardened block-prod-push / protect-env / stop-continue hooks; Delete matcher; warn uses diff-tree; doc-writer + README/INSTALL nits; regression tests for Sol blockers.
+**Reviewer:** gpt-5.6-sol-high
+

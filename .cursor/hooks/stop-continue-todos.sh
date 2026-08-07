@@ -29,11 +29,13 @@ if [ -z "$phase_file" ] || [ ! -f "$phase_file" ]; then
   exit 0
 fi
 
-# Count TODO tickets in tables (status column)
-todo_count=$(grep -E '\|[[:space:]]*P[0-9]+-T[0-9]+[[:space:]]*\|[^|]*\|[[:space:]]*TODO[[:space:]]*\|' "$phase_file" | wc -l | tr -d ' ')
-blocked_count=$(grep -E '\|[[:space:]]*P[0-9]+-T[0-9]+[[:space:]]*\|[^|]*\|[[:space:]]*BLOCKED[[:space:]]*\|' "$phase_file" | wc -l | tr -d ' ')
+# grep -c exits 1 on zero matches — swallow so set -e does not abort
+todo_count=$(grep -cE '\|[[:space:]]*P[0-9]+-T[0-9]+[[:space:]]*\|[^|]*\|[[:space:]]*TODO[[:space:]]*\|' "$phase_file" 2>/dev/null || true)
+blocked_count=$(grep -cE '\|[[:space:]]*P[0-9]+-T[0-9]+[[:space:]]*\|[^|]*\|[[:space:]]*BLOCKED[[:space:]]*\|' "$phase_file" 2>/dev/null || true)
+todo_count=${todo_count:-0}
+blocked_count=${blocked_count:-0}
 
-if [ "${todo_count:-0}" -gt 0 ]; then
+if [ "$todo_count" -gt 0 ]; then
   msg="Harness stop-continue: ${todo_count} TODO ticket(s) remain in ${phase_file}. Continue the /work loop: pick the next unblocked TODO, implement with TDD, commit with [PN-TXXX], mark DONE. Do not invent DECIDED decisions. If all remaining are blocked (${blocked_count} BLOCKED), stop and report blockers."
   jq -n --arg m "$msg" '{followup_message:$m}'
   exit 0

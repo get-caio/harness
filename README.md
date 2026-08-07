@@ -164,19 +164,11 @@ Created during implementation when multiple valid approaches exist.
 
 ## Skills Included
 
-| Skill               | Coverage                                             |
-| ------------------- | ---------------------------------------------------- |
-| `nextjs-bun-prisma` | Project structure, server actions, database          |
-| `auth`              | Authentication, OAuth, sessions                      |
-| `trpc`              | Type-safe API, routers, client                       |
-| `ai-integration`    | Claude API, prompts, tool use                        |
-| `react-native`      | Expo, offline, notifications                         |
-| `payments`          | Stripe, subscriptions, webhooks                      |
-| `testing`           | Vitest, unit tests, component tests, MSW             |
-| `e2e-testing`       | Playwright, visual regression, accessibility         |
-| `security`          | Validation, auth checks, secrets                     |
-| `code-quality`      | Complexity limits, refactoring                       |
-| `code-audit`        | Security scanning, dependency audit, codebase health |
+~59 domain skills live in `.claude/skills/` (shared; do not copy into `.cursor/skills/`).
+
+**Allowlist (prefer):** `testing`, `security`, `database-migrations`, `git-workflow`, `payments`, `design-routing`, `nextjs-bun-prisma` / `drizzle-orm`, `trpc`, `ci-cd`, `bun-runtime`, `code-quality`, `vitepress`.
+
+Auth / observability / stripe-billing rules live as compressed skill rules in `HARNESS.md` (those skill folders were removed after absorption evals). Full prefer / situational / do-not-auto-load tables: `HARNESS.md` → Available Skills.
 
 ## Safety Guardrails
 
