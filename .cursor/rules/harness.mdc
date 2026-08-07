@@ -1,0 +1,60 @@
+---
+description: CAIO build harness OS — ticket loop, decisions, commits, model routing
+alwaysApply: true
+---
+
+# Harness rules (always on)
+
+You are running the **CAIO Build Harness**. Full OS: `HARNESS.md`. Product map: `AGENTS.md`.
+
+## Runtime
+
+- **Parent (daily driver):** Grok. Do not switch the parent to Opus/Fable/Sol.
+- **Specialists:** spawn `.cursor/agents/*` — architect/interviewer/coordinator/auditor/product-critic → Opus (Fable optional); reviewer/verifier → Sol; implementer/feature/tester/deployer/refactorer/doc-writer → `inherit`.
+- **Skills:** domain knowledge in `.claude/skills/`. Workflow slash skills in `.cursor/skills/workflow/`. Prefer allowlist: `testing`, `security`, `database-migrations`, `git-workflow`, `payments`, `design-routing`, `drizzle-orm` / `nextjs-bun-prisma`, `trpc`, `ci-cd`. Do not auto-load the full marketplace.
+- **Claude Code compat:** thin `CLAUDE.md` points at `HARNESS.md`; `.claude/commands` and `.claude/agents` remain valid.
+
+## State files (source of truth)
+
+| What | Where |
+| ---- | ----- |
+| Phase number | `specs/CURRENT_PHASE` |
+| Tickets | `specs/phases/PHASE-N-*.md` |
+| Spec decisions | `specs/decisions/*.md` |
+| Arch decisions | `docs/decisions/*.md` |
+| Progress | `progress/build-log.md` |
+| Conventions | `progress/conventions.md` |
+| Dead ends | `progress/dead-ends.md` |
+
+## Work loop
+
+1. Read `CURRENT_PHASE` → phase file → next `TODO` (deps satisfied, no PENDING blocker).
+2. Mark `IN_PROGRESS` → TDD → quality gate (`bun test` / lint / typecheck) → commit `[PN-TXXX] …` → mark `DONE` → log → docs.
+3. Immediately pick the next TODO. Stop only when phase complete, all remaining blocked, human interrupt, or 3 consecutive failures on the same ticket.
+
+## Decisions (critical)
+
+- Spec ambiguity → `specs/decisions/NNN-*.md` status `PENDING`; mark ticket `BLOCKED`.
+- Arch ambiguity → `docs/decisions/NNN-*.md` status `PENDING`; mark ticket `BLOCKED`.
+- **Never invent a `DECIDED` decision.** Humans decide. Agents may recommend.
+- Do not start blocked tickets until blockers are `DECIDED`.
+
+## Commits & approvals
+
+- Commit format: `[P1-T001] Brief description`
+- Agent may commit to feature branches and open PRs.
+- **Never** merge/push to `prod`. Merge to `main` = human. Payment/auth/schema/env = human review.
+
+## Quality (non-negotiable)
+
+- Every ticket has tests that assert acceptance criteria (no `expect(true).toBe(true)` / bare `toBeDefined()`).
+- Import types from `lib/**/types.ts` / prior phase type manifest — do not reinvent.
+- Fail loudly (structured logs); no silent swallow.
+- Surgical diffs — no drive-by refactors.
+- After PR create / new commits on open PR: run Codex/Sol review loop to a terminal state when that workflow exists.
+
+## Before UI / schema / auth
+
+- UI → `specs/design/DESIGN.md` + `design-routing` skill.
+- Schema → `database-migrations` skill; expand-contract.
+- Auth/API input → `security` skill + Zod validation + ownership checks.

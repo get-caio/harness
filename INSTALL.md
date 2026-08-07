@@ -2,7 +2,14 @@
 
 ## Overview
 
-The Build Harness is a Claude Code plugin that provides autonomous development capabilities: phased ticket execution, multi-agent coordination, safety gates, and 24 skills for full-stack development.
+The Build Harness provides autonomous development capabilities: phased ticket execution, multi-agent coordination, safety gates, and domain skills.
+
+**Runtimes:**
+
+| Runtime           | Role                                                                            |
+| ----------------- | ------------------------------------------------------------------------------- |
+| **Cursor + Grok** | Preferred daily driver — parent conductor; Opus/Fable/Sol via `.cursor/agents/` |
+| **Claude Code**   | Compat — thin `CLAUDE.md` → `HARNESS.md`; commands/agents under `.claude/`      |
 
 ---
 
@@ -14,9 +21,13 @@ The Build Harness is a Claude Code plugin that provides autonomous development c
 # Clone the harness repo
 git clone https://github.com/YOUR_ORG/harness.git
 
-# Copy .claude/ into your project
+# Copy Claude + Cursor surfaces
 cp -r harness/.claude/ YOUR_PROJECT/.claude/
+cp -r harness/.cursor/ YOUR_PROJECT/.cursor/
+cp harness/HARNESS.md YOUR_PROJECT/HARNESS.md
+cp harness/AGENTS.md YOUR_PROJECT/AGENTS.md
 cp harness/CLAUDE.md YOUR_PROJECT/CLAUDE.md
+# Edit YOUR_PROJECT/AGENTS.md with product stack/paths
 ```
 
 ### Option B: Use as a git submodule
@@ -26,8 +37,11 @@ cp harness/CLAUDE.md YOUR_PROJECT/CLAUDE.md
 cd YOUR_PROJECT
 git submodule add https://github.com/YOUR_ORG/harness.git .harness
 
-# Symlink the .claude directory
+# Symlink both surfaces
 ln -s .harness/.claude .claude
+ln -s .harness/.cursor .cursor
+cp .harness/HARNESS.md HARNESS.md
+cp .harness/AGENTS.md AGENTS.md
 cp .harness/CLAUDE.md CLAUDE.md
 ```
 
@@ -48,6 +62,8 @@ Then each engineer can install via:
 ```bash
 claude /install caio-build-harness
 ```
+
+**Note:** The marketplace installs the Claude Code plugin (`.claude/`). For Cursor daily-driver use, also copy `.cursor/`, `HARNESS.md`, and `AGENTS.md` from this repo (Option A/B) until a Cursor-native distribution exists.
 
 ---
 
@@ -77,10 +93,12 @@ Place your product specification at `specs/SPEC.md`. This is the master referenc
 
 ### 3. Verify the installation
 
-```bash
-# Check that commands are available
-claude /status
+**Cursor:** open Agent with parent model **Grok 4.5**, run `/status`.
 
+**Claude Code:**
+
+```bash
+claude /status
 # Should show: Current Phase, ticket counts, etc.
 ```
 
@@ -90,7 +108,9 @@ claude /status
 
 ### Per-Engineer Settings
 
-Each engineer should have their Claude Code configured for the project. The `.claude/settings.json` in the repo handles most configuration, but engineers can add personal overrides in `.claude/settings.local.json` (gitignored):
+**Cursor:** set the Agent parent model to **Grok 4.5**. Specialists are pinned in `.cursor/agents/*` (Opus/Sol/inherit). Do not set Opus/Fable/Sol as the parent default.
+
+**Claude Code:** `.claude/settings.json` handles most configuration; personal overrides go in `.claude/settings.local.json` (gitignored):
 
 ```json
 {
@@ -116,7 +136,8 @@ These are set automatically by `.claude/settings.json`:
 ```bash
 cd harness && git pull
 cp -r .claude/ YOUR_PROJECT/.claude/
-cp CLAUDE.md YOUR_PROJECT/CLAUDE.md
+cp -r .cursor/ YOUR_PROJECT/.cursor/
+cp HARNESS.md AGENTS.md CLAUDE.md YOUR_PROJECT/
 ```
 
 ### Option B: Submodule
@@ -171,26 +192,31 @@ Full-stack development knowledge covering: Next.js/Bun/Prisma, React, Auth, tRPC
 | `/design-review`   | Visual polish audit                    |
 | `/clarify`         | Clarify requirements                   |
 
-### 8 Agents
+### Agents (Cursor model IDs in `.cursor/agents/`)
 
-| Agent         | Model  | Purpose                                |
-| ------------- | ------ | -------------------------------------- |
-| `feature`     | sonnet | Large feature implementation           |
-| `implementer` | sonnet | Medium ticket implementation           |
-| `architect`   | opus   | System design decisions                |
-| `reviewer`    | opus   | Code review                            |
-| `tester`      | sonnet | Test writing and coverage              |
-| `interviewer` | opus   | Requirements refinement                |
-| `coordinator` | opus   | Parallel agent orchestration           |
-| `doc-writer`  | haiku  | Documentation updates (cheap and fast) |
+| Agent                                                                           | Cursor model          | Purpose                                |
+| ------------------------------------------------------------------------------- | --------------------- | -------------------------------------- |
+| `feature` / `implementer` / `tester` / `deployer` / `refactorer` / `doc-writer` | `inherit`             | Implementation, tests, docs            |
+| `architect` / `interviewer` / `coordinator` / `auditor` / `product-critic`      | Opus (Fable optional) | Hard thinking                          |
+| `reviewer` / `verifier`                                                         | Sol                   | Independent review (verifier readonly) |
+
+Claude Code agents under `.claude/agents/` keep `opus` / `sonnet` / `haiku` aliases for compat.
 
 ### Safety Hooks
 
+**Cursor (`.cursor/hooks.json`):**
+
+- Block `git push` / merge to `prod`
+- Protect `.env*` from agent writes
+- Warn on auth/api/payment/schema edits
+- Optional stop-continue when TODO tickets remain
+
+**Claude Code (`.claude/settings.json`):**
+
 - Pre-commit: secrets detection, type checking, test running
-- Pre-push: lint and build verification
-- Protected files: `.env`, `.git/`, lockfiles blocked from agent edits
-- Production guard: blocks pushes/merges to prod branch
-- Security audit: auto-runs on dependency installs
+- Production guard + dependency audit hooks
+
+Hooks are **not** a substitute for GitHub Actions CI.
 
 ---
 
