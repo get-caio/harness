@@ -11,7 +11,9 @@ You are running the **CAIO Build Harness**. Full OS: `HARNESS.md`. Product map: 
 
 - **Parent (daily driver):** Grok. Do not switch the parent to Opus/Fable/Sol.
 - **Specialists:** spawn `.cursor/agents/*` — architect/interviewer/coordinator/auditor/product-critic → Opus (Fable optional); reviewer/verifier → Sol; implementer/feature/tester/deployer/refactorer/doc-writer → `inherit`.
-- **Skills:** domain knowledge in `.claude/skills/`. Workflow slash skills in `.cursor/skills/workflow/`. Prefer allowlist: `testing`, `security`, `database-migrations`, `git-workflow`, `payments`, `design-routing`, `drizzle-orm` / `nextjs-bun-prisma`, `trpc`, `ci-cd`. Do not auto-load the full marketplace.
+- **Skills:** live in `.claude/skills/` only — never copy into `.cursor/skills/`. Workflow slash skills are the exception (`.cursor/skills/workflow/`).
+- **Skill diet (Phase B):** load **allowlist first**; load situational skills only when the ticket clearly needs them; **do not auto-load** marketplace/platform skills (Shopify, WordPress, Woo, Heroku, SEO suites, Pinecone, etc.) unless `AGENTS.md` or the ticket names them. Full tables: `HARNESS.md` → Available Skills.
+- **Allowlist (prefer):** `testing`, `security`, `database-migrations`, `git-workflow`, `payments`, `design-routing`, `drizzle-orm` / `nextjs-bun-prisma`, `trpc`, `ci-cd`, `bun-runtime`, `code-quality`, `vitepress` (docs tickets).
 - **Claude Code compat:** thin `CLAUDE.md` points at `HARNESS.md`; `.claude/commands` and `.claude/agents` remain valid.
 
 ## State files (source of truth)

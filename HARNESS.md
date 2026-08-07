@@ -3,6 +3,7 @@
 You are an autonomous development agent working on a CAIO incubator project. This file is the **runtime-agnostic operating system**: phases, tickets, decisions, quality gates, and commit conventions.
 
 **Runtime notes:**
+
 - **Cursor (daily driver):** Parent session = Grok. Specialists are `.cursor/agents/*` with pinned models. Slash workflows live in `.cursor/skills/workflow/`.
 - **Claude Code (compat):** Thin `CLAUDE.md` points here. Commands/agents under `.claude/` still work.
 - **Product map:** Stack-specific patterns belong in `AGENTS.md` (per project), not here.
@@ -186,7 +187,56 @@ _Modify per project as specified in SPEC.md_
 
 ## Available Skills
 
-Skill names and descriptions load automatically each session — read the relevant skill before implementing a related feature. For UI work, read `design-routing` first; for SEO work, read `seo-routing` first — each says which skills to combine.
+Domain skills live in **`.claude/skills/`** (shared by Cursor and Claude Code). **Do not duplicate them into `.cursor/skills/`** — only slash workflows belong there.
+
+Read the relevant skill **before** implementing a related feature. Cursor already discovers skill descriptions; still open the `SKILL.md` when the ticket touches that domain.
+
+### Skill diet (do not auto-load the marketplace)
+
+Agents must prefer a small allowlist. Other skills stay in the repo for CAIO apps that need them, but must not be pulled into context by default.
+
+#### Prefer (allowlist) — load when relevant
+
+| Skill                 | When                                   |
+| --------------------- | -------------------------------------- |
+| `testing`             | Every ticket with code                 |
+| `security`            | Auth, API input, webhooks, secrets     |
+| `database-migrations` | Schema / Prisma / Drizzle changes      |
+| `git-workflow`        | Branches, PRs, multi-engineer flow     |
+| `payments`            | Stripe / billing                       |
+| `design-routing`      | Any UI (routes to other design skills) |
+| `nextjs-bun-prisma`   | Standard CAIO web stack                |
+| `drizzle-orm`         | When the product uses Drizzle          |
+| `trpc`                | tRPC routers / clients                 |
+| `ci-cd`               | GitHub Actions / pipelines             |
+| `bun-runtime`         | Bun APIs, scripts, tooling             |
+| `code-quality`        | Complexity / refactor review           |
+| `vitepress`           | `docs/` updates                        |
+
+Compressed rules for removed skills (`auth`, `observability`, `stripe-billing`) remain authoritative in **Compressed Skill Rules** below.
+
+#### Situational — load only when the ticket needs them
+
+| Skill                                                                                                                                                  | When                                            |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| `design-philosophy`, `visual-design`, `ui-patterns`, `design-system`, `design-craft`, `design-taste-frontend`, `interaction-motion`, `shadcn-tailwind` | Via `design-routing` for UI work                |
+| `design-minimalist`, `design-brutalist`, `design-redesign`                                                                                             | Only if DESIGN.md / ticket picks that aesthetic |
+| `e2e-testing`, `msw-mock-api`, `react-best-practices`, `react-native`                                                                                  | E2E, mocks, RN tickets                          |
+| `ai-integration`, `mcp-server`, `multi-agent-coordination`, `context-engineering`, `evaluation`, `council`                                             | AI / agent / eval work                          |
+| `code-audit`, `red-team`, `data-protection`, `gdpr-consent`, `incident-response`, `debug`                                                              | Audit, security test, compliance, incidents     |
+| `redis-caching`, `resend-email`, `data-migration`, `contract-testing`, `turborepo`                                                                     | Infra matching the ticket                       |
+| `seo-routing` (+ `seo-foundations`, `local-seo`, `aeo-geo`, `seo-*`)                                                                                   | SEO tickets only — start at `seo-routing`       |
+
+#### Do not auto-load — keep until a ticket/AGENTS.md names them
+
+These are marketplace / alternate-platform skills. Leave them on disk for other CAIO apps; **do not** open them during a normal CAIO Next.js ticket:
+
+- `shopify-remix`, `woocommerce`, `wordpress-plugin`
+- `heroku-deploy`, `cloudflare-dns`, `mysql-planetscale`, `pinecone`
+- `svg-animation` (presentation decks only)
+- Broad SEO/plugin suites when the product is not an SEO surface
+
+Product repos may tighten this list further in `AGENTS.md`.
 
 ---
 
@@ -216,14 +266,14 @@ Skill names and descriptions load automatically each session — read the releva
 
 ### Model Routing Matrix
 
-| Role | Default model (Cursor) | When |
-| ---- | ---------------------- | ---- |
-| Daily driver (parent) | Grok 4.5 | Ticket loop, exploration, routine impl |
-| `implementer` / `feature` / `tester` / `deployer` / `refactorer` | `inherit` | Clear tickets, TDD, cleanup |
+| Role                                                                       | Default model (Cursor)                        | When                                                      |
+| -------------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------- |
+| Daily driver (parent)                                                      | Grok 4.5                                      | Ticket loop, exploration, routine impl                    |
+| `implementer` / `feature` / `tester` / `deployer` / `refactorer`           | `inherit`                                     | Clear tickets, TDD, cleanup                               |
 | `architect` / `interviewer` / `coordinator` / `auditor` / `product-critic` | `claude-opus-5[effort=high]` (Fable optional) | Schema, tenancy, ambiguous design, parallel orchestration |
-| `reviewer` / `verifier` | `gpt-5.6-sol` | Independent second opinion; verifier is readonly |
-| `doc-writer` / explore | `inherit` or fast | Cheap context / docs |
-| Cloud babysit | Grok parent + specialists | Overnight `/work`-style loops |
+| `reviewer` / `verifier`                                                    | `gpt-5.6-sol`                                 | Independent second opinion; verifier is readonly          |
+| `doc-writer` / explore                                                     | `inherit` or fast                             | Cheap context / docs                                      |
+| Cloud babysit                                                              | Grok parent + specialists                     | Overnight `/work`-style loops                             |
 
 **Fable:** Prefer Opus by default. If Fable is available and privacy/opt-in allows, parent may spawn architect-class agents with `claude-fable-5`. Do not hard-require Fable.
 
@@ -231,21 +281,21 @@ Skill names and descriptions load automatically each session — read the releva
 
 ### Available Agents
 
-| Agent | Cursor model | Purpose | Isolation |
-| ----- | ------------ | ------- | --------- |
-| `feature` | `inherit` | Large feature implementation (L/XL tickets) | worktree |
-| `implementer` | `inherit` | Medium ticket implementation (M tickets) | same tree |
-| `architect` | Opus (Fable optional) | System design, architecture decisions | same tree |
-| `reviewer` | Sol | Code review before human | same tree |
-| `verifier` | Sol (readonly) | Independent acceptance-criteria check | same tree |
-| `tester` | `inherit` | Test writing, coverage improvement | same tree |
-| `interviewer` | Opus | Requirements refinement | same tree |
-| `coordinator` | Opus | Parallel phase orchestration | same tree |
-| `doc-writer` | `inherit` | Documentation updates | same tree |
-| `auditor` | Opus (readonly) | Full product audit between phases | same tree |
-| `product-critic` | Opus (readonly) | Product quality / UX fidelity | same tree |
-| `deployer` | `inherit` | Pre-deploy checklist | same tree |
-| `refactorer` | `inherit` | Codebase cleanup (no new behavior) | same tree |
+| Agent            | Cursor model          | Purpose                                     | Isolation |
+| ---------------- | --------------------- | ------------------------------------------- | --------- |
+| `feature`        | `inherit`             | Large feature implementation (L/XL tickets) | worktree  |
+| `implementer`    | `inherit`             | Medium ticket implementation (M tickets)    | same tree |
+| `architect`      | Opus (Fable optional) | System design, architecture decisions       | same tree |
+| `reviewer`       | Sol                   | Code review before human                    | same tree |
+| `verifier`       | Sol (readonly)        | Independent acceptance-criteria check       | same tree |
+| `tester`         | `inherit`             | Test writing, coverage improvement          | same tree |
+| `interviewer`    | Opus                  | Requirements refinement                     | same tree |
+| `coordinator`    | Opus                  | Parallel phase orchestration                | same tree |
+| `doc-writer`     | `inherit`             | Documentation updates                       | same tree |
+| `auditor`        | Opus (readonly)       | Full product audit between phases           | same tree |
+| `product-critic` | Opus (readonly)       | Product quality / UX fidelity               | same tree |
+| `deployer`       | `inherit`             | Pre-deploy checklist                        | same tree |
+| `refactorer`     | `inherit`             | Codebase cleanup (no new behavior)          | same tree |
 
 ### Ticket Sizing & Delegation
 
@@ -293,10 +343,10 @@ After each ticket, spawn a `doc-writer` agent (`inherit` / fast) to update the r
 
 `.claude/settings.json` still configures Claude Code permissions and hooks:
 
-| Variable | Value | Purpose |
-| -------- | ----- | ------- |
-| `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` | `70` | Compact context at 70% usage (default 80) |
-| `CLAUDE_CODE_SUBAGENT_MODEL` | `sonnet` | Default model for Claude Code subagents |
+| Variable                          | Value    | Purpose                                   |
+| --------------------------------- | -------- | ----------------------------------------- |
+| `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` | `70`     | Compact context at 70% usage (default 80) |
+| `CLAUDE_CODE_SUBAGENT_MODEL`      | `sonnet` | Default model for Claude Code subagents   |
 
 ### Session Management
 

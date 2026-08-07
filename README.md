@@ -102,7 +102,7 @@ project/
 └── .mcp.json
 ```
 
-See [docs/guide/cursor-harness.md](docs/guide/cursor-harness.md) for the Cursor daily-driver playbook.
+See [docs/guide/cursor-harness.md](docs/guide/cursor-harness.md) for the Cursor daily-driver playbook (morning → `/work` → PR gates → Cloud overnight). Skill diet (allowlist vs do-not-auto-load) lives in `HARNESS.md` → Available Skills.
 
 ## Model routing
 

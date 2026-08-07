@@ -136,3 +136,9 @@ baseline). The prior baseline was 2026-03-19 on `claude-sonnet-4-20250514`.
 **Branch:** `cursor/cursor-harness-ca82`
 **Note:** Domain skills remain in `.claude/skills/` (no copy). Claude Code remains compatible.
 
+
+## 2026-08-07 — Phase B+C: Skill diet + daily-driver playbook
+
+**Change:** Expanded skill allowlist / situational / do-not-auto-load in `HARNESS.md` + `harness.mdc`; full Cursor day playbook in `docs/guide/cursor-harness.md`; AGENTS.md overrides.
+**Branch:** `cursor/cursor-harness-ca82`
+

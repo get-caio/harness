@@ -93,6 +93,48 @@ describe("Cursor dual-harness surface", () => {
     expect(harness).toContain("Grok 4.5");
     expect(harness).toContain("Never pin Opus");
   });
+
+  test("skill diet documents allowlist and do-not-auto-load", () => {
+    const harness = readFileSync(join(root, "HARNESS.md"), "utf8");
+    expect(harness).toContain("Skill diet");
+    expect(harness).toContain("Do not auto-load");
+    for (const skill of [
+      "testing",
+      "security",
+      "database-migrations",
+      "git-workflow",
+      "payments",
+      "design-routing",
+    ]) {
+      expect(harness).toContain(`\`${skill}\``);
+    }
+    for (const banned of [
+      "shopify-remix",
+      "woocommerce",
+      "wordpress-plugin",
+      "heroku-deploy",
+    ]) {
+      expect(harness).toContain(`\`${banned}\``);
+    }
+
+    const rules = readFileSync(join(root, ".cursor/rules/harness.mdc"), "utf8");
+    expect(rules).toContain("Skill diet");
+    expect(rules).toContain("Allowlist (prefer)");
+  });
+
+  test("daily-driver playbook covers morning work PR and cloud", () => {
+    const playbook = readFileSync(
+      join(root, "docs/guide/cursor-harness.md"),
+      "utf8",
+    );
+    expect(playbook).toContain("## Morning");
+    expect(playbook).toContain("## Workday loop");
+    expect(playbook).toContain("## Before a PR");
+    expect(playbook).toContain("## Overnight / Cloud babysit");
+    expect(playbook).toContain("Team Rules");
+    expect(playbook).toContain("/check-decisions");
+    expect(playbook).toContain("verifier");
+  });
 });
 
 describe("Cursor hook scripts", () => {
