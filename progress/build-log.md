@@ -127,3 +127,24 @@ baseline). The prior baseline was 2026-03-19 on `claude-sonnet-4-20250514`.
   measure them; they're load-bearing references in agents/commands/workflows.
 - Eval runner defaults updated: model `claude-sonnet-4-6`, judge `claude-haiku-4-5`,
   current pricing table.
+
+---
+
+## 2026-08-07 — Phase A: Cursor dual-harness surface
+
+**Change:** Extracted `HARNESS.md`, thinned `CLAUDE.md`, added `AGENTS.md`, `.cursor/agents` (model-pinned), `.cursor/skills/workflow` slash skills, `harness.mdc`, `hooks.json`, `environment.json`.
+**Branch:** `cursor/cursor-harness-ca82`
+**Note:** Domain skills remain in `.claude/skills/` (no copy). Claude Code remains compatible.
+
+
+## 2026-08-07 — Phase B+C: Skill diet + daily-driver playbook
+
+**Change:** Expanded skill allowlist / situational / do-not-auto-load in `HARNESS.md` + `harness.mdc`; full Cursor day playbook in `docs/guide/cursor-harness.md`; AGENTS.md overrides.
+**Branch:** `cursor/cursor-harness-ca82`
+
+
+## 2026-08-07 — Sol review fixes (PR #10)
+
+**Change:** Hardened block-prod-push / protect-env / stop-continue hooks; Delete matcher; warn uses diff-tree; doc-writer + README/INSTALL nits; regression tests for Sol blockers.
+**Reviewer:** gpt-5.6-sol-high
+
