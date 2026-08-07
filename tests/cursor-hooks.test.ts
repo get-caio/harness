@@ -174,6 +174,31 @@ describe("Cursor hook scripts", () => {
     expect(permission(stdout)).toBe("deny");
   });
 
+  test("block-prod-push denies git -C push from a foreign prod checkout", async () => {
+    const fixture = mkdtempSync(join(tmpdir(), "harness-prod-c-"));
+    const init = Bun.spawnSync(["git", "init", "-b", "prod"], { cwd: fixture });
+    expect(init.exitCode).toBe(0);
+    writeFileSync(join(fixture, "README"), "x\n");
+    Bun.spawnSync(["git", "config", "user.email", "test@example.com"], { cwd: fixture });
+    Bun.spawnSync(["git", "config", "user.name", "Test"], { cwd: fixture });
+    Bun.spawnSync(["git", "add", "README"], { cwd: fixture });
+    Bun.spawnSync(["git", "commit", "-m", "init"], { cwd: fixture });
+
+    const { stdout, exitCode } = await runHook("block-prod-push.sh", {
+      command: `git -C ${fixture} push origin HEAD`,
+    });
+    expect(exitCode).toBe(0);
+    expect(permission(stdout)).toBe("deny");
+  });
+
+  test("block-prod-push denies quoted prod refspec", async () => {
+    const { stdout, exitCode } = await runHook("block-prod-push.sh", {
+      command: "git push origin HEAD:'prod'",
+    });
+    expect(exitCode).toBe(0);
+    expect(permission(stdout)).toBe("deny");
+  });
+
   test("block-prod-push denies force-with-lease to main", async () => {
     const { stdout, exitCode } = await runHook("block-prod-push.sh", {
       command: "git push --force-with-lease origin HEAD:main",
@@ -221,6 +246,18 @@ describe("Cursor hook scripts", () => {
     ];
     for (const payload of cases) {
       const { stdout, exitCode } = await runHook("protect-env.sh", payload);
+      expect(exitCode).toBe(0);
+      expect(permission(stdout)).toBe("deny");
+    }
+  });
+
+  test("protect-env denies chained commands mentioning .env", async () => {
+    for (const command of [
+      "cat .env; install /tmp/replacement .env",
+      "cat .env; touch .env",
+      "perl -pi -e s/a/b/ .env",
+    ]) {
+      const { stdout, exitCode } = await runHook("protect-env.sh", { command });
       expect(exitCode).toBe(0);
       expect(permission(stdout)).toBe("deny");
     }

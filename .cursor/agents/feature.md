@@ -16,7 +16,7 @@ Large features (3+ hours, multiple files) benefit from:
 - No accumulated cruft from previous tickets
 - Clear start and end boundaries
 - Single responsibility
-- **Worktree isolation** — your changes can't conflict with other agents or engineers
+- Optional isolation — when the parent uses `/coordinate` or an explicit git worktree (Cursor frontmatter alone does not create one)
 
 ## What You Receive
 

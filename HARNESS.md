@@ -281,30 +281,30 @@ Product repos may tighten this list further in `AGENTS.md`.
 
 ### Available Agents
 
-| Agent            | Cursor model          | Purpose                                     | Isolation |
-| ---------------- | --------------------- | ------------------------------------------- | --------- |
-| `feature`        | `inherit`             | Large feature implementation (L/XL tickets) | worktree  |
-| `implementer`    | `inherit`             | Medium ticket implementation (M tickets)    | same tree |
-| `architect`      | Opus (Fable optional) | System design, architecture decisions       | same tree |
-| `reviewer`       | Sol                   | Code review before human                    | same tree |
-| `verifier`       | Sol (readonly)        | Independent acceptance-criteria check       | same tree |
-| `tester`         | `inherit`             | Test writing, coverage improvement          | same tree |
-| `interviewer`    | Opus                  | Requirements refinement                     | same tree |
-| `coordinator`    | Opus                  | Parallel phase orchestration                | same tree |
-| `doc-writer`     | `inherit`             | Documentation updates                       | same tree |
-| `auditor`        | Opus (readonly)       | Full product audit between phases           | same tree |
-| `product-critic` | Opus (readonly)       | Product quality / UX fidelity               | same tree |
-| `deployer`       | `inherit`             | Pre-deploy checklist                        | same tree |
-| `refactorer`     | `inherit`             | Codebase cleanup (no new behavior)          | same tree |
+| Agent            | Cursor model          | Purpose                                     | Isolation                              |
+| ---------------- | --------------------- | ------------------------------------------- | -------------------------------------- |
+| `feature`        | `inherit`             | Large feature implementation (L/XL tickets) | same tree (worktree via `/coordinate`) |
+| `implementer`    | `inherit`             | Medium ticket implementation (M tickets)    | same tree                              |
+| `architect`      | Opus (Fable optional) | System design, architecture decisions       | same tree                              |
+| `reviewer`       | Sol                   | Code review before human                    | same tree                              |
+| `verifier`       | Sol (readonly)        | Independent acceptance-criteria check       | same tree                              |
+| `tester`         | `inherit`             | Test writing, coverage improvement          | same tree                              |
+| `interviewer`    | Opus                  | Requirements refinement                     | same tree                              |
+| `coordinator`    | Opus                  | Parallel phase orchestration                | same tree                              |
+| `doc-writer`     | `inherit`             | Documentation updates                       | same tree                              |
+| `auditor`        | Opus (readonly)       | Full product audit between phases           | same tree                              |
+| `product-critic` | Opus (readonly)       | Product quality / UX fidelity               | same tree                              |
+| `deployer`       | `inherit`             | Pre-deploy checklist                        | same tree                              |
+| `refactorer`     | `inherit`             | Codebase cleanup (no new behavior)          | same tree                              |
 
 ### Ticket Sizing & Delegation
 
-| Size     | Est. Lines | Approach                      | Agent         |
-| -------- | ---------- | ----------------------------- | ------------- |
-| S (< 2h) | < 200      | Work directly in main loop    | (self)        |
-| M (2-4h) | 200-500    | Subagent (stays in same tree) | `implementer` |
-| L (4-8h) | 500+       | Subagent in worktree          | `feature`     |
-| XL (8h+) | 1000+      | Subagent in worktree          | `feature`     |
+| Size     | Est. Lines | Approach                                                     | Agent         |
+| -------- | ---------- | ------------------------------------------------------------ | ------------- |
+| S (< 2h) | < 200      | Work directly in main loop                                   | (self)        |
+| M (2-4h) | 200-500    | Subagent (stays in same tree)                                | `implementer` |
+| L (4-8h) | 500+       | Subagent (`feature`); worktree via `/coordinate` when needed | `feature`     |
+| XL (8h+) | 1000+      | Subagent (`feature`); worktree via `/coordinate` when needed | `feature`     |
 
 ### Parallel Coordination
 
@@ -427,7 +427,7 @@ On resume, re-read phase state, build log, and conventions.
 20. **Run /design-review after Phase 2** — verify visual polish, empty states, loading states, animations
 21. **Update docs after every ticket** — spawn a `doc-writer` agent (`inherit` / fast) to update `docs/`. Skip for test-only changes.
 22. **Never stop between tickets** — after committing a ticket, immediately pick up the next TODO. Only stop when the phase is complete, all tickets are blocked, or the human interrupts.
-23. **Delegate by ticket size** — S/M tickets: work inline. L/XL tickets: spawn `feature` agent in worktree. 3+ independent tickets: run `/coordinate` (the deterministic `coordinate-phase` workflow) for parallel execution.
+23. **Delegate by ticket size** — S/M tickets: work inline. L/XL tickets: spawn `feature` agent; use `/coordinate` (or an explicit worktree) when isolation is required — Cursor agent frontmatter alone does not create a worktree. 3+ independent tickets: run `/coordinate`.
 24. **Read `git-workflow` skill** before creating branches or PRs on multi-engineer projects.
 25. **Read `database-migrations` skill** before any schema changes — follow expand-contract for zero-downtime.
 26. **Read `ci-cd` skill** when setting up or modifying GitHub Actions workflows.

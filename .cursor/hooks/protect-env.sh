@@ -28,18 +28,23 @@ if [ -z "$cmd" ]; then
   allow
 fi
 
-# Any shell mention of .env* — default deny; allow only clear read-only commands
+# Any shell mention of .env* — default deny; allow only a single read-only invocation
 if ! echo "$cmd" | grep -qE '\.env([A-Za-z0-9_.-]*)?'; then
   allow
 fi
 
-# Explicit mutation patterns (always deny)
-if echo "$cmd" | grep -qE '>|>>|tee([[:space:]]|$)|sed[[:space:]]|python[0-9.]*[[:space:]]|node[[:space:]]|bun[[:space:]]|dd[[:space:]]|truncate|[[:space:]](rm|mv|cp|chmod|chown)[[:space:]]|^(rm|mv|cp|chmod|chown)[[:space:]]|git[[:space:]]+(checkout|restore|clean|rm|add)([[:space:]]|$)|nano[[:space:]]|vim[[:space:]]|vi[[:space:]]|code[[:space:]]'; then
+# Reject chaining / subshells / redirections / process substitution involving .env
+if echo "$cmd" | grep -qE ';|\||&&|\|\||`|\$\(|>|<'; then
   deny "Blocked: do not modify .env* files via shell. Use human-approved env configuration."
 fi
 
-# Allow only known read-only entrypoints
-if echo "$cmd" | grep -qE '^(cat|head|tail|less|more|bat|file|stat|ls|wc|rg|grep|git[[:space:]]+(show|diff|log))([[:space:]]|$)'; then
+# Explicit mutation entrypoints
+if echo "$cmd" | grep -qE '(^|[[:space:]])(sed|python[0-9.]*|node|bun|dd|truncate|rm|mv|cp|chmod|chown|tee|install|perl|ruby|php|nano|vim|vi|code)([[:space:]]|$)|git[[:space:]]+(checkout|restore|clean|rm|add)([[:space:]]|$)'; then
+  deny "Blocked: do not modify .env* files via shell. Use human-approved env configuration."
+fi
+
+# Entire command must be one read-only invocation (optional args/paths only)
+if echo "$cmd" | grep -qE '^(cat|head|tail|less|more|bat|file|stat|ls|wc|rg|grep|git[[:space:]]+(show|diff|log))([[:space:]]+[^;&|<>`\$]+)*[[:space:]]*$'; then
   allow
 fi
 
