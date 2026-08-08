@@ -33,15 +33,15 @@ If `/check-decisions` creates new PENDING files, **stop coding** those tickets. 
 
 ## Workday loop
 
-| Move                                | How                                                                           |
-| ----------------------------------- | ----------------------------------------------------------------------------- |
-| Grind tickets                       | `/work` or “implement next TODO”                                              |
-| Single clear ticket (M)             | Spawn `implementer` (`inherit` → Grok)                                        |
-| Large / multi-file (L/XL)           | Spawn `feature` (`inherit`); use `/coordinate`/worktree when isolation needed |
-| Ambiguous design / schema / tenancy | Spawn `architect` (Opus; Fable if allowed) → PENDING decision if needed       |
-| Requirements mushy                  | Spawn `interviewer` (Opus)                                                    |
-| 3+ independent TODOs                | `/coordinate` (prefer workflow over hand-rolled `coordinator`)                |
-| Docs after a ticket                 | Spawn `doc-writer` (`inherit`)                                                |
+| Move                                | How                                                                      |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| Grind tickets                       | `/work` or “implement next TODO”                                         |
+| Single clear ticket (M)             | Spawn `implementer` (`grok-4.5[effort=high]`)                            |
+| Large / multi-file (L/XL)           | Spawn `feature` (Grok); use `/coordinate`/worktree when isolation needed |
+| Ambiguous design / schema / tenancy | Spawn `architect` (Opus; Fable if allowed) → PENDING decision if needed  |
+| Requirements mushy                  | Spawn `interviewer` (Opus)                                               |
+| 3+ independent TODOs                | `/coordinate` (prefer workflow over hand-rolled `coordinator`)           |
+| Docs after a ticket                 | Spawn `doc-writer` (Grok)                                                |
 
 ### Hard rules while working
 
@@ -84,7 +84,7 @@ Cloud agents are for long loops, not for inventing product decisions.
 | Role                                                                | Model                        | Notes                                  |
 | ------------------------------------------------------------------- | ---------------------------- | -------------------------------------- |
 | Parent                                                              | Grok 4.5                     | Conductor only                         |
-| implementer / feature / tester / deployer / refactorer / doc-writer | `inherit`                    | Follows Grok                           |
+| implementer / feature / tester / deployer / refactorer / doc-writer | `grok-4.5[effort=high]`      | Prefer Grok; do not use Sonnet         |
 | architect / interviewer / coordinator / auditor / product-critic    | `claude-opus-5[effort=high]` | Fable optional via `claude-fable-5`    |
 | reviewer / verifier                                                 | `gpt-5.6-sol`                | Independent opinion; verifier readonly |
 
@@ -131,6 +131,8 @@ Repo hooks reinforce prod-push and `.env` protection; dashboard rules cover org-
 ## Anti-patterns
 
 - Pinning Opus/Fable/Sol as the parent model for ticket grind
+- Spawning `implementer` / `feature` on Sonnet (use Grok; escalate only when needed)
+- Shipping a product repo with `.claude/agents` but **without** `.cursor/agents` (Cursor then hits `model: sonnet`)
 - Copying all `.claude/skills` into `.cursor/skills`
 - Dumping full `HARNESS.md` into always-on rules
 - Auto-loading Shopify/WordPress/SEO/Heroku skills on a standard CAIO app

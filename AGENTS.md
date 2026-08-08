@@ -67,4 +67,4 @@ Product-specific Cursor rules (e.g. `**/engine/**`, `**/api/**`) belong in `.cur
 
 ## Daily driver
 
-Parent model: **Grok 4.5**. Morning: `/status` → `/check-decisions`. Work: `/work`. Hard design: `architect` (Opus). Before PR: `reviewer` + `verifier` (Sol). Overnight: Cloud Agent + stop-continue hook.
+Parent model: **Grok 4.5**. Routine agents (`implementer`, `feature`, …) pin `grok-4.5[effort=high]` — not Sonnet. Morning: `/status` → `/check-decisions`. Work: `/work`. Hard design: `architect` (Opus). Before PR: `reviewer` + `verifier` (Sol). Overnight: Cloud Agent + stop-continue hook. Ensure `.cursor/agents/` is present in this repo.
