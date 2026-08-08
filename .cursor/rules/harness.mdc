@@ -9,12 +9,14 @@ You are running the **CAIO Build Harness**. Full OS: `HARNESS.md`. Product map: 
 
 ## Runtime
 
-- **Parent (daily driver):** Grok. Do not switch the parent to Opus/Fable/Sol.
-- **Specialists:** spawn `.cursor/agents/*` — architect/interviewer/coordinator/auditor/product-critic → Opus (Fable optional); reviewer/verifier → Sol; implementer/feature/tester/deployer/refactorer/doc-writer → `inherit`.
+- **Parent (daily driver):** Grok 4.5. Do not switch the parent to Opus/Fable/Sol.
+- **Routine specialists (prefer Grok):** `implementer` / `feature` / `tester` / `deployer` / `refactorer` / `doc-writer` → `grok-4.5[effort=high]`. Do **not** spawn these with Sonnet.
+- **Escalate only when needed:** architect/interviewer/coordinator/auditor/product-critic → Opus (Fable optional); reviewer/verifier → Sol.
+- **Always spawn from `.cursor/agents/*` in Cursor.** If a product repo only has `.claude/agents/` (`model: sonnet`), Cursor will use Sonnet — copy `.cursor/` from this harness.
 - **Skills:** live in `.claude/skills/` only — never copy into `.cursor/skills/`. Workflow slash skills are the exception (`.cursor/skills/workflow/`).
 - **Skill diet (Phase B):** load **allowlist first**; load situational skills only when the ticket clearly needs them; **do not auto-load** marketplace/platform skills (Shopify, WordPress, Woo, Heroku, SEO suites, Pinecone, etc.) unless `AGENTS.md` or the ticket names them. Full tables: `HARNESS.md` → Available Skills.
 - **Allowlist (prefer):** `testing`, `security`, `database-migrations`, `git-workflow`, `payments`, `design-routing`, `drizzle-orm` / `nextjs-bun-prisma`, `trpc`, `ci-cd`, `bun-runtime`, `code-quality`, `vitepress` (docs tickets).
-- **Claude Code compat:** thin `CLAUDE.md` points at `HARNESS.md`; `.claude/commands` and `.claude/agents` remain valid.
+- **Claude Code compat:** thin `CLAUDE.md` → `HARNESS.md`. `.claude/agents` keep `sonnet`/`opus`/`haiku` for Claude Code only — Cursor must not use those aliases for routine work.
 
 ## State files (source of truth)
 

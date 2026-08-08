@@ -148,3 +148,9 @@ baseline). The prior baseline was 2026-03-19 on `claude-sonnet-4-20250514`.
 **Change:** Hardened block-prod-push / protect-env / stop-continue hooks; Delete matcher; warn uses diff-tree; doc-writer + README/INSTALL nits; regression tests for Sol blockers.
 **Reviewer:** gpt-5.6-sol-high
 
+
+## 2026-08-08 — Pin routine Cursor agents to Grok 4.5
+
+**Change:** `implementer`/`feature`/`tester`/`deployer`/`refactorer`/`doc-writer` now `grok-4.5[effort=high]` (not `inherit`). Docs warn that missing `.cursor/agents` falls through to `.claude` → Sonnet.
+**Why:** Product repos were spawning Sonnet implementers from Claude Code agent frontmatter.
+

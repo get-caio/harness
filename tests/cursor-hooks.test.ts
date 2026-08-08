@@ -83,11 +83,25 @@ describe("Cursor dual-harness surface", () => {
     expect(architect).toMatch(/model:\s*claude-opus-5/);
 
     const implementer = readFileSync(join(agentsDir, "implementer.md"), "utf8");
-    expect(implementer).toMatch(/model:\s*inherit/);
+    expect(implementer).toMatch(/model:\s*grok-4\.5/);
 
     const docWriter = readFileSync(join(agentsDir, "doc-writer.md"), "utf8");
     expect(docWriter.toLowerCase()).not.toContain("haiku");
-    expect(docWriter).toMatch(/model:\s*inherit/);
+    expect(docWriter).toMatch(/model:\s*grok-4\.5/);
+
+    // Routine agents prefer Grok — not inherit/sonnet (avoids Claude Code sonnet bleed)
+    for (const name of [
+      "implementer",
+      "feature",
+      "tester",
+      "deployer",
+      "refactorer",
+      "doc-writer",
+    ]) {
+      const text = readFileSync(join(agentsDir, `${name}.md`), "utf8");
+      expect(text).toMatch(/model:\s*grok-4\.5/);
+      expect(text).not.toMatch(/model:\s*(inherit|sonnet)\s*$/m);
+    }
   });
 
   test("workflow skills are slash-only", () => {
@@ -179,7 +193,9 @@ describe("Cursor hook scripts", () => {
     const init = Bun.spawnSync(["git", "init", "-b", "prod"], { cwd: fixture });
     expect(init.exitCode).toBe(0);
     writeFileSync(join(fixture, "README"), "x\n");
-    Bun.spawnSync(["git", "config", "user.email", "test@example.com"], { cwd: fixture });
+    Bun.spawnSync(["git", "config", "user.email", "test@example.com"], {
+      cwd: fixture,
+    });
     Bun.spawnSync(["git", "config", "user.name", "Test"], { cwd: fixture });
     Bun.spawnSync(["git", "add", "README"], { cwd: fixture });
     Bun.spawnSync(["git", "commit", "-m", "init"], { cwd: fixture });
@@ -212,7 +228,9 @@ describe("Cursor hook scripts", () => {
     const init = Bun.spawnSync(["git", "init", "-b", "prod"], { cwd: fixture });
     expect(init.exitCode).toBe(0);
     writeFileSync(join(fixture, "README"), "x\n");
-    Bun.spawnSync(["git", "config", "user.email", "test@example.com"], { cwd: fixture });
+    Bun.spawnSync(["git", "config", "user.email", "test@example.com"], {
+      cwd: fixture,
+    });
     Bun.spawnSync(["git", "config", "user.name", "Test"], { cwd: fixture });
     Bun.spawnSync(["git", "add", "README"], { cwd: fixture });
     Bun.spawnSync(["git", "commit", "-m", "init"], { cwd: fixture });
