@@ -108,7 +108,7 @@ claude /status
 
 ### Per-Engineer Settings
 
-**Cursor:** set the Agent parent model to **Grok 4.5**. Specialists are pinned in `.cursor/agents/*` (Opus/Sol/inherit). Do not set Opus/Fable/Sol as the parent default.
+**Cursor:** set the Agent parent model to **Grok 4.5**. Specialists are pinned in `.cursor/agents/*` (routine → Grok; architect → Opus; reviewer → Sol). **You must copy `.cursor/`** — if only `.claude/agents/` is present, Cursor will run `implementer` as Sonnet. Do not set Opus/Fable/Sol as the parent default.
 
 **Claude Code:** `.claude/settings.json` handles most configuration; personal overrides go in `.claude/settings.local.json` (gitignored):
 
@@ -196,11 +196,11 @@ Prefer the allowlist (`testing`, `security`, `database-migrations`, `git-workflo
 
 | Agent                                                                           | Cursor model          | Purpose                                |
 | ------------------------------------------------------------------------------- | --------------------- | -------------------------------------- |
-| `feature` / `implementer` / `tester` / `deployer` / `refactorer` / `doc-writer` | `inherit`             | Implementation, tests, docs            |
+| `feature` / `implementer` / `tester` / `deployer` / `refactorer` / `doc-writer` | `grok-4.5[effort=high]` | Implementation, tests, docs (prefer Grok) |
 | `architect` / `interviewer` / `coordinator` / `auditor` / `product-critic`      | Opus (Fable optional) | Hard thinking                          |
 | `reviewer` / `verifier`                                                         | Sol                   | Independent review (verifier readonly) |
 
-Claude Code agents under `.claude/agents/` keep `opus` / `sonnet` / `haiku` aliases for compat.
+Claude Code agents under `.claude/agents/` keep `opus` / `sonnet` / `haiku` aliases for Claude Code only — do not rely on them in Cursor.
 
 ### Safety Hooks
 

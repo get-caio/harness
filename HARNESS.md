@@ -266,36 +266,37 @@ Product repos may tighten this list further in `AGENTS.md`.
 
 ### Model Routing Matrix
 
-| Role                                                                       | Default model (Cursor)                        | When                                                      |
-| -------------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------- |
-| Daily driver (parent)                                                      | Grok 4.5                                      | Ticket loop, exploration, routine impl                    |
-| `implementer` / `feature` / `tester` / `deployer` / `refactorer`           | `inherit`                                     | Clear tickets, TDD, cleanup                               |
-| `architect` / `interviewer` / `coordinator` / `auditor` / `product-critic` | `claude-opus-5[effort=high]` (Fable optional) | Schema, tenancy, ambiguous design, parallel orchestration |
-| `reviewer` / `verifier`                                                    | `gpt-5.6-sol`                                 | Independent second opinion; verifier is readonly          |
-| `doc-writer` / explore                                                     | `inherit` or fast                             | Cheap context / docs                                      |
-| Cloud babysit                                                              | Grok parent + specialists                     | Overnight `/work`-style loops                             |
+| Role                                                                            | Default model (Cursor)                        | When                                                      |
+| ------------------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------- |
+| Daily driver (parent)                                                           | Grok 4.5                                      | Ticket loop, exploration, routine impl                    |
+| `implementer` / `feature` / `tester` / `deployer` / `refactorer` / `doc-writer` | `grok-4.5[effort=high]`                       | Clear tickets, TDD, cleanup, docs — **prefer Grok**       |
+| `architect` / `interviewer` / `coordinator` / `auditor` / `product-critic`      | `claude-opus-5[effort=high]` (Fable optional) | Schema, tenancy, ambiguous design, parallel orchestration |
+| `reviewer` / `verifier`                                                         | `gpt-5.6-sol`                                 | Independent second opinion; verifier is readonly          |
+| Cloud babysit                                                                   | Grok parent + Grok routine specialists        | Overnight `/work`-style loops                             |
 
-**Fable:** Prefer Opus by default. If Fable is available and privacy/opt-in allows, parent may spawn architect-class agents with `claude-fable-5`. Do not hard-require Fable.
+**Prefer Grok unless greater capability is required.** Do not route routine implementation to Sonnet. Escalate to Opus/Fable/Sol only for architect/reviewer-class work above.
 
-**Claude Code compat:** `.claude/agents/*` still use short aliases (`opus` / `sonnet` / `haiku`). Cursor agents in `.cursor/agents/*` win on name clash and use Cursor model IDs.
+**Fable:** Prefer Opus by default for hard design. If Fable is available and privacy/opt-in allows, parent may spawn architect-class agents with `claude-fable-5`. Do not hard-require Fable.
+
+**Why you might still see Sonnet:** Product repos that copied only `.claude/agents/` (where `implementer` is `model: sonnet` for Claude Code) and not `.cursor/agents/`. In Cursor, **always ship `.cursor/agents/*`** — they win on name clash and pin Grok for routine agents. Claude Code aliases (`opus` / `sonnet` / `haiku`) remain under `.claude/agents/` for Claude Code only.
 
 ### Available Agents
 
 | Agent            | Cursor model          | Purpose                                     | Isolation                              |
 | ---------------- | --------------------- | ------------------------------------------- | -------------------------------------- |
-| `feature`        | `inherit`             | Large feature implementation (L/XL tickets) | same tree (worktree via `/coordinate`) |
-| `implementer`    | `inherit`             | Medium ticket implementation (M tickets)    | same tree                              |
-| `architect`      | Opus (Fable optional) | System design, architecture decisions       | same tree                              |
-| `reviewer`       | Sol                   | Code review before human                    | same tree                              |
-| `verifier`       | Sol (readonly)        | Independent acceptance-criteria check       | same tree                              |
-| `tester`         | `inherit`             | Test writing, coverage improvement          | same tree                              |
-| `interviewer`    | Opus                  | Requirements refinement                     | same tree                              |
-| `coordinator`    | Opus                  | Parallel phase orchestration                | same tree                              |
-| `doc-writer`     | `inherit`             | Documentation updates                       | same tree                              |
-| `auditor`        | Opus (readonly)       | Full product audit between phases           | same tree                              |
-| `product-critic` | Opus (readonly)       | Product quality / UX fidelity               | same tree                              |
-| `deployer`       | `inherit`             | Pre-deploy checklist                        | same tree                              |
-| `refactorer`     | `inherit`             | Codebase cleanup (no new behavior)          | same tree                              |
+| `feature`        | `grok-4.5[effort=high]` | Large feature implementation (L/XL tickets) | same tree (worktree via `/coordinate`) |
+| `implementer`    | `grok-4.5[effort=high]` | Medium ticket implementation (M tickets)    | same tree                              |
+| `architect`      | Opus (Fable optional)   | System design, architecture decisions       | same tree                              |
+| `reviewer`       | Sol                     | Code review before human                    | same tree                              |
+| `verifier`       | Sol (readonly)          | Independent acceptance-criteria check       | same tree                              |
+| `tester`         | `grok-4.5[effort=high]` | Test writing, coverage improvement          | same tree                              |
+| `interviewer`    | Opus                    | Requirements refinement                     | same tree                              |
+| `coordinator`    | Opus                    | Parallel phase orchestration                | same tree                              |
+| `doc-writer`     | `grok-4.5[effort=high]` | Documentation updates                       | same tree                              |
+| `auditor`        | Opus (readonly)         | Full product audit between phases           | same tree                              |
+| `product-critic` | Opus (readonly)         | Product quality / UX fidelity               | same tree                              |
+| `deployer`       | `grok-4.5[effort=high]` | Pre-deploy checklist                        | same tree                              |
+| `refactorer`     | `grok-4.5[effort=high]` | Codebase cleanup (no new behavior)          | same tree                              |
 
 ### Ticket Sizing & Delegation
 
@@ -329,7 +330,7 @@ Invoke as `Workflow({ name: "<name>", args: { ... } })`. If the `Workflow` tool 
 
 ### Documentation Updates
 
-After each ticket, spawn a `doc-writer` agent (`inherit` / fast) to update the relevant docs. Skip for test-only changes.
+After each ticket, spawn a `doc-writer` agent (Grok) to update the relevant docs. Skip for test-only changes.
 
 ---
 
@@ -425,7 +426,7 @@ On resume, re-read phase state, build log, and conventions.
 18. **Run /pre-ship before production** — final checklist to prevent career-ending failures
 19. **Add observability in Phase 1** — health checks, structured logging, error tracking from day one
 20. **Run /design-review after Phase 2** — verify visual polish, empty states, loading states, animations
-21. **Update docs after every ticket** — spawn a `doc-writer` agent (`inherit` / fast) to update `docs/`. Skip for test-only changes.
+21. **Update docs after every ticket** — spawn a `doc-writer` agent (Grok) to update `docs/`. Skip for test-only changes.
 22. **Never stop between tickets** — after committing a ticket, immediately pick up the next TODO. Only stop when the phase is complete, all tickets are blocked, or the human interrupts.
 23. **Delegate by ticket size** — S/M tickets: work inline. L/XL tickets: spawn `feature` agent; use `/coordinate` (or an explicit worktree) when isolation is required — Cursor agent frontmatter alone does not create a worktree. 3+ independent tickets: run `/coordinate`.
 24. **Read `git-workflow` skill** before creating branches or PRs on multi-engineer projects.

@@ -12,9 +12,9 @@ Follow `HARNESS.md` for the entire session. Do not invent `DECIDED` decisions; c
 
 ## Runtime
 
-| Runtime | Parent model | Specialists | Workflows |
-| ------- | ------------ | ----------- | --------- |
-| **Cursor (preferred daily driver)** | Grok 4.5 | `.cursor/agents/*` (Opus/Fable/Sol pinned) | `.cursor/skills/workflow/` (`/work`, `/status`, …) |
-| **Claude Code** | as configured | `.claude/agents/*` | `.claude/commands/` |
+| Runtime                             | Parent model  | Specialists                                               | Workflows                                          |
+| ----------------------------------- | ------------- | --------------------------------------------------------- | -------------------------------------------------- |
+| **Cursor (preferred daily driver)** | Grok 4.5      | `.cursor/agents/*` (routine→Grok; Opus/Sol for hard jobs) | `.cursor/skills/workflow/` (`/work`, `/status`, …) |
+| **Claude Code**                     | as configured | `.claude/agents/*`                                        | `.claude/commands/`                                |
 
 Cursor loads this file for compat; always-on harness rules also live in `.cursor/rules/harness.mdc`. Domain skills remain under `.claude/skills/` (do not duplicate into `.cursor/skills/`).

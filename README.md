@@ -109,11 +109,11 @@ See [docs/guide/cursor-harness.md](docs/guide/cursor-harness.md) for the Cursor 
 | Role                                                                | Model                        |
 | ------------------------------------------------------------------- | ---------------------------- |
 | Parent (daily driver)                                               | Grok 4.5                     |
-| implementer / feature / tester / deployer / refactorer / doc-writer | `inherit`                    |
+| implementer / feature / tester / deployer / refactorer / doc-writer | `grok-4.5[effort=high]`      |
 | architect / interviewer / coordinator / auditor / product-critic    | Claude Opus (Fable optional) |
 | reviewer / verifier                                                 | OpenAI Sol                   |
 
-Never pin Opus/Fable/Sol as the parent default — see `HARNESS.md`.
+Prefer Grok for routine work; escalate to Opus/Sol only when needed. Product repos must include `.cursor/agents/` or Cursor may fall through to `.claude/agents` (`sonnet`). See `HARNESS.md`.
 
 ## Commands
 
