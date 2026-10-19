@@ -1,106 +1,118 @@
 ---
-description: "Patterns for GitHub Actions PR check workflows, concurrency cancellation, Vercel preview deployments, secrets management in CI, and status gates that block merges. Use when setting up or modifying pipeline configs — not for local dev tooling."
+description: "The one CI shape for CAIO repos: a self-hosted Linux runner, a cheap gate tier on every PR push, a full tier on main / nightly / label, preview deploys behind a label. Read before creating or changing anything under .github/. Not for local dev tooling."
 ---
 
-# CI/CD Skill — GitHub Actions & Deployment Pipelines
+# CI/CD Skill — GitHub Actions on a self-hosted runner
 
-## When to Use
+## Rules first
 
-Reference this skill when:
+The rules in `HARNESS.md` → **CI and Process Changes** govern every edit under `.github/`. In short: state the cost and wait for approval before changing CI; a green run on the commit is the evidence; keep PRs fast; cheap checks first, expensive jobs gated on them; remove or merge checks before adding one. Read that section before this file.
 
-- Setting up GitHub Actions workflows
-- Configuring PR checks and status gates
-- Setting up preview deployments
-- Configuring production deployment pipelines
-- Adding automated testing to CI
+Every workflow uses `runs-on: self-hosted`. GitHub-hosted runners (`ubuntu-latest`, `macos-*`, `windows-*`) are never used: the org's Actions spending limit is $0, so a hosted job queues forever. The runner is Linux with Docker, so service containers, `apt-get`, `sudo`, and `docker build` all work as they did on `ubuntu-latest`.
 
-## GitHub Actions Patterns
+## The shape
 
-### PR Check Workflow
+Two tiers in one `ci.yml`:
+
+| Tier     | Runs on                                                                    | Contents                                                      | Budget                      |
+| -------- | -------------------------------------------------------------------------- | ------------------------------------------------------------- | --------------------------- |
+| `gate`   | every PR push, every push to `main`                                        | lint, typecheck, build, unit tests, secret scan               | ≤ 5 min wall-clock on a PR  |
+| `full`   | push to `main`, nightly schedule, `workflow_dispatch`, PR labeled `ci:full` | browser / e2e, integration against a database, benchmarks, Lighthouse, long rehearsals | whatever it needs, `needs: gate` |
+
+Preview deploys are their own job, `needs: gate`, and run only on a PR labeled `preview`. Adding the label triggers the run (`labeled` is in the `pull_request` types), so a person never pushes an empty commit to get one.
+
+What goes in `gate` is what an engineer would run before pushing. If it needs a browser, a database, a deployed URL, or more than five minutes, it is `full`.
+
+### `ci.yml`
 
 ```yaml
-# .github/workflows/pr-check.yml
-name: PR Check
+name: CI
 
 on:
-  pull_request:
+  push:
     branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  schedule:
+    - cron: '17 6 * * *' # nightly full tier; the odd minute avoids the top-of-hour pile-up
+  workflow_dispatch:
 
+# A new push to a PR cancels the in-flight run for that PR. Main runs are never cancelled.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  lint-and-type:
-    name: Lint & Type Check
-    runs-on: ubuntu-latest
+  gate:
+    name: Gate
+    runs-on: self-hosted
+    timeout-minutes: 15
+    outputs:
+      # True on main, nightly, manual, and PRs labeled ci:full. Every full-tier job keys its `if` on this.
+      # (A job-level `if` cannot read `env`, so it is an output.)
+      full: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'ci:full') }}
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun lint
-      - run: bun typecheck
-
-  test:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install --frozen-lockfile
-      - run: bun test --coverage
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage
-          path: coverage/
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun test
+      - run: bun run build
 
   e2e:
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    needs: [lint-and-type]
+    name: Browser tests
+    needs: gate
+    if: ${{ needs.gate.result == 'success' && needs.gate.outputs.full == 'true' }}
+    runs-on: self-hosted
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bunx playwright install --with-deps chromium
-      - run: bun test:e2e
+      - run: bun run test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: playwright-report
           path: playwright-report/
+          retention-days: 7
 
-  security:
-    name: Security Audit
-    runs-on: ubuntu-latest
+  integration:
+    name: Database integration
+    needs: gate
+    if: ${{ needs.gate.result == 'success' && needs.gate.outputs.full == 'true' }}
+    runs-on: self-hosted
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app_test
+          POSTGRES_PASSWORD: integration-only
+          POSTGRES_DB: app_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U app_test" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://app_test:integration-only@127.0.0.1:5432/app_test
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun audit || true
-      - name: Check for secrets
-        run: |
-          if grep -rn "sk_live\|pk_live\|ghp_\|AKIA" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.env*" .; then
-            echo "::error::Potential secrets found in code"
-            exit 1
-          fi
-```
+      - run: bunx prisma migrate deploy
+      - run: bun run test:integration
 
-### Preview Deployment Workflow
-
-```yaml
-# .github/workflows/preview.yml
-name: Preview Deploy
-
-on:
-  pull_request:
-    branches: [main]
-
-jobs:
-  deploy:
-    name: Deploy Preview
-    runs-on: ubuntu-latest
+  preview:
+    name: Preview deploy
+    needs: gate
+    if: ${{ needs.gate.result == 'success' && github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'preview') }}
+    runs-on: self-hosted
+    timeout-minutes: 20
+    concurrency:
+      group: preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     permissions:
       pull-requests: write
     steps:
@@ -120,127 +132,94 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `Preview deployed: ${{ steps.deploy.outputs.preview-url }}`
+              body: `Preview: ${{ steps.deploy.outputs.preview-url }}`
             })
 ```
 
-### Production Deployment Workflow
+### Required check
+
+If branch protection requires a single named check, add an aggregator that treats skipped full-tier jobs as success on a PR, so an unlabeled PR can go green:
 
 ```yaml
-# .github/workflows/production.yml
-name: Production Deploy
+  ci:
+    name: CI
+    if: always()
+    needs: [gate, e2e, integration]
+    runs-on: self-hosted
+    timeout-minutes: 2
+    steps:
+      - env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          node -e '
+            const needs = JSON.parse(process.env.RESULTS);
+            const bad = Object.entries(needs).filter(([n, j]) => !["success", "skipped"].includes(j.result) || (n === "gate" && j.result !== "success"));
+            bad.forEach(([n, j]) => console.error(`${n}: ${j.result}`));
+            process.exit(bad.length ? 1 : 0);
+          '
+```
 
-on:
-  push:
-    branches: [main]
+Make `CI` the only required check. Do not require individual full-tier jobs.
 
-jobs:
+### Multi-app repos
+
+Run only the jobs for what changed. Use `dorny/paths-filter` in a tiny first job and `needs` + `if` on its outputs, or `paths:` filters on separate workflows. A docs-only PR should run nothing but lint.
+
+## On the self-hosted runner
+
+- `runs-on: self-hosted` on every job. A second label (for example `self-hosted, linux`) is fine; `ubuntu-latest` is not.
+- The runner keeps its working directory between runs. Caches from `actions/setup-node` / `setup-bun` still work and are warm after the first run.
+- One runner handles one job at a time. Several runner instances on the same machine give parallelism; the harness default is two.
+- Write temp files to `$RUNNER_TEMP`, never to `/usr/local/bin` or other shared paths. Tools downloaded in a job go in `$RUNNER_TEMP/bin` and onto `$GITHUB_PATH`.
+- Service containers, `docker build`, `sudo apt-get`, and `sudo tee /etc/hosts` work because the runner is a Linux box with Docker and passwordless sudo.
+- A job that needs the hosted runner's 16 GB (a large Angular/Next build with `NODE_OPTIONS=--max-old-space-size=...`) needs the runner VM sized to match. Check `free -g` on the runner before raising a heap limit.
+
+## Production deploys
+
+Deploys to production are triggered by a human (`workflow_dispatch` or a push to a protected `prod` branch), never automatically from `main`. The deploy job has `environment: production` with a required reviewer. The harness `deployer` agent runs its pre-deploy checklist first; see `HARNESS.md` → Notes for Agents, rule 29.
+
+```yaml
   deploy:
-    name: Deploy Production
-    runs-on: ubuntu-latest
+    name: Deploy production
+    if: github.event_name == 'workflow_dispatch'
+    needs: gate
+    runs-on: self-hosted
+    timeout-minutes: 15
     environment: production
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
-      - run: bun test
-      - run: bun build
+      - run: bun run build
       - uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: "--prod"
+          vercel-args: '--prod'
+      - name: Health check
+        run: |
+          for i in {1..10}; do
+            curl -sf "$DEPLOY_URL/api/health" && exit 0
+            sleep 5
+          done
+          exit 1
+        env:
+          DEPLOY_URL: ${{ vars.PRODUCTION_URL }}
 ```
 
-## Branch Protection Rules
+## Secrets
 
-Configure on GitHub:
+- Vendor tokens (`VERCEL_TOKEN`, `CLOUDFLARE_API_TOKEN`, `NEON_API_KEY`) go on the step that calls the vendor, never on the job or workflow, and never on a dependency-install step.
+- `DATABASE_URL` for tests points at the job's service container, not a real database.
+- The gate tier runs a secret scan (gitleaks or an equivalent) so a committed key fails before anything else runs.
 
-```
-Branch: main
-- Require PR reviews: 1
-- Require status checks: lint-and-type, test, security
-- Require branches to be up to date
-- No force pushes
-- No deletions
+## Before you change a workflow
 
-Branch: prod
-- Require PR reviews: 2
-- Require all status checks
-- Restrict who can push: release team only
-```
+Write, in the PR description, before anything else:
 
-## Environment Variables
+1. Wall-clock minutes per PR run, before and after.
+2. Runner minutes per run, before and after.
+3. Any new step a person must take (a label to add, a secret to set, a runner to register).
 
-### Required Secrets (GitHub Settings > Secrets)
-
-```
-VERCEL_TOKEN          — Vercel deployment token
-VERCEL_ORG_ID         — Vercel organization ID
-VERCEL_PROJECT_ID     — Vercel project ID
-DATABASE_URL          — PostgreSQL connection string (for E2E)
-```
-
-### Environment Protection Rules
-
-```
-production:
-  - Required reviewers: 1+
-  - Wait timer: 5 minutes (optional)
-  - Deployment branches: main only
-```
-
-## Caching Strategy
-
-```yaml
-# Bun cache for faster CI
-- uses: actions/cache@v4
-  with:
-    path: ~/.bun/install/cache
-    key: ${{ runner.os }}-bun-${{ hashFiles('bun.lockb') }}
-    restore-keys: |
-      ${{ runner.os }}-bun-
-```
-
-## Database Migrations in CI
-
-```yaml
-# Run migrations before E2E tests
-- name: Run migrations
-  run: bunx prisma migrate deploy
-  env:
-    DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-# Validate schema matches
-- name: Validate Prisma schema
-  run: bunx prisma validate
-```
-
-## Monitoring Deployment Health
-
-After deploying, verify the deployment:
-
-```yaml
-- name: Health check
-  run: |
-    for i in {1..10}; do
-      STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ steps.deploy.outputs.preview-url }}/api/health)
-      if [ "$STATUS" = "200" ]; then
-        echo "Health check passed"
-        exit 0
-      fi
-      sleep 5
-    done
-    echo "Health check failed"
-    exit 1
-```
-
-## Key Principles
-
-1. **Fast feedback** — Lint and type check run first (fastest), E2E last (slowest)
-2. **Cancel in progress** — New pushes cancel old CI runs on same PR
-3. **Fail fast** — Security and lint block before expensive test runs
-4. **Cache aggressively** — Bun cache, Playwright browser cache
-5. **Environment gates** — Production requires human approval
-6. **No secrets in code** — Use GitHub Secrets, never commit credentials
+Then wait for approval. If a job is slow, ask first whether it belongs on PRs, not how many more minutes to give it.

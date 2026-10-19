@@ -55,7 +55,8 @@ You are running the **CAIO Build Harness**. Full OS: `HARNESS.md`. Product map: 
 - Import types from `lib/**/types.ts` / prior phase type manifest — do not reinvent.
 - Fail loudly (structured logs); no silent swallow.
 - Surgical diffs — no drive-by refactors.
-- After PR create / new commits on open PR: run Codex/Sol review loop to a terminal state when that workflow exists.
+- One PR per feature; push once per logical change, not per commit. When the feature is complete (and after each batch of fixes): run Codex/Sol review loop to a terminal state when that workflow exists.
+- Anything under `.github/`: read `HARNESS.md` → CI and Process Changes. State the cost, wait for approval. `runs-on: self-hosted` only.
 
 ## Before UI / schema / auth
 

@@ -255,6 +255,35 @@ Product repos may tighten this list further in `AGENTS.md`.
 | Payment/auth changes     | Human review           |
 | Schema migrations        | Human review           |
 | Environment variables    | Human approval         |
+| CI workflows, merge gates, test setup | Human approval, with the cost stated first (see CI and Process Changes) |
+
+---
+
+## Pull Requests and Pushes
+
+One pull request per feature, not one per ticket. A feature is the unit a human reviews and merges; tickets are the agent's internal checklist. Open the PR when the first ticket of a feature is committed, keep pushing to the same branch until the feature is done, and only then ask for review.
+
+Push once per logical change, not once per commit. Every push to an open PR starts a CI run; ten pushes of one-line fixes is ten runs. Batch review fixes into one push. Rebase and push once; do not push, then push again to fix the push.
+
+The Codex review loop (rule 33) runs when the feature is complete and after each batch of fixes, not after every commit.
+
+---
+
+## CI and Process Changes
+
+CI runs on a self-hosted Linux runner with Docker (`runs-on: self-hosted`). GitHub-hosted runners (`ubuntu-latest`, `macos-*`, `windows-*`) are not used in any workflow; the Actions spending limit is $0.
+
+- Do not add CI jobs, merge gates, required local commands, or committed verification artifacts (hashes, fingerprints, evidence or attestation files, generated manifests) unless the user explicitly asks for them.
+- Before changing CI workflows, build gates or test setup, state the cost: wall-clock minutes per PR, runner minutes per run, and any new step a person must take. Wait for approval.
+- A green CI run on the commit is the evidence. Do not build a second proof system on top of it.
+- Never require a local run before CI can pass, and never let merging the base branch invalidate anything.
+- Keep pull requests fast. Run slow suites (long rehearsals, benchmarks, full end-to-end runs) on main, on a schedule or on demand, unless told otherwise.
+- Make cheap checks run first and gate expensive jobs on them, so an early failure doesn't keep billing for the rest of the suite.
+- In multi-app repos, run only the jobs for what changed.
+- Prefer removing or merging checks over adding new ones. If a new safeguard seems necessary, propose it with its cost, separately from feature work.
+- When a job times out, the first question is whether the job belongs on pull requests at all, not how many more minutes to give it.
+
+The workflow shape is in the `ci-cd` skill: a `gate` tier on every PR push (lint, typecheck, build, unit), a `full` tier on main, nightly, `workflow_dispatch`, or a PR labeled `ci:full`, and preview deploys only on a PR labeled `preview`.
 
 ---
 
@@ -438,7 +467,8 @@ On resume, re-read phase state, build log, and conventions.
 30. **Run `refactorer` between phases** — codebase cleanup: copy-pasted patterns, missing utils, naming inconsistencies. Zero new behavior, just cleanup PRs.
 31. **Import, don't reinvent types** — before defining ANY Zod schema or TypeScript interface, grep `lib/**/types.ts` and the prior phase's `specs/phases/PHASE-(N-1)-type-manifest.md` for the concept. If a canonical type exists, import it. See Type Discipline section for the full rule.
 32. **Generate type manifest at phase end** — after the last ticket in a phase is DONE, run `/audit types` to write `specs/phases/PHASE-N-type-manifest.md` so the next phase knows what to import. This is mandatory before `/init-phase N+1`.
-33. **Codex review is mandatory on every PR** — after `gh pr create`, and after pushing new commits to an open PR, run `/codex-review <PR#>` and drive the loop to a terminal state (`mergeable`, `human-steps-remaining`, or `blocked`) before starting the next ticket. The every-5-iterations human check-in is part of the gate.
+33. **Codex review is mandatory on every PR** — when the feature on the branch is complete, and after each batch of fixes pushed to the open PR, run `/codex-review <PR#>` and drive the loop to a terminal state (`mergeable`, `human-steps-remaining`, or `blocked`) before starting the next feature. The every-5-iterations human check-in is part of the gate. Batch fixes into one push per loop iteration (see Pull Requests and Pushes).
+34. **Read CI and Process Changes** before touching anything under `.github/`. State the cost, wait for approval, never add a job to make a ticket feel complete.
 
 ---
 
@@ -451,7 +481,7 @@ These failures can end careers. The harness is designed to prevent them:
 | **Data breach**               | Secrets detection hook, /red-team, /audit     | Pre-commit + Phase 1 |
 | **Production outage**         | /pre-ship rollback plan, deployer agent       | Pre-deploy           |
 | **GDPR/compliance violation** | data-protection skill, /pre-ship checklist    | Phase 1 + Pre-deploy |
-| **Major bug in production**   | Mandatory tests, /audit, /red-team            | Every commit         |
+| **Major bug in production**   | Mandatory tests, /audit, /red-team            | Every PR (gate tier) |
 | **Can't debug production**    | observability skill, health endpoint          | Phase 1              |
 | **No rollback possible**      | /pre-ship migration check, deployer agent     | Pre-deploy           |
 | **Silent config failure**     | deployer agent: env vars, webhooks, crons     | Pre-deploy           |
@@ -550,7 +580,7 @@ Past incident: Phase 2 defined `stepConditionsSchema` in `lib/orchestration/type
 
 ## Pre-Push Checklist
 
-Always run `bun lint` / `bun run build` (or the project's package scripts) locally before pushing to GitHub. Fix any errors before committing.
+Always run the project's `check` script (`bun run check`, `npm run check`, or the lint/typecheck/build scripts if there is none) locally before pushing to GitHub. Fix any errors before pushing. This is a convenience that saves a CI round-trip, not a gate: CI on the commit is the evidence, and a push that skipped the local run still gets the same CI.
 
 ---
 

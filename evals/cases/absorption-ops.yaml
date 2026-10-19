@@ -5,36 +5,47 @@ cases:
   - id: abs-cicd-001
     skill: ci-cd
     task: >
-      Write a GitHub Actions workflow for a Next.js + Bun project that runs on
-      pull requests targeting main. It should run linting, type checking, unit tests
-      with coverage upload, and E2E tests. Cancel in-progress runs when new commits
-      are pushed.
+      Write the GitHub Actions CI workflow for a Next.js + Bun project. Lint, type
+      check, unit tests and the build must run on every pull request push; the
+      Playwright E2E suite is slow and must not run on an unlabeled PR. Cancel
+      in-progress runs when new commits are pushed to a PR. The org does not pay
+      for GitHub-hosted runners.
     assertions:
-      - pattern: "cancel-in-progress:\\s*true"
+      - pattern: "runs-on:\\s*self-hosted|runs-on:\\s*\\[\\s*self-hosted"
         expect: present
-        description: "Cancels in-progress runs on new pushes"
+        description: "Every job runs on the self-hosted runner"
+      - pattern: "ubuntu-latest|macos-latest|windows-latest"
+        expect: absent
+        description: "No GitHub-hosted runner labels"
+      - pattern: "cancel-in-progress:"
+        expect: present
+        description: "Cancels in-progress PR runs on new pushes"
       - pattern: "concurrency:"
         expect: present
-        description: "Uses concurrency group to deduplicate runs"
+        description: "Uses a concurrency group"
       - pattern: "setup-bun|oven-sh/setup-bun"
         expect: present
         description: "Uses Bun setup action (not npm/yarn)"
       - pattern: "frozen-lockfile|--frozen-lockfile"
         expect: present
         description: "Installs with frozen lockfile for reproducibility"
-      - pattern: "upload-artifact|actions/upload-artifact"
+      - pattern: "needs:"
         expect: present
-        description: "Uploads coverage or test report artifacts"
-      - pattern: "needs:\\s*\\[|needs:"
+        description: "E2E job depends on the gate job"
+      - pattern: "ci:full|workflow_dispatch|schedule:"
         expect: present
-        description: "E2E job depends on lint/type job (fail fast ordering)"
+        description: "E2E is reachable on main, a schedule, on demand, or by label — not on every PR"
+      - pattern: "timeout-minutes:"
+        expect: present
+        description: "Jobs carry a timeout"
 
   - id: abs-cicd-002
     skill: ci-cd
     task: >
-      Write a GitHub Actions workflow that deploys to Vercel preview on every PR
-      and posts the preview URL as a comment on the PR. Also write a separate
-      production deployment workflow triggered on push to main.
+      Write a GitHub Actions job that deploys a Vercel preview for a pull request
+      and posts the preview URL as a comment on the PR. Previews cost real money
+      and should only be made when someone asks for one. Also write the production
+      deployment workflow.
     assertions:
       - pattern: "amondnet/vercel-action|vercel-action"
         expect: present
@@ -42,35 +53,43 @@ cases:
       - pattern: "VERCEL_TOKEN|VERCEL_ORG_ID|VERCEL_PROJECT_ID"
         expect: present
         description: "References required Vercel secrets"
+      - pattern: "labels\\.\\*\\.name,\\s*'preview'|labeled"
+        expect: present
+        description: "Preview deploy is gated on a `preview` label"
       - pattern: "permissions:\\s*\\n.*pull-requests:\\s*write"
         expect: present
         description: "Grants write permission to post PR comments"
       - pattern: "github.rest.issues.createComment|actions/github-script"
         expect: present
         description: "Posts preview URL as PR comment"
+      - pattern: "workflow_dispatch|environment:\\s*production"
+        expect: present
+        description: "Production deploy is human-triggered or environment-gated, not automatic on main"
       - pattern: "vercel-args.*--prod|--prod"
         expect: present
         description: "Production workflow deploys with --prod flag"
+      - pattern: "ubuntu-latest"
+        expect: absent
+        description: "No GitHub-hosted runner labels"
 
   - id: abs-cicd-003
     skill: ci-cd
     task: >
-      Add a security audit job to an existing GitHub Actions PR workflow. It should
-      scan for hardcoded secrets in source files and run a dependency vulnerability
-      audit.
+      The team wants secret scanning in CI for an existing repo that already has a
+      gate job (lint, typecheck, unit) on pull requests. Propose the change.
     assertions:
-      - pattern: "sk_live|pk_live|ghp_|AKIA"
+      - pattern: "gitleaks|sk_live|ghp_|AKIA|secret scan"
         expect: present
-        description: "Scans for known secret patterns"
-      - pattern: "grep.*--include|rg.*\\*\\.ts|secrets"
+        description: "Proposes a real secret scan"
+      - pattern: "minute|wall-clock|cost"
         expect: present
-        description: "Searches source files for leaked secrets"
-      - pattern: "bun audit|npm audit|audit"
+        description: "States the cost before changing CI"
+      - pattern: "approv|wait"
         expect: present
-        description: "Runs dependency vulnerability audit"
-      - pattern: "exit 1|::error::"
-        expect: present
-        description: "Fails the job if secrets are found"
+        description: "Waits for approval rather than committing the change unasked"
+      - pattern: "ubuntu-latest"
+        expect: absent
+        description: "No GitHub-hosted runner labels"
 
   # ══════════════════════════════════
   # GIT WORKFLOW
