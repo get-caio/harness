@@ -384,9 +384,9 @@ if [ "$SOURCE_COUNT" -gt 0 ]; then
   echo "Test:Source ratio: $RATIO"
 fi
 
-# Check for Vitest config
+# Check for bun:test config (preloads for DOM + MSW live in bunfig.toml)
 echo "=== Test Infrastructure ==="
-ls vitest.config.ts vitest.config.js 2>/dev/null || echo "⚠️ No vitest config found"
+grep -q '^\[test\]' bunfig.toml 2>/dev/null || echo "⚠️ No [test] section in bunfig.toml"
 
 # Check for test setup file
 ls tests/setup.ts test/setup.ts 2>/dev/null || echo "⚠️ No test setup file found"
@@ -412,7 +412,7 @@ npm run test:coverage --if-present 2>/dev/null || npm run coverage --if-present 
 | Test:source ratio < 0.3 | ⚠️ Medium   | Under-tested                        |
 | Test:source ratio < 0.1 | 🔴 High     | Severely under-tested               |
 | Zero tests              | 🔴 Critical | No safety net — **blocks shipping** |
-| No vitest config        | 🔴 High     | Test infrastructure missing         |
+| No bunfig.toml `[test]` | 🔴 High     | Test infrastructure missing         |
 | No test scripts         | 🔴 High     | Tests cannot be run                 |
 
 ### Output

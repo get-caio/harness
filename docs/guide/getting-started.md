@@ -49,7 +49,7 @@ More variables will be documented here as features are added.
 ## Development Workflow
 
 1. Pick a ticket from the current phase
-2. Write failing tests first (TDD)
+2. Write failing tests first: a Playwright e2e spec for user-facing flows, unit tests for pure logic (see the Testing Policy in `HARNESS.md`)
 3. Implement the feature
 4. Ensure all quality gates pass
 5. Commit with `[PN-TXXX]` prefix
@@ -57,8 +57,8 @@ More variables will be documented here as features are added.
 ## Testing
 
 ```bash
-bun test              # Run unit tests
-bun test --coverage   # With coverage report
+bun test ./src ./app ./lib ./tests/integration              # Run unit tests
+bun test --coverage ./src ./app ./lib ./tests/integration   # With coverage report
 bun run test:e2e      # Playwright e2e tests
 ```
 

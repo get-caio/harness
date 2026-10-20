@@ -62,7 +62,7 @@ cases:
 
   - id: ret-012
     task: "Store workout embeddings in Pinecone for semantic search"
-    expected: [pinecone, ai-integration]
+    expected: [ai-integration]
     not_expected: [visual-design, interaction-motion, local-seo]
 
   # ── Infrastructure ──

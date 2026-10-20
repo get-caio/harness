@@ -27,7 +27,7 @@ bun init -y                 # Accept defaults
 ```bash
 bun install                 # Install all deps (reads bun.lock)
 bun add hono drizzle-orm    # Add dependencies
-bun add -d vitest           # Add dev dependency
+bun add -d @types/bun       # Add dev dependency
 bun remove express          # Remove dependency
 bun update                  # Update all packages
 ```
@@ -119,10 +119,10 @@ const mockFetch = mock(() =>
 ```
 
 ```bash
-bun test                    # Run all tests
-bun test --watch            # Watch mode
+bun test ./src ./app ./lib ./tests/integration                    # Run all tests
+bun test --watch ./src ./app ./lib ./tests/integration            # Watch mode
 bun test polls.test.ts      # Run specific file
-bun test --coverage         # With coverage report
+bun test --coverage ./src ./app ./lib ./tests/integration         # With coverage report
 bun test --timeout 10000    # Custom timeout
 ```
 

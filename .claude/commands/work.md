@@ -76,14 +76,15 @@ The environment is configured with `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=70` for aggr
 │           ↓                                              │
 │  6. Read relevant skills                                 │
 │           ↓                                              │
-│  7. Implement with TDD                                   │
-│     - Write failing test                                 │
+│  7. Implement test-first (HARNESS.md Testing Policy)     │
+│     - Write failing test (e2e for user flows)            │
 │     - Write implementation                               │
 │     - Make test pass                                     │
 │     - Refactor if needed                                 │
 │           ↓                                              │
 │  8. Quality Gate                                         │
-│     - bun test ✓                                         │
+│     - bun test ./src ./app ./lib ./tests/integration ✓   │
+│     - touched Playwright specs ✓                         │
 │     - bun lint ✓                                         │
 │     - bun typecheck ✓                                    │
 │     - bun audit ✓                                        │
@@ -189,11 +190,14 @@ Then, based on ticket content, read applicable skills:
 | React Native       | `skills/react-native`                                         |
 | Stripe/payments    | `skills/payments`                                             |
 | Tests              | `skills/testing`                                              |
+| User-facing flows  | `skills/e2e-testing`                                          |
 | User input/auth    | `skills/security`                                             |
 
 **For UI tickets:** Always check `specs/design/DESIGN.md` for colors, typography, spacing, and component patterns before implementing. Reference `specs/design/assets/` for logo and icon paths.
 
-### 7. Implement with TDD
+### 7. Implement Test-First
+
+Follow the **Testing Policy** in `HARNESS.md`. A ticket that touches a user-facing flow starts with a failing Playwright spec, API and DB work gets integration tests against a real test database, and only pure logic gets unit tests.
 
 **Ticket Sizing and Agent Delegation:**
 
@@ -275,7 +279,8 @@ export function feature() {
 Before committing, run:
 
 ```bash
-bun test           # All tests pass
+bun test ./src ./app ./lib ./tests/integration  # Unit + integration (never bare `bun test`: it picks up tests/e2e)
+bunx playwright test <specs>  # E2E specs this ticket touched
 bun lint           # No lint errors
 bun typecheck      # No type errors
 bun audit          # No high/critical vulnerabilities
@@ -285,12 +290,12 @@ bun audit          # No high/critical vulnerabilities
 
 Every ticket MUST have tests. Before committing, verify:
 
-| Check           | Requirement                                |
-| --------------- | ------------------------------------------ |
-| New test files? | At least one test file created or modified |
-| Test count      | At least 1 test per acceptance criterion   |
-| Tests pass      | `bun test` exits with 0                    |
-| Coverage        | Does not decrease from previous commit     |
+| Check           | Requirement                                                              |
+| --------------- | ------------------------------------------------------------------------ |
+| New test files? | At least one test file created or modified                               |
+| Test count      | At least 1 test per acceptance criterion                                 |
+| Tests pass      | `bun test ./src ./app ./lib ./tests/integration` and touched Playwright specs exit 0 |
+| Coverage        | Does not decrease from previous commit                                   |
 
 **If no tests:** Do NOT commit. Either:
 

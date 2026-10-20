@@ -57,7 +57,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run lint
       - run: bun run typecheck
-      - run: bun test
+      - run: bun test ./src ./app ./lib # unit only; tests/integration needs the DB and runs in the full tier
       - run: bun run build
 
   e2e:

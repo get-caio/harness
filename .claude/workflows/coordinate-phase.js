@@ -38,8 +38,9 @@ export const meta = {
 //      contains wave N. The staleness bug becomes unrepresentable.
 //   2. File ownership — tickets in the same parallel wave are proven file-disjoint
 //      in code (packIntoWaves). No two concurrent agents can touch the same file.
-//   3. The gate — `bun test/lint/typecheck` runs after every merge, not when the
-//      model remembers to.
+//   3. The gate — unit/integration tests (`bun test ./src ./app ./lib ./tests/integration`,
+//      never bare `bun test`), Playwright e2e, lint and typecheck run after every
+//      merge, not when the model remembers to.
 //
 // Invoke:  Workflow({ name: 'coordinate-phase', args: { phase: 2, maxParallel: 3 } })
 //          (args optional — phase defaults to specs/CURRENT_PHASE, maxParallel to 3)
@@ -141,7 +142,7 @@ const MERGE_RESULT_SCHEMA = {
     gatePassed: {
       type: "boolean",
       description:
-        "true only if bun test && lint && typecheck all exit 0 after the merges",
+        "true only if `bun test ./src ./app ./lib ./tests/integration`, `bunx playwright test` (when configured), lint and typecheck all exit 0 after the merges",
     },
     gateOutput: {
       type: "string",
@@ -321,10 +322,15 @@ for (let w = 0; w < wavePlan.length; w++) {
            Do not modify files outside that ownership set — another agent may own them.
 
            Read first: progress/conventions.md, progress/dead-ends.md, and the relevant docs/ pages
-           and skills for what this ticket touches (see CLAUDE.md mappings). Follow TDD — failing test
-           first. Before committing, run whichever quality-gate scripts this repo actually defines in
-           package.json (e.g. \`npm run typecheck\`, \`npm test\`, \`npm run lint\`) — check the scripts
-           block first; do not invoke a runner the repo hasn't configured.
+           and skills for what this ticket touches (see CLAUDE.md mappings). Work test-first per the HARNESS.md
+           Testing Policy — a failing Playwright e2e spec first for user-facing flows, integration
+           tests against a real test DB for API/DB work, unit tests only for pure logic. Before committing, run the
+           HARNESS.md Testing Policy gate: unit and integration tests with
+           \`bun test ./src ./app ./lib ./tests/integration\` — never a bare \`bun test\` or a package.json
+           test script that expands to it (Bun also collects tests/e2e/*.spec.ts and fails on them) —
+           plus the Playwright specs you touched via \`bunx playwright test <specs>\`. Run typecheck and
+           lint through whichever scripts package.json defines (e.g. \`npm run typecheck\`,
+           \`npm run lint\`) — check the scripts block first; do not invoke a runner the repo hasn't configured.
 
            Commit exactly once: "[${t.id}] <description>". Then run \`git branch --show-current\`
            and report that branch name. If a PENDING decision or hard blocker stops you, do NOT
@@ -367,10 +373,15 @@ for (let w = 0; w < wavePlan.length; w++) {
      so merges should be clean — if one conflicts, abort that merge, record the conflicting paths,
      and continue with the rest (do not force-resolve).
 
-     After merging, run the FULL quality gate using whichever scripts this repo defines in
-     package.json (check the scripts block — typically \`npm run typecheck\` and \`npm test\`, and
-     \`npm run lint\` if present). Do not invoke a runner the repo hasn't configured, and treat a
-     missing script as "not applicable", not a failure.
+     After merging, run the FULL quality gate per the HARNESS.md Testing Policy:
+     - Unit and integration tests: \`bun test ./src ./app ./lib ./tests/integration\`. Never run a bare
+       \`bun test\` or a package.json test script that expands to it — Bun also collects
+       tests/e2e/*.spec.ts and would fail on the Playwright specs.
+     - E2E: \`bunx playwright test\` (the full e2e suite) if the repo has a Playwright config;
+       otherwise "not applicable".
+     - Typecheck and lint: whichever scripts package.json defines (typically \`npm run typecheck\`
+       and \`npm run lint\`). Do not invoke a runner the repo hasn't configured, and treat a
+       missing script as "not applicable", not a failure.
 
      ORDER MATTERS — only record success on a green gate:
      - If the gate PASSES: set each successfully-merged ticket's status to DONE in the phase file

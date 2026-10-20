@@ -36,7 +36,7 @@
           },
           {
             "type": "command",
-            "command": "file_path=$(jq -r '.tool_input.file_path // .tool_input.path // empty'); if [ -z \"$file_path\" ] || ! echo \"$file_path\" | grep -qE '\\.(ts|tsx|js|jsx)$'; then exit 0; fi; if echo \"$file_path\" | grep -qE '\\.(test|spec)\\.(ts|tsx|js|jsx)$'; then exit 0; fi; if echo \"$file_path\" | grep -qE '(config|setup|\\.d\\.ts)'; then exit 0; fi; dir=$(dirname \"$file_path\"); base=$(basename \"$file_path\"); name=\"${base%.*}\"; ext=\"${base##*.}\"; test_file=''; for candidate in \"$dir/$name.test.$ext\" \"$dir/$name.spec.$ext\" \"$dir/__tests__/$name.test.$ext\" \"$dir/__tests__/$name.spec.$ext\"; do if [ -f \"$candidate\" ]; then test_file=\"$candidate\"; break; fi; done; if [ -z \"$test_file\" ]; then echo \"⚠️  No test file found for $file_path. Add a test at $dir/$name.test.$ext\"; exit 0; fi; echo \"🧪 Running test: $test_file\"; result=$(bunx vitest run \"$test_file\" 2>&1); status=$?; if [ $status -ne 0 ]; then echo \"❌ Test failed: $test_file\"; echo \"$result\" | tail -30; exit 1; else echo \"✅ Test passed: $test_file\"; fi",
+            "command": "file_path=$(jq -r '.tool_input.file_path // .tool_input.path // empty'); if [ -z \"$file_path\" ] || ! echo \"$file_path\" | grep -qE '\\.(ts|tsx|js|jsx)$'; then exit 0; fi; if echo \"$file_path\" | grep -qE '\\.(test|spec)\\.(ts|tsx|js|jsx)$'; then exit 0; fi; if echo \"$file_path\" | grep -qE '(config|setup|\\.d\\.ts)'; then exit 0; fi; dir=$(dirname \"$file_path\"); base=$(basename \"$file_path\"); name=\"${base%.*}\"; ext=\"${base##*.}\"; test_file=''; for candidate in \"$dir/$name.test.$ext\" \"$dir/$name.spec.$ext\" \"$dir/__tests__/$name.test.$ext\" \"$dir/__tests__/$name.spec.$ext\"; do if [ -f \"$candidate\" ]; then test_file=\"$candidate\"; break; fi; done; if [ -z \"$test_file\" ]; then echo \"⚠️  No test file found for $file_path. Add a test at $dir/$name.test.$ext\"; exit 0; fi; echo \"🧪 Running test: $test_file\"; case \"$test_file\" in /*|./*) ;; *) test_file=\"./$test_file\" ;; esac; result=$(bun test \"$test_file\" 2>&1); status=$?; if [ $status -ne 0 ]; then echo \"❌ Test failed: $test_file\"; echo \"$result\" | tail -30; exit 1; else echo \"✅ Test passed: $test_file\"; fi",
             "timeout": 60
           }
         ]
@@ -148,7 +148,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '🧪 Running tests before PR creation...' && bun test --passWithNoTests || (echo '❌ BLOCKED: Tests must pass before creating PR' >&2 && exit 1)",
+            "command": "echo '🧪 Running unit and integration tests before PR creation...' && bun test ./src ./app ./lib ./tests/integration --pass-with-no-tests || (echo '❌ BLOCKED: Tests must pass before creating PR' >&2 && exit 1)",
             "timeout": 120
           }
         ]

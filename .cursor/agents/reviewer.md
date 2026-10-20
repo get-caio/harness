@@ -47,7 +47,7 @@ cat <changed-file>
 bun typecheck
 
 # Tests
-bun test
+bun test ./src ./app ./lib ./tests/integration
 
 # Lint
 bun lint

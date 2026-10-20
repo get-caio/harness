@@ -1,6 +1,6 @@
 {
   "name": "caio-build-harness",
-  "version": "3.5.0",
+  "version": "3.6.0",
   "description": "CAIO Build Harness — autonomous development framework with phased execution, multi-agent coordination, and safety gates for team projects.",
   "author": {
     "name": "CAIO",
@@ -14,7 +14,6 @@
       "skills/ai-integration",
       "skills/bun-runtime",
       "skills/ci-cd",
-      "skills/cloudflare-dns",
       "skills/code-audit",
       "skills/code-quality",
       "skills/context-engineering",
@@ -37,17 +36,14 @@
       "skills/evaluation",
       "skills/gdpr-consent",
       "skills/git-workflow",
-      "skills/heroku-deploy",
       "skills/incident-response",
       "skills/interaction-motion",
       "skills/local-seo",
       "skills/mcp-server",
       "skills/msw-mock-api",
       "skills/multi-agent-coordination",
-      "skills/mysql-planetscale",
       "skills/nextjs-bun-prisma",
       "skills/payments",
-      "skills/pinecone",
       "skills/react-best-practices",
       "skills/react-native",
       "skills/red-team",
@@ -59,16 +55,13 @@
       "skills/seo-integrations",
       "skills/seo-routing",
       "skills/shadcn-tailwind",
-      "skills/shopify-remix",
       "skills/svg-animation",
       "skills/testing",
       "skills/trpc",
       "skills/turborepo",
       "skills/ui-patterns",
       "skills/visual-design",
-      "skills/vitepress",
-      "skills/woocommerce",
-      "skills/wordpress-plugin"
+      "skills/vitepress"
     ],
     "commands": [
       "commands/work.md",
@@ -82,7 +75,8 @@
       "commands/red-team.md",
       "commands/pre-ship.md",
       "commands/design-review.md",
-      "commands/clarify.md"
+      "commands/clarify.md",
+      "commands/codex-review.md"
     ],
     "agents": [
       "agents/architect.md",

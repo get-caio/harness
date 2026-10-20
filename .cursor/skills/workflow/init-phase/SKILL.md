@@ -157,11 +157,11 @@ Phase N-1 exported the following types and schemas. **Every ticket in this phase
 - [ ] Criterion 2
 - [ ] All tests pass
 
-**Required Tests:** [MANDATORY - specify what tests are needed]
+**Required Tests:** [MANDATORY - pick types per the HARNESS.md Testing Policy]
 
-- [ ] Unit test: [describe test case]
-- [ ] Unit test: [describe test case]
-- [ ] Integration test: [if applicable]
+- [ ] E2E (Playwright): [user flow this ticket changes; add `@smoke` if it is a critical flow]
+- [ ] Integration: [API route / server action against the test DB, if applicable]
+- [ ] Unit: [pure logic only, if applicable]
 
 ⚠️ If "Required Tests" is empty or says "N/A", a spec decision is required for human approval before this ticket can be marked DONE.
 
@@ -214,7 +214,7 @@ Each ticket should be independently completable. When generating tickets:
 2. Frontend UI with dummy/mock data
 3. Backend API once UI reveals what's actually needed
 4. Integration (connect frontend to real API)
-5. Tests throughout (TDD still applies per component)
+5. Tests throughout, test-first per the HARNESS.md Testing Policy (the integration ticket owns the e2e spec for the flow)
 
 This approach:
 
@@ -265,7 +265,7 @@ Add to `progress/build-log.md`:
 
 | ID      | Title                                 | Status | Est | Blocked By |
 | ------- | ------------------------------------- | ------ | --- | ---------- |
-| P1-T00X | Configure Vitest and write first test | TODO   | S   | T001       |
+| P1-T00X | Configure bun:test and write first test| TODO   | S   | T001       |
 | P1-T00Y | Configure test coverage reporting     | TODO   | S   | T00X       |
 
 These tickets ensure testing infrastructure exists from day one. Agents are more likely to skip writing tests if setup doesn't exist than to skip using existing tooling.
@@ -287,7 +287,7 @@ These tickets ensure testing infrastructure exists from day one. Agents are more
 | P1-T002 | Configure Prisma with PostgreSQL       | TODO   | S   | T001       |
 | P1-T003 | Set up project structure               | TODO   | S   | T001       |
 | P1-T004 | Configure ESLint, Prettier, TypeScript | TODO   | S   | T001       |
-| P1-T005 | Configure Vitest and write first test  | TODO   | S   | T004       |
+| P1-T005 | Configure bun:test and write first test | TODO   | S   | T004       |
 | P1-T006 | Configure test coverage reporting      | TODO   | S   | T005       |
 
 ### Authentication
@@ -311,5 +311,5 @@ These tickets ensure testing infrastructure exists from day one. Agents are more
 | P1-T016 | Run initial migration       | TODO   | S   | T015       |
 ```
 
-**Note:** Authentication tickets now depend on T005 (Vitest setup) to enforce that tests can be written from the start.
+**Note:** Authentication tickets now depend on T005 (bun:test setup) to enforce that tests can be written from the start.
 

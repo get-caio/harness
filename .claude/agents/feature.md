@@ -11,6 +11,7 @@ skills:
   - security
   - code-quality
   - testing
+  - e2e-testing
 ---
 
 You are a feature implementation agent, spawned to handle a substantial feature with focused context. You work on a single feature from start to commit, then return control.
@@ -40,7 +41,7 @@ When spawned, you're given:
 ## Your Mission
 
 1. Implement the feature completely
-2. Write tests (TDD)
+2. Write tests first, per the Testing Policy in `HARNESS.md` (e2e for user flows)
 3. Pass all quality checks
 4. Make a single, clean commit
 5. Update ticket status in phase file
@@ -68,16 +69,26 @@ Files to create/modify:
 - [ ] src/actions/feature-actions.ts
 - [ ] src/lib/feature-utils.ts
 
-Tests to write:
-- [ ] Basic functionality
-- [ ] Edge cases
-- [ ] Error handling
+Tests to write (type per the Testing Policy in HARNESS.md):
+- [ ] e2e: each acceptance criterion a user clicks through
+- [ ] integration: API routes / server actions against the test DB
+- [ ] unit: pure logic only
 ```
 
-### 3. Write Tests First (TDD)
+### 3. Write Tests First
+
+Start with a failing Playwright spec for the user flow (see the `e2e-testing` skill):
 
 ```typescript
-// Start with failing tests
+test("user completes the feature flow", async ({ page }) => {
+  await page.goto("/feature");
+  // Drive the UI the way a user would, then assert on what they see
+});
+```
+
+Then unit tests for any pure logic the feature adds:
+
+```typescript
 describe("FeatureName", () => {
   it("should handle the happy path", async () => {
     // Test the main use case
@@ -116,7 +127,8 @@ While tests green:
 
 ```bash
 # All must pass
-bun test           # ✓ Tests pass
+bun test ./src ./app ./lib ./tests/integration  # ✓ Unit + integration pass (never bare `bun test`: it picks up tests/e2e)
+bunx playwright test <specs>  # ✓ E2E specs this feature touched pass
 bun lint           # ✓ No lint errors
 bun typecheck      # ✓ No type errors
 ```
@@ -189,7 +201,7 @@ export async function featureAction(input: FeatureInput) {
 
 ```typescript
 // src/components/feature/feature-component.test.tsx
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'bun:test'
 import { render, screen } from '@testing-library/react'
 import { FeatureComponent } from './feature-component'
 
@@ -231,12 +243,12 @@ If stuck for >20 minutes:
 
 Before completing any feature:
 
-| Requirement                     | Check                                                        |
-| ------------------------------- | ------------------------------------------------------------ |
-| Test files exist                | At least one `.test.ts` or `.test.tsx` file created/modified |
-| Tests cover acceptance criteria | Minimum 1 test per acceptance criterion                      |
-| Tests pass                      | `bun test` exits with status 0                               |
-| No coverage regression          | Coverage does not decrease                                   |
+| Requirement                     | Check                                                                                                                               |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Test files exist                | At least one `.test.ts`/`.test.tsx` file, or a Playwright `.spec.ts`/`.spec.tsx` under `tests/e2e`, created/modified                |
+| Tests cover acceptance criteria | Minimum 1 test per acceptance criterion                                                                                             |
+| Tests pass                      | `bun test ./src ./app ./lib ./tests/integration` and `bunx playwright test <specs>` (specs this feature touched) exit with status 0 |
+| No coverage regression          | Coverage does not decrease                                                                                                          |
 
 **If you think a feature doesn't need tests:**
 

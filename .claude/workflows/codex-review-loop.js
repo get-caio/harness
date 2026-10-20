@@ -1,15 +1,15 @@
 export const meta = {
   name: "codex-review-loop",
   description:
-    "External-reviewer loop — Codex (Sol) reviews the branch/PR, Claude vets and applies the feedback, commits, and re-reviews, until the PR is mergeable or only human steps remain. Pauses for a human check-in every N iterations (default 5).",
+    "External-reviewer loop — Codex reviews the branch/PR (local CLI or Codex's GitHub code review), Claude vets and applies the feedback, commits, and re-reviews, until the PR is mergeable or only human steps remain. Pauses for a human check-in every N iterations (default 5).",
   whenToUse:
-    "After a PR is created or new commits are pushed to one — the automated version of the manual 'ping Codex, act on feedback, repeat' flow. Pass { pr: 123 } for a PR loop (fix commits are pushed), nothing for a local-branch loop (commits stay local). Options: { checkinEvery: 5, base: 'main' }; to continue after a check-in, forward the prior result's { startIteration: nextIteration, seenCounts, humanItems }. Invoked via /codex-review, which owns the human check-in between runs.",
+    "After a PR is created or new commits are pushed to one — the automated version of the manual 'ping Codex, act on feedback, repeat' flow. Pass { pr: 123 } for a PR loop (fix commits are pushed), nothing for a local-branch loop (commits stay local). Options: { checkinEvery: 5, base: 'main', reviewer: 'cli' | 'github' } — 'github' asks Codex's GitHub code review with an '@codex review' PR comment instead of running the codex CLI, and needs a PR; to continue after a check-in, forward the prior result's { startIteration: nextIteration, seenCounts, humanItems } and the same reviewer. Invoked via /codex-review, which owns the human check-in between runs.",
   phases: [
     { title: "Scope", detail: "resolve branch, base, and PR state" },
     {
       title: "Review",
       detail:
-        "codex exec review (Sol) over the diff; vet and classify findings",
+        "codex exec review, or Codex's GitHub PR review; vet and classify findings",
     },
     { title: "Fix", detail: "apply agent-actionable feedback, test, commit" },
     { title: "Gate", detail: "mergeability + remaining human-only steps" },
@@ -19,9 +19,17 @@ export const meta = {
 // ─────────────────────────────────────────────────────────────────────────────
 // Why this exists
 //
-// The manual flow this automates: author commits → ask Codex (model gpt-5.6-sol,
-// configured in ~/.codex/config.toml) for a review → read the feedback → apply
-// what's right → repeat until the PR is mergeable or what's left needs a human.
+// The manual flow this automates: author commits → ask Codex for a review →
+// read the feedback → apply what's right → repeat until the PR is mergeable or
+// what's left needs a human.
+//
+//   Reviewer sources (args.reviewer). Both bill to the ChatGPT subscription,
+//   not the OpenAI API:
+//   - "cli" (default): `codex exec review` locally, with whatever model
+//     ~/.codex/config.toml sets. The harness does not pin the model.
+//   - "github": Codex's GitHub code review. The loop comments "@codex review"
+//     on the PR and reads the review Codex posts. Needs a PR and Codex code
+//     review enabled for the repo in Codex settings.
 //
 //   1. Codex is the REVIEWER, Claude is the JUDGE AND FIXER. Codex output is
 //      external model output — every finding is vetted against the actual code
@@ -71,7 +79,7 @@ const REVIEW_SCHEMA = {
     reviewRan: {
       type: "boolean",
       description:
-        "false if the codex CLI itself failed (auth, network, crash)",
+        "false if the review could not be obtained: codex CLI failed (auth, network, crash), or the GitHub review never arrived",
     },
     failureNote: { type: ["string", "null"] },
     findings: {
@@ -174,6 +182,14 @@ phase("Scope");
 
 const checkinEvery = Math.max(1, args?.checkinEvery ?? 5);
 const startIteration = args?.startIteration ?? 1;
+const reviewer = args?.reviewer === "github" ? "github" : "cli";
+
+if (reviewer === "github" && !args?.pr) {
+  const problem =
+    'reviewer "github" needs a PR — Codex GitHub review only runs on pull requests. Pass { pr } or use reviewer "cli".';
+  log(`Cannot start loop: ${problem}`);
+  return { status: "blocked", problem, iterationsRun: 0 };
+}
 const baseHint =
   args?.base ??
   "the repo default branch (origin/main, fall back to main/master)";
@@ -187,7 +203,9 @@ const scope = await agent(
 Base branch: ${baseHint}.
 Set ok=false (with problem) if any of these hold: the checked-out branch differs from the PR head
 branch (NEVER check out a different branch yourself); the PR is CLOSED or MERGED; \`git status\` shows
-uncommitted changes (fix commits would swallow them); or \`codex --version\` fails. Read-only — change nothing.`,
+uncommitted changes (fix commits would swallow them)${
+    reviewer === "cli" ? "; or `codex --version` fails" : ""
+  }. Read-only — change nothing.`,
   { label: "scope", phase: "Scope", schema: SCOPE_SCHEMA },
 );
 
@@ -224,17 +242,51 @@ let gate = null;
 for (let n = 0; n < checkinEvery; n++) {
   const i = startIteration + n;
   const iterPhase = `Iteration ${i}`;
-  log(`— Iteration ${i}: requesting Codex (Sol) review…`);
+  log(
+    `— Iteration ${i}: requesting Codex review (${reviewer === "github" ? "GitHub" : "CLI"})…`,
+  );
+
+  const requestReview =
+    reviewer === "github"
+      ? `1. Request a review from Codex's GitHub code review on PR #${scope.pr}:
+   a. Record the current head SHA (\`gh pr view ${scope.pr} --json headRefOid\`) and the time.
+   b. Post the request: \`gh pr comment ${scope.pr} --body "@codex review"\`. Post exactly one
+      request per iteration; never post any other comment. The command prints the comment URL;
+      record the id after "#issuecomment-" as the request comment id.
+   c. Wait for Codex's answer. Poll with one shell until-loop that pauses 60 seconds between
+      checks and gives up after 15 minutes. Codex posts as a bot whose login contains "codex"
+      (e.g. chatgpt-codex-connector[bot]). These endpoints return 30 items per page, oldest
+      first, so always pass --paginate and keep only items created/submitted after your request
+      time:
+      \`gh api --paginate repos/{owner}/{repo}/pulls/${scope.pr}/reviews\`,
+      \`gh api --paginate repos/{owner}/{repo}/pulls/${scope.pr}/comments\` (inline comments; group
+      them by pull_request_review_id),
+      \`gh api --paginate repos/{owner}/{repo}/issues/${scope.pr}/comments\`, and
+      \`gh api --paginate repos/{owner}/{repo}/issues/comments/<request comment id>/reactions\`.
+      Codex also posts a "codex-pull-request-review-summary" issue comment with an embedded
+      codex-review-state. It appears within seconds with code_review.status "running" and is NOT
+      an answer; ignore it while it says "running". Codex is done when any one of these holds:
+      - a codex review submitted after your request whose commit_id is the head SHA from (a)
+        (it has findings);
+      - a +1 (👍) reaction by the codex bot on the request comment (clean, no findings);
+      - the summary comment's codex-review-state shows code_review.status "completed"
+        (has_any_findings=false means clean; true means wait for the review itself).
+   d. Codex's review body plus its inline comments are the review output. A 👍 reaction on the
+      request comment, or a completed summary state with has_any_findings=false, is a clean
+      review: reviewRan=true, empty findings.
+2. If nothing from Codex arrives within 15 minutes, or a gh command fails, set reviewRan=false with
+   a failureNote (say whether Codex code review may not be enabled for this repo) and stop.`
+      : `1. Run: \`codex exec --color never review --base ${scope.base} 2>&1\` from the repo root
+   (\`--color\` is an \`exec\` option and must precede the \`review\` subcommand)
+   (non-interactive; the model comes from ~/.codex/config.toml). Give it time.
+2. If the command itself fails, set reviewRan=false with failureNote and stop.`;
 
   const review = await agent(
     `${guardrails}
 
 Run one Codex review of this branch and report the findings, vetted and classified.
 
-1. Run: \`codex exec --color never review --base ${scope.base} 2>&1\` from the repo root
-   (\`--color\` is an \`exec\` option and must precede the \`review\` subcommand)
-   (non-interactive; the model gpt-5.6-sol comes from ~/.codex/config.toml). Give it time.
-2. If the command itself fails, set reviewRan=false with failureNote and stop.
+${requestReview}
 3. Parse every distinct issue Codex raises. For each, READ THE CODE IT POINTS AT and judge it:
    - clearly wrong or misreads the code → still report it, actionable="human" with humanReason
      "codex claim appears incorrect: <why>" ONLY if severity would be blocking/important; drop
@@ -412,7 +464,7 @@ log(
 
 return {
   status, // mergeable | human-steps-remaining | checkin-required | blocked
-  scope: { branch: scope.branch, base: scope.base, pr: scope.pr },
+  scope: { branch: scope.branch, base: scope.base, pr: scope.pr, reviewer },
   iterationsRun: iterationLog.length,
   // To continue after a check-in, /codex-review must pass the whole continuation
   // set back as args: { pr, base, checkinEvery, startIteration: nextIteration,

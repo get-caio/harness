@@ -26,7 +26,7 @@ Default to using Bun instead of Node.js.
 
 ## Testing
 
-Use `bun test` to run tests.
+Use `bun test ./src ./app ./lib ./tests/integration` to run unit and integration tests. Never a bare `bun test`: it also collects the Playwright `*.spec.ts` files in `tests/e2e/`, which run with `bunx playwright test`.
 
 ```ts#index.test.ts
 import { test, expect } from "bun:test";

@@ -374,7 +374,7 @@ bun db:migrate dev     # Create migration
 bun db:studio          # Open Prisma Studio
 
 # Testing
-bun test               # Run tests
+bun test ./src ./app ./lib ./tests/integration               # Run tests
 bun test:watch         # Watch mode
 bun test:coverage      # With coverage
 

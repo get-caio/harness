@@ -832,7 +832,7 @@ phases:
 
   - name: testing
     steps:
-      - run: bun test # Unit tests
+      - run: bun test ./src ./app ./lib # Unit tests (integration runs where the DB is)
       - run: bun test:e2e # E2E tests
     on_failure: block
 

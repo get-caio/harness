@@ -84,11 +84,38 @@ Read CURRENT_PHASE → Get phase number
 Read PHASE-N-*.md → Find next TODO ticket
 IF spec decision needed → Create in specs/decisions/, mark BLOCKED
 IF arch decision needed → Create in docs/decisions/, mark BLOCKED
-IF clear → Implement with TDD
+IF clear → Implement test-first (see Testing Policy)
 Commit with [PN-TXXX] prefix
 Update ticket → DONE
 Repeat until phase complete or all blocked
 ```
+
+---
+
+## Testing Policy — test where the bugs are
+
+Agent-written unit tests tend to check the agent's own assumptions. They mock the database, the router, or the component under test, and stay green while the real flow is broken. Tests here must fail when a real user would hit a bug.
+
+Work stays test-first: write the failing test, then implement. What this policy sets is **which** test comes first:
+
+| Ticket touches                                                                  | Write first                                                        | Skill            |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------------- |
+| A user-facing flow (page, form, auth, checkout, anything a user clicks through) | Playwright e2e that walks each acceptance criterion through the UI | `e2e-testing`    |
+| An API route, server action, or DB query                                        | Integration test against a real test database (no ORM mocks)       | `testing`        |
+| Pure logic (pricing, calculations, parsers, validation, state machines)         | Unit test                                                          | `testing`        |
+| A third-party API (Stripe, email)                                               | Mock at the network boundary only (MSW)                            | `msw-mock-api`   |
+| An LLM SDK client (Anthropic, OpenAI)                                           | Stub the SDK module with `mock.module` (the one exception to MSW)  | `ai-integration` |
+
+**Rules**
+
+- Every acceptance criterion maps to at least one test that would fail if the feature broke for a real user.
+- Do not mock the module under test, the database layer, or framework internals. A test that passes only because of its mocks does not count.
+- Mock third-party APIs with MSW at the network boundary. **Exception: LLM SDK clients** may be stubbed with `mock.module("<sdk>", …)` before importing the code under test. The happy-dom preload gives every test file a browser-like global, and LLM SDKs refuse to construct there, so MSW can't reach them in the shared run. Stub only the SDK client; the code that builds the prompt and parses the response still runs for real. Everything else stays on MSW.
+- "Renders without crashing" and snapshot-only tests never count as coverage for a criterion.
+- Tag the critical flows `@smoke`: sign-up/login, the product's core feature, and payments.
+- Before committing, run the unit and integration tests with `bun test ./src ./app ./lib ./tests/integration` plus the Playwright specs the ticket touched (`bunx playwright test <specs>`). CI runs the whole e2e suite in the `full` tier (see `ci-cd`).
+- Never run a bare `bun test` as the gate. Bun also collects `*.spec.ts`, so it would run the Playwright specs in `tests/e2e/` under Bun, where they fail. Pass the unit-test roots explicitly instead: the command covers `src/`, root-level `app/` and `lib/` (where colocated `*.test.ts` files live), and `tests/integration/`. Roots the repo does not have are skipped, and Bun fails only if none of them exist. Add any other root that holds unit tests, never `tests/e2e/`, and run e2e only through Playwright.
+- Deleting a mock-heavy unit test that an e2e or integration test now covers is allowed in any ticket. Say so in the commit body.
 
 ---
 
@@ -177,7 +204,7 @@ Examples:
 | Auth       | BetterAuth (or as specified) |
 | Payments   | Stripe                       |
 | Styling    | Tailwind CSS + shadcn/ui     |
-| Testing    | Vitest + Playwright          |
+| Testing    | bun:test + Playwright        |
 | Docs       | VitePress                    |
 | Deployment | Vercel                       |
 
@@ -229,32 +256,39 @@ Compressed rules for removed skills (`auth`, `observability`, `stripe-billing`) 
 
 #### Do not auto-load — keep until a ticket/AGENTS.md names them
 
-These are marketplace / alternate-platform skills. Leave them on disk for other CAIO apps; **do not** open them during a normal CAIO Next.js ticket:
+**do not** open these during a normal CAIO Next.js ticket:
 
-- `shopify-remix`, `woocommerce`, `wordpress-plugin`
-- `heroku-deploy`, `cloudflare-dns`, `mysql-planetscale`, `pinecone`
 - `svg-animation` (presentation decks only)
 - Broad SEO/plugin suites when the product is not an SEO surface
 
 Product repos may tighten this list further in `AGENTS.md`.
 
+#### Archived — not shipped with the plugin
+
+These alternate-platform skills were never loaded in practice and now live in `archive/skills/`, with their eval cases in `archive/evals/absorption-archived.yaml`:
+
+- `shopify-remix`, `woocommerce`, `wordpress-plugin`
+- `heroku-deploy`, `cloudflare-dns`, `mysql-planetscale`, `pinecone`
+
+To bring one back, move its folder to `.claude/skills/`, add it to `.claude/.claude-plugin/plugin.json`, and move its eval cases back into `evals/cases/`.
+
 ---
 
 ## Approval Levels
 
-| Action                   | Approval Required      |
-| ------------------------ | ---------------------- |
-| Write/edit code          | None                   |
-| Create new files         | None                   |
-| Run tests/lint           | None                   |
-| Install dependencies     | None (logged)          |
-| Commit to feature branch | None                   |
-| Create PR                | Agent can create       |
-| Merge to `main`          | Human                  |
-| Merge to `prod`          | **NEVER** (human only) |
-| Payment/auth changes     | Human review           |
-| Schema migrations        | Human review           |
-| Environment variables    | Human approval         |
+| Action                                | Approval Required                                                       |
+| ------------------------------------- | ----------------------------------------------------------------------- |
+| Write/edit code                       | None                                                                    |
+| Create new files                      | None                                                                    |
+| Run tests/lint                        | None                                                                    |
+| Install dependencies                  | None (logged)                                                           |
+| Commit to feature branch              | None                                                                    |
+| Create PR                             | Agent can create                                                        |
+| Merge to `main`                       | Human                                                                   |
+| Merge to `prod`                       | **NEVER** (human only)                                                  |
+| Payment/auth changes                  | Human review                                                            |
+| Schema migrations                     | Human review                                                            |
+| Environment variables                 | Human approval                                                          |
 | CI workflows, merge gates, test setup | Human approval, with the cost stated first (see CI and Process Changes) |
 
 ---
@@ -295,24 +329,26 @@ The workflow shape is in the `ci-cd` skill: a `gate` tier on every PR push (lint
 
 ### Model Routing Matrix
 
-| Role                                                                            | Default model (Cursor)                        | When                                                      |
-| ------------------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------- |
-| Daily driver (parent)                                                           | Grok 4.5                                      | Ticket loop, exploration, routine impl                    |
-| `implementer` / `feature` / `tester` / `deployer` / `refactorer` / `doc-writer` | `grok-4.5[effort=high]`                       | Clear tickets, TDD, cleanup, docs — **prefer Grok**       |
-| `architect` / `interviewer` / `coordinator` / `auditor` / `product-critic`      | `claude-opus-5[effort=high]` (Fable optional) | Schema, tenancy, ambiguous design, parallel orchestration |
-| `reviewer` / `verifier`                                                         | `gpt-5.6-sol`                                 | Independent second opinion; verifier is readonly          |
-| Cloud babysit                                                                   | Grok parent + Grok routine specialists        | Overnight `/work`-style loops                             |
+| Role                                                                            | Default model (Cursor)                        | When                                                       |
+| ------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------- |
+| Daily driver (parent)                                                           | Grok 4.5                                      | Ticket loop, exploration, routine impl                     |
+| `implementer` / `feature` / `tester` / `deployer` / `refactorer` / `doc-writer` | `grok-4.5[effort=high]`                       | Clear tickets, test-first, cleanup, docs — **prefer Grok** |
+| `architect` / `interviewer` / `coordinator` / `auditor` / `product-critic`      | `claude-opus-5[effort=high]` (Fable optional) | Schema, tenancy, ambiguous design, parallel orchestration  |
+| `reviewer` / `verifier`                                                         | `gpt-5.6-sol`                                 | Independent second opinion; verifier is readonly           |
+| Cloud babysit                                                                   | Grok parent + Grok routine specialists        | Overnight `/work`-style loops                              |
 
 **Prefer Grok unless greater capability is required.** Do not route routine implementation to Sonnet. Escalate to Opus/Fable/Sol only for architect/reviewer-class work above.
 
 **Fable:** Prefer Opus by default for hard design. If Fable is available and privacy/opt-in allows, parent may spawn architect-class agents with `claude-fable-5`. Do not hard-require Fable.
 
+**Fable as advisor (Claude Code only):** Claude Code's advisor lets the working model consult a stronger model on hard calls without running the whole session on it. Turn it on per machine with `/advisor fable`, or with `"advisorModel": "fable"` in `~/.claude/settings.json`. Subagents inherit it, so Sonnet `implementer` / `feature` runs ask Fable only when they get stuck. The advisor must rank at or above the model it advises, and it needs Fable access on the account. Cursor has no equivalent; there, escalate by spawning `architect`.
+
 **Why you might still see Sonnet:** Product repos that copied only `.claude/agents/` (where `implementer` is `model: sonnet` for Claude Code) and not `.cursor/agents/`. In Cursor, **always ship `.cursor/agents/*`** — they win on name clash and pin Grok for routine agents. Claude Code aliases (`opus` / `sonnet` / `haiku`) remain under `.claude/agents/` for Claude Code only.
 
 ### Available Agents
 
-| Agent            | Cursor model          | Purpose                                     | Isolation                              |
-| ---------------- | --------------------- | ------------------------------------------- | -------------------------------------- |
+| Agent            | Cursor model            | Purpose                                     | Isolation                              |
+| ---------------- | ----------------------- | ------------------------------------------- | -------------------------------------- |
 | `feature`        | `grok-4.5[effort=high]` | Large feature implementation (L/XL tickets) | same tree (worktree via `/coordinate`) |
 | `implementer`    | `grok-4.5[effort=high]` | Medium ticket implementation (M tickets)    | same tree                              |
 | `architect`      | Opus (Fable optional)   | System design, architecture decisions       | same tree                              |
@@ -344,16 +380,16 @@ When 3+ independent tickets have no file overlap, run **`/coordinate`** — it i
 
 `.claude/workflows/` ships deterministic multi-agent scripts, run via the `Workflow` tool. Prefer these over hand-orchestrating the equivalent agents — fan-out, adversarial verification, ordering, and verdicts are enforced by code, not memory:
 
-| Workflow            | When to Run                                                                                                | Replaces                                                                                                                                                           |
-| ------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `coordinate-phase`  | 3+ independent TODO tickets                                                                                | hand-rolled `coordinator` orchestration                                                                                                                            |
-| `phase-gate`        | every phase boundary, before `/init-phase N+1`                                                             | the remembered auditor / product-critic / refactorer / `/audit` checklist + `/audit types`                                                                         |
-| `check-decisions`   | after `/init-phase N`, before `/work`                                                                      | single-context `/check-decisions` scan                                                                                                                             |
-| `review-ticket`     | after a ticket commit / before human PR review                                                             | single-lens `reviewer` pass                                                                                                                                        |
-| `design-review`     | after UI phases, before `/pre-ship`                                                                        | single-context `/design-review`                                                                                                                                    |
-| `pre-ship`          | last gate before human production deploy                                                                   | single-context `/pre-ship` checklist                                                                                                                               |
-| `doc-sync`          | end of phase, or when docs drift is suspected                                                              | accumulated per-ticket `doc-writer` nags                                                                                                                           |
-| `codex-review-loop` | **MANDATORY on every PR** — after `gh pr create` and after pushing new commits to an open PR (hook nudges) | the manual "ping Codex (Sol), apply feedback, repeat" loop — run via `/codex-review` to a terminal state before the next ticket; human check-in every 5 iterations |
+| Workflow            | When to Run                                                                                                | Replaces                                                                                                                                                                                                                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `coordinate-phase`  | 3+ independent TODO tickets                                                                                | hand-rolled `coordinator` orchestration                                                                                                                                                                                                                                                               |
+| `phase-gate`        | every phase boundary, before `/init-phase N+1`                                                             | the remembered auditor / product-critic / refactorer / `/audit` checklist + `/audit types`                                                                                                                                                                                                            |
+| `check-decisions`   | after `/init-phase N`, before `/work`                                                                      | single-context `/check-decisions` scan                                                                                                                                                                                                                                                                |
+| `review-ticket`     | after a ticket commit / before human PR review                                                             | single-lens `reviewer` pass                                                                                                                                                                                                                                                                           |
+| `design-review`     | after UI phases, before `/pre-ship`                                                                        | single-context `/design-review`                                                                                                                                                                                                                                                                       |
+| `pre-ship`          | last gate before human production deploy                                                                   | single-context `/pre-ship` checklist                                                                                                                                                                                                                                                                  |
+| `doc-sync`          | end of phase, or when docs drift is suspected                                                              | accumulated per-ticket `doc-writer` nags                                                                                                                                                                                                                                                              |
+| `codex-review-loop` | **MANDATORY on every PR** — after `gh pr create` and after pushing new commits to an open PR (hook nudges) | the manual "ping Codex, apply feedback, repeat" loop — run via `/codex-review` to a terminal state before the next ticket; human check-in every 5 iterations. Codex runs on the ChatGPT subscription, either as the local CLI (default) or as Codex's GitHub PR review (`/codex-review <PR#> github`) |
 
 Invoke as `Workflow({ name: "<name>", args: { ... } })`. If the `Workflow` tool is unavailable, fall back to the corresponding command/agents — the command markdown remains the reference each workflow's lenses are aligned to. Plugin installs must copy the scripts once: `mkdir -p .claude/workflows && cp <harness>/.claude/workflows/*.js .claude/workflows/`.
 

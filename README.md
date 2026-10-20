@@ -9,7 +9,7 @@ A structured harness for autonomous AI development of CAIO incubator projects.
 - **Phased development** — Large specs split into manageable phases
 - **Decision gates** — Spec ambiguities resolved before building
 - **Continuous execution** — Work through tickets until blocked or complete
-- **Quality guardrails** — TDD, security checks, complexity limits
+- **Quality guardrails** — test-first (e2e for user flows), security checks, complexity limits
 - **Multi-model routing** — Cheap parent (Grok); expensive models only on specialists
 
 ## Quick Start (Cursor — preferred)

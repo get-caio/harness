@@ -337,56 +337,6 @@ cases:
         expect: present
         description: "Bulk email includes unsubscribe mechanism for CAN-SPAM compliance"
 
-  # ─── Batch 2: Database / Data ─────────────────────────────────────────────────
-
-  - id: abs-mysql-planetscale-001
-    skill: mysql-planetscale
-    task: >
-      Set up a PlanetScale MySQL connection with Drizzle ORM including proper
-      SSL configuration and connection pooling. Write a schema for an
-      organizations table with an index for common query patterns. Implement
-      a cascade delete for an organization that removes all child records
-      manually since foreign keys are not supported.
-    assertions:
-      - pattern: "ssl:\\s*\\{\\s*rejectUnauthorized:\\s*true"
-        expect: present
-        description: "Connection requires SSL with rejectUnauthorized: true for PlanetScale"
-      - pattern: "connectionLimit|maxIdle|waitForConnections"
-        expect: present
-        description: "Connection pool is configured with size limits"
-      - pattern: '\\.references\s*\('
-        expect: absent
-        description: "Schema does not use .references() FK constraints unsupported by PlanetScale"
-      - pattern: "db\\.transaction|tx\\.delete"
-        expect: present
-        description: "Cascade delete is implemented manually inside a transaction"
-      - pattern: "index\\s*\\(['\"]idx_"
-        expect: present
-        description: "Table defines named composite indexes for query optimization"
-
-  - id: abs-mysql-planetscale-002
-    skill: mysql-planetscale
-    task: >
-      Write the PlanetScale branching workflow commands to add a new nullable
-      column to a production table, and implement a read replica setup using
-      a secondary DATABASE_READ_URL for analytics queries.
-    assertions:
-      - pattern: "pscale branch create|pscale deploy-request"
-        expect: present
-        description: "Uses pscale CLI commands to create branch and deploy request"
-      - pattern: "DATABASE_READ_URL|read.*replica|readPool|readDb"
-        expect: present
-        description: "Separate read replica pool is created for analytics queries"
-      - pattern: "connectionLimit.*20|Higher limit|reads"
-        expect: present
-        description: "Read replica pool has a higher connection limit than the write pool"
-      - pattern: "FOREIGN KEY|ADD FOREIGN KEY"
-        expect: absent
-        description: "Migration SQL does not add foreign key constraints"
-      - pattern: "NOT NULL|nullable|\\?"
-        expect: present
-        description: "New column is added as nullable to avoid locking the table"
-
   - id: abs-database-migrations-001
     skill: database-migrations
     task: >
@@ -526,54 +476,6 @@ cases:
       - pattern: "catch.*allowed.*true|fail.*open|Redis.*down"
         expect: present
         description: "Redis errors cause fail-open behavior: request is allowed through"
-
-  - id: abs-pinecone-001
-    skill: pinecone
-    task: >
-      Build an embedding pipeline that takes a product description, generates
-      an embedding using OpenAI's text-embedding-3-small model, and upserts it
-      into a Pinecone index with metadata. Then implement a semantic search
-      function that queries the index and returns the top 10 results with scores.
-    assertions:
-      - pattern: "text-embedding-3-small"
-        expect: present
-        description: "Uses the text-embedding-3-small model for embeddings"
-      - pattern: "pollSearchIndex\\.upsert|index\\.upsert|pinecone.*upsert"
-        expect: present
-        description: "Upserts the embedding vector into the Pinecone index"
-      - pattern: "includeMetadata:\\s*true"
-        expect: present
-        description: "Queries include includeMetadata: true to return metadata with results"
-      - pattern: "topK"
-        expect: present
-        description: "Search query specifies topK to limit number of results"
-      - pattern: "m\\.score|matches.*score|score.*match"
-        expect: present
-        description: "Search results include the cosine similarity score"
-
-  - id: abs-pinecone-002
-    skill: pinecone
-    task: >
-      Write a backfill script that indexes all existing active records from a
-      database into Pinecone in batches of 100, using batch embedding for
-      efficiency, and implement filtered vector search to scope results to a
-      specific organization ID.
-    assertions:
-      - pattern: "embedBatch|embeddings\\.create.*input.*texts|batch.*embed"
-        expect: present
-        description: "Uses batch embedding API instead of embedding one record at a time"
-      - pattern: "BATCH_SIZE.*100|100.*BATCH_SIZE|limit.*100"
-        expect: present
-        description: "Upserts in batches of 100 to respect Pinecone's per-call limit"
-      - pattern: "await.*sleep|Bun\\.sleep|sleep.*200"
-        expect: present
-        description: "Includes rate limiting delay between batches to respect API limits"
-      - pattern: "filter.*organizationId|organizationId.*\\$eq"
-        expect: present
-        description: "Filtered search scopes results to a specific organizationId"
-      - pattern: "offset\\s*\\+?=|while.*true.*break|offset.*BATCH"
-        expect: present
-        description: "Backfill loops with pagination until all records are indexed"
 
   # ─── Batch 3: Compliance / Privacy ───────────────────────────────────────────
 

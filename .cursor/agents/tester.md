@@ -23,9 +23,9 @@ If you are invoked to write tests for code that was already committed without te
 ## Testing Stack
 
 ```
-- Vitest — Unit + component tests (fast, ESM-native)
-- @testing-library/react — React component testing
-- MSW — API mocking for unit/integration tests
+- bun:test — Bun's built-in runner for unit, component and integration tests (no Vitest/Jest)
+- happy-dom + @testing-library/react — React component testing
+- MSW v2 — API mocking at the network boundary (v3 does not intercept under bun test)
 - Playwright — E2E browser testing, visual regression, a11y
 ```
 
@@ -58,7 +58,7 @@ tests/
 ### Test File Template
 
 ```typescript
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'bun:test'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
@@ -138,7 +138,7 @@ describe("calculateTrainingLoad", () => {
 ```typescript
 describe('PlanEditor', () => {
   it('saves changes when form is submitted', async () => {
-    const onSave = vi.fn()
+    const onSave = mock() // from 'bun:test'
     render(<PlanEditor plan={testPlan} onSave={onSave} />)
 
     const nameInput = screen.getByLabelText('Plan Name')
@@ -152,7 +152,7 @@ describe('PlanEditor', () => {
   })
 
   it('shows validation error for empty name', async () => {
-    render(<PlanEditor plan={testPlan} onSave={vi.fn()} />)
+    render(<PlanEditor plan={testPlan} onSave={mock()} />)
 
     const nameInput = screen.getByLabelText('Plan Name')
     await userEvent.clear(nameInput)
@@ -165,10 +165,18 @@ describe('PlanEditor', () => {
 
 ### Server Action Tests
 
+Run these against the real test database. Only the session is stubbed, with `mock.module`:
+
 ```typescript
+import { describe, it, expect, mock } from "bun:test";
+
+let session: { user: TestUser } | null = null;
+mock.module("@/lib/auth", () => ({ auth: async () => session }));
+const { createTrainingPlan } = await import("@/actions/plans");
+
 describe("createTrainingPlan action", () => {
   it("creates a plan for authenticated user", async () => {
-    vi.mocked(auth).mockResolvedValue({ user: testUser });
+    session = { user: testUser };
 
     const formData = new FormData();
     formData.set("name", "Marathon Prep");
@@ -181,7 +189,7 @@ describe("createTrainingPlan action", () => {
   });
 
   it("throws for unauthenticated user", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    session = null;
 
     await expect(createTrainingPlan(new FormData())).rejects.toThrow(
       "Unauthorized",
@@ -234,10 +242,10 @@ it('renders the entire app correctly', () => {
 ## Commands
 
 ```bash
-bun test                                    # Run all tests
-bun test src/lib/plan-generator.test.ts     # Run specific file
-bun test -t "createPlan"                    # Run matching pattern
-bun test --coverage                         # Run with coverage
-bun test --watch                            # Watch mode
-bun test:e2e                                # Run E2E tests
+bun test ./src ./app ./lib ./tests/integration   # Unit + integration (never bare `bun test`: it collects Playwright specs)
+bun test ./src/lib/plan-generator.test.ts        # Run one file (./ makes it a path, not a name filter)
+bun test ./src -t "createPlan"                   # Run tests whose name matches
+bun run test:coverage                            # With coverage
+bun run test:watch                               # Watch mode
+bunx playwright test                             # E2E tests (Playwright's own runner)
 ```

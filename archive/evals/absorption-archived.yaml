@@ -1,0 +1,329 @@
+# Absorption cases for skills moved to archive/skills/.
+# To restore a skill, move it back to .claude/skills/ and these cases back into evals/cases/.
+cases:
+
+
+  - id: abs-mysql-planetscale-001
+    skill: mysql-planetscale
+    task: >
+      Set up a PlanetScale MySQL connection with Drizzle ORM including proper
+      SSL configuration and connection pooling. Write a schema for an
+      organizations table with an index for common query patterns. Implement
+      a cascade delete for an organization that removes all child records
+      manually since foreign keys are not supported.
+    assertions:
+      - pattern: "ssl:\\s*\\{\\s*rejectUnauthorized:\\s*true"
+        expect: present
+        description: "Connection requires SSL with rejectUnauthorized: true for PlanetScale"
+      - pattern: "connectionLimit|maxIdle|waitForConnections"
+        expect: present
+        description: "Connection pool is configured with size limits"
+      - pattern: '\\.references\s*\('
+        expect: absent
+        description: "Schema does not use .references() FK constraints unsupported by PlanetScale"
+      - pattern: "db\\.transaction|tx\\.delete"
+        expect: present
+        description: "Cascade delete is implemented manually inside a transaction"
+      - pattern: "index\\s*\\(['\"]idx_"
+        expect: present
+        description: "Table defines named composite indexes for query optimization"
+
+  - id: abs-mysql-planetscale-002
+    skill: mysql-planetscale
+    task: >
+      Write the PlanetScale branching workflow commands to add a new nullable
+      column to a production table, and implement a read replica setup using
+      a secondary DATABASE_READ_URL for analytics queries.
+    assertions:
+      - pattern: "pscale branch create|pscale deploy-request"
+        expect: present
+        description: "Uses pscale CLI commands to create branch and deploy request"
+      - pattern: "DATABASE_READ_URL|read.*replica|readPool|readDb"
+        expect: present
+        description: "Separate read replica pool is created for analytics queries"
+      - pattern: "connectionLimit.*20|Higher limit|reads"
+        expect: present
+        description: "Read replica pool has a higher connection limit than the write pool"
+      - pattern: "FOREIGN KEY|ADD FOREIGN KEY"
+        expect: absent
+        description: "Migration SQL does not add foreign key constraints"
+      - pattern: "NOT NULL|nullable|\\?"
+        expect: present
+        description: "New column is added as nullable to avoid locking the table"
+
+  - id: abs-pinecone-001
+    skill: pinecone
+    task: >
+      Build an embedding pipeline that takes a product description, generates
+      an embedding using OpenAI's text-embedding-3-small model, and upserts it
+      into a Pinecone index with metadata. Then implement a semantic search
+      function that queries the index and returns the top 10 results with scores.
+    assertions:
+      - pattern: "text-embedding-3-small"
+        expect: present
+        description: "Uses the text-embedding-3-small model for embeddings"
+      - pattern: "pollSearchIndex\\.upsert|index\\.upsert|pinecone.*upsert"
+        expect: present
+        description: "Upserts the embedding vector into the Pinecone index"
+      - pattern: "includeMetadata:\\s*true"
+        expect: present
+        description: "Queries include includeMetadata: true to return metadata with results"
+      - pattern: "topK"
+        expect: present
+        description: "Search query specifies topK to limit number of results"
+      - pattern: "m\\.score|matches.*score|score.*match"
+        expect: present
+        description: "Search results include the cosine similarity score"
+
+  - id: abs-pinecone-002
+    skill: pinecone
+    task: >
+      Write a backfill script that indexes all existing active records from a
+      database into Pinecone in batches of 100, using batch embedding for
+      efficiency, and implement filtered vector search to scope results to a
+      specific organization ID.
+    assertions:
+      - pattern: "embedBatch|embeddings\\.create.*input.*texts|batch.*embed"
+        expect: present
+        description: "Uses batch embedding API instead of embedding one record at a time"
+      - pattern: "BATCH_SIZE.*100|100.*BATCH_SIZE|limit.*100"
+        expect: present
+        description: "Upserts in batches of 100 to respect Pinecone's per-call limit"
+      - pattern: "await.*sleep|Bun\\.sleep|sleep.*200"
+        expect: present
+        description: "Includes rate limiting delay between batches to respect API limits"
+      - pattern: "filter.*organizationId|organizationId.*\\$eq"
+        expect: present
+        description: "Filtered search scopes results to a specific organizationId"
+      - pattern: "offset\\s*\\+?=|while.*true.*break|offset.*BATCH"
+        expect: present
+        description: "Backfill loops with pagination until all records are indexed"
+
+  - id: abs-shopify-001
+    skill: shopify-remix
+    task: >
+      Build a Shopify app that syncs a merchant's product catalog to an
+      external database and handles order webhooks to record attribution.
+      The app should use Shopify OAuth via the Remix template.
+    assertions:
+      - pattern: "authenticate\\.admin|authenticate\\.webhook"
+        expect: present
+        description: Uses Shopify Remix authenticate helpers instead of custom OAuth
+      - pattern: "admin\\.graphql|PRODUCTS_QUERY|pageInfo.*hasNextPage|endCursor"
+        expect: present
+        description: Uses cursor-based GraphQL pagination for product sync
+      - pattern: "shopifyApp\\s*\\(|@shopify/shopify-app-remix"
+        expect: present
+        description: Uses official Shopify Remix app package for configuration
+      - pattern: "note_attributes|sidedRef|recordAttribution|webhook"
+        expect: present
+        description: Handles order webhook for attribution tracking
+      - pattern: "SHOPIFY_API_KEY|SHOPIFY_API_SECRET|scopes"
+        expect: present
+        description: Configures API keys and scopes through shopifyApp config
+
+  - id: abs-shopify-002
+    skill: shopify-remix
+    task: >
+      Implement a ScriptTag injection for a Shopify app that embeds a
+      JavaScript file into all merchant store pages using the Admin GraphQL API.
+    assertions:
+      - pattern: "scriptTagCreate|ScriptTagInput|displayScope"
+        expect: present
+        description: Uses scriptTagCreate GraphQL mutation for script injection
+      - pattern: "admin\\.graphql"
+        expect: present
+        description: Uses admin.graphql client from Shopify Remix
+      - pattern: "afterAuth|register_hooks|register.*webhook"
+        expect: present
+        description: Registers scripts/webhooks programmatically via afterAuth hook
+      - pattern: "read_products|write_script_tags|scopes"
+        expect: present
+        description: Declares required OAuth scopes for script tag access
+      - pattern: "curl\\s|fetch\\(|axios"
+        expect: absent
+        description: Does not use raw HTTP calls for Shopify Admin API
+
+  - id: abs-wp-001
+    skill: wordpress-plugin
+    task: >
+      Write a WordPress plugin admin settings page that allows administrators
+      to save an API key and a property ID. The form must be secured against
+      CSRF and the inputs must be sanitized before storage.
+    assertions:
+      - pattern: "wp_verify_nonce|wp_nonce_field|wp_die.*Security"
+        expect: present
+        description: Verifies nonce on form submission and dies on failure
+      - pattern: "current_user_can\\s*\\(\\s*['\"]manage_options"
+        expect: present
+        description: Checks manage_options capability before saving settings
+      - pattern: "sanitize_text_field"
+        expect: present
+        description: Sanitizes all user input with appropriate WP function
+      - pattern: "update_option|get_option"
+        expect: present
+        description: Uses WP options API for settings persistence
+      - pattern: "\\$_POST\\s*\\[(?!.*\\$_POST\\s*\\[.*sanitize)"
+        expect: absent
+        description: Does not use raw $_POST values without sanitization
+
+  - id: abs-wp-002
+    skill: wordpress-plugin
+    task: >
+      Register a custom WP REST API endpoint for a WordPress plugin that
+      returns plugin settings. The endpoint should only be accessible to
+      administrators and validate/sanitize any input arguments.
+    assertions:
+      - pattern: "register_rest_route|rest_api_init"
+        expect: present
+        description: Registers route using WP REST API convention
+      - pattern: "permission_callback.*current_user_can|current_user_can.*manage_options"
+        expect: present
+        description: Uses permission_callback to restrict access to admins
+      - pattern: "sanitize_callback|sanitize_text_field"
+        expect: present
+        description: Declares sanitize_callback on route args
+      - pattern: "defined\\s*\\(\\s*['\"]ABSPATH|ABSPATH.*exit"
+        expect: present
+        description: Guards file with ABSPATH check to prevent direct access
+      - pattern: "wp_remote_get|wp_remote_post"
+        expect: present
+        description: Uses wp_remote_* for outbound HTTP rather than curl
+
+  - id: abs-wc-001
+    skill: woocommerce
+    task: >
+      Write a WooCommerce plugin that syncs the store's published product
+      catalog to an external API on a scheduled basis and hooks into order
+      completion to send attribution data.
+    assertions:
+      - pattern: "woocommerce_order_status_completed|wc_get_order"
+        expect: present
+        description: Uses WooCommerce order status hook for attribution tracking
+      - pattern: "wp_remote_post|wp_remote_get"
+        expect: present
+        description: Uses WordPress HTTP API instead of curl
+      - pattern: "wp_schedule_event|wp_next_scheduled|register_activation_hook"
+        expect: present
+        description: Registers WP-Cron for scheduled product sync
+      - pattern: "wc_get_products|get_price|get_permalink|is_in_stock"
+        expect: present
+        description: Uses WC product API methods to read product data
+      - pattern: "class_exists\\s*\\(\\s*['\"]WooCommerce"
+        expect: present
+        description: Checks WooCommerce is active before using wc_* functions
+
+  - id: abs-wc-002
+    skill: woocommerce
+    task: >
+      Implement attribution tracking in a WooCommerce plugin. When a customer
+      completes a checkout, capture a referral cookie into order meta, and on
+      order completion fire a webhook to an external attribution API.
+    assertions:
+      - pattern: "woocommerce_checkout_update_order_meta|update_post_meta.*_myapp_ref|update_post_meta.*_ref"
+        expect: present
+        description: Captures attribution cookie into order meta at checkout
+      - pattern: "sanitize_text_field\\s*\\(\\s*\\$_COOKIE"
+        expect: present
+        description: Sanitizes cookie value before storing in order meta
+      - pattern: "get_meta\\s*\\(\\s*['\"]_|order->get_meta"
+        expect: present
+        description: Reads attribution from order meta, not from cookie in order hook
+      - pattern: "wp_json_encode"
+        expect: present
+        description: Uses wp_json_encode instead of json_encode
+      - pattern: "woocommerce_order_refunded|orders.*refund|reverse.*attribution"
+        expect: present
+        description: Handles refund event to reverse attributions
+
+  - id: abs-cf-001
+    skill: cloudflare-dns
+    task: >
+      Write a function that verifies a customer's custom domain CNAME
+      configuration, and a Cloudflare Worker that splits traffic between an
+      old and a new API origin based on an environment variable percentage.
+    assertions:
+      - pattern: "dns\\.resolve|CNAME|endsWith.*expectedTarget"
+        expect: present
+        description: Verifies CNAME by programmatic DNS resolution
+      - pattern: "TRAFFIC_SPLIT_PCT|Math\\.random|NEW_API_ORIGIN|OLD_API_ORIGIN"
+        expect: present
+        description: Implements traffic splitting with percentage env variable
+      - pattern: "X-Backend|new.*legacy|useNew"
+        expect: present
+        description: Sets debug header to identify which backend served the request
+      - pattern: "domainVerified|customDomain|addCustomDomain"
+        expect: present
+        description: Updates domain verification state in database after DNS check
+      - pattern: "orange.*cloud|DNS.*only|proxy.*false|proxied.*false"
+        expect: present
+        description: Notes proxy mode implications for Heroku/custom domain SSL
+
+  - id: abs-cf-002
+    skill: cloudflare-dns
+    task: >
+      Configure DNS records for a SaaS application with marketing site,
+      admin panel, API, and docs subdomain. Document the correct proxy settings
+      and SSL configuration for each record type.
+    assertions:
+      - pattern: "CNAME|A.*record|subdomain"
+        expect: present
+        description: Defines A/CNAME records for application subdomains
+      - pattern: "Full.*Strict|SSL.*strict|TLS.*1\\.2"
+        expect: present
+        description: Specifies Full (Strict) SSL mode and minimum TLS version
+      - pattern: "orange.*cloud|gray.*cloud|DNS.*only|proxied"
+        expect: present
+        description: Differentiates between proxied and DNS-only records
+      - pattern: "TTL.*60|low.*TTL.*migrat|60s.*migration"
+        expect: present
+        description: Recommends short TTL during migrations for fast rollback
+      - pattern: "Cache.*Bypass|api.*bypass|no.*cache.*api"
+        expect: present
+        description: Configures cache bypass for API endpoints
+
+  - id: abs-heroku-001
+    skill: heroku-deploy
+    task: >
+      Write a Procfile, server entrypoint, and health check route for a
+      Bun + Hono API deployed to Heroku, including a release phase for
+      database migrations and a readiness probe that checks the database.
+    assertions:
+      - pattern: "web:\\s*bun|worker:\\s*bun|release:\\s*bun.*migrat"
+        expect: present
+        description: Procfile has web, worker, and release phases
+      - pattern: "process\\.env\\.PORT|parseInt.*PORT"
+        expect: present
+        description: Binds server to dynamic PORT from environment
+      - pattern: "/health|/ready|SELECT 1"
+        expect: present
+        description: Implements health and readiness endpoints with DB check
+      - pattern: "503|db.*error|not.*ready"
+        expect: present
+        description: Returns 503 on readiness check when database is unreachable
+      - pattern: "NODE_ENV.*production|heroku config:set"
+        expect: present
+        description: Sets NODE_ENV and other required config vars
+
+  - id: abs-heroku-002
+    skill: heroku-deploy
+    task: >
+      Set up a Heroku pipeline with staging and production stages, configure
+      the Redis addon, and document the correct database connection pooling
+      settings for a Bun app on Heroku standard dynos.
+    assertions:
+      - pattern: "heroku pipelines|staging|production.*manual.*promote"
+        expect: present
+        description: Creates pipeline with staging auto-deploy and manual production promote
+      - pattern: "heroku addons:create heroku-redis|REDIS_URL"
+        expect: present
+        description: Adds Redis via Heroku addon rather than external URL
+      - pattern: "connectionLimit|waitForConnections|pool"
+        expect: present
+        description: Configures connection pooling for database client
+      - pattern: "heroku buildpacks:set.*bun|heroku-buildpack-bun"
+        expect: present
+        description: Sets Bun buildpack explicitly
+      - pattern: "review.*app|ephemeral|PR.*app"
+        expect: present
+        description: Enables review apps for pull request environments
