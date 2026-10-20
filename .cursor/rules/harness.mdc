@@ -51,7 +51,7 @@ You are running the **CAIO Build Harness**. Full OS: `HARNESS.md`. Product map: 
 
 ## Quality (non-negotiable)
 
-- Every ticket has tests that assert acceptance criteria (no `expect(true).toBe(true)` / bare `toBeDefined()`). Tests must exercise real behavior: never mock the code under test or the DB layer; mock third-party APIs only via MSW.
+- Every ticket has tests that assert acceptance criteria (no `expect(true).toBe(true)` / bare `toBeDefined()`). Tests must exercise real behavior: never mock the code under test or the DB layer; mock third-party APIs only via MSW, except LLM SDK clients, which may be stubbed with `mock.module` (see `HARNESS.md` Testing Policy).
 - Import types from `lib/**/types.ts` / prior phase type manifest — do not reinvent.
 - Fail loudly (structured logs); no silent swallow.
 - Surgical diffs — no drive-by refactors.

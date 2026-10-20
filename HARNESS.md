@@ -98,17 +98,19 @@ Agent-written unit tests tend to check the agent's own assumptions. They mock th
 
 Work stays test-first: write the failing test, then implement. What this policy sets is **which** test comes first:
 
-| Ticket touches                                                                  | Write first                                                        | Skill          |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------ | -------------- |
-| A user-facing flow (page, form, auth, checkout, anything a user clicks through) | Playwright e2e that walks each acceptance criterion through the UI | `e2e-testing`  |
-| An API route, server action, or DB query                                        | Integration test against a real test database (no ORM mocks)       | `testing`      |
-| Pure logic (pricing, calculations, parsers, validation, state machines)         | Unit test                                                          | `testing`      |
-| A third-party API (Stripe, email, LLMs)                                         | Mock at the network boundary only                                  | `msw-mock-api` |
+| Ticket touches                                                                  | Write first                                                        | Skill            |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------------- |
+| A user-facing flow (page, form, auth, checkout, anything a user clicks through) | Playwright e2e that walks each acceptance criterion through the UI | `e2e-testing`    |
+| An API route, server action, or DB query                                        | Integration test against a real test database (no ORM mocks)       | `testing`        |
+| Pure logic (pricing, calculations, parsers, validation, state machines)         | Unit test                                                          | `testing`        |
+| A third-party API (Stripe, email)                                               | Mock at the network boundary only (MSW)                            | `msw-mock-api`   |
+| An LLM SDK client (Anthropic, OpenAI)                                           | Stub the SDK module with `mock.module` (the one exception to MSW)  | `ai-integration` |
 
 **Rules**
 
 - Every acceptance criterion maps to at least one test that would fail if the feature broke for a real user.
 - Do not mock the module under test, the database layer, or framework internals. A test that passes only because of its mocks does not count.
+- Mock third-party APIs with MSW at the network boundary. **Exception: LLM SDK clients** may be stubbed with `mock.module("<sdk>", …)` before importing the code under test. The happy-dom preload gives every test file a browser-like global, and LLM SDKs refuse to construct there, so MSW can't reach them in the shared run. Stub only the SDK client; the code that builds the prompt and parses the response still runs for real. Everything else stays on MSW.
 - "Renders without crashing" and snapshot-only tests never count as coverage for a criterion.
 - Tag the critical flows `@smoke`: sign-up/login, the product's core feature, and payments.
 - Before committing, run the unit and integration tests with `bun test ./src ./app ./lib ./tests/integration` plus the Playwright specs the ticket touched (`bunx playwright test <specs>`). CI runs the whole e2e suite in the `full` tier (see `ci-cd`).
@@ -327,13 +329,13 @@ The workflow shape is in the `ci-cd` skill: a `gate` tier on every PR push (lint
 
 ### Model Routing Matrix
 
-| Role                                                                            | Default model (Cursor)                        | When                                                      |
-| ------------------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------- |
-| Daily driver (parent)                                                           | Grok 4.5                                      | Ticket loop, exploration, routine impl                    |
-| `implementer` / `feature` / `tester` / `deployer` / `refactorer` / `doc-writer` | `grok-4.5[effort=high]`                       | Clear tickets, test-first, cleanup, docs — **prefer Grok**       |
-| `architect` / `interviewer` / `coordinator` / `auditor` / `product-critic`      | `claude-opus-5[effort=high]` (Fable optional) | Schema, tenancy, ambiguous design, parallel orchestration |
-| `reviewer` / `verifier`                                                         | `gpt-5.6-sol`                                 | Independent second opinion; verifier is readonly          |
-| Cloud babysit                                                                   | Grok parent + Grok routine specialists        | Overnight `/work`-style loops                             |
+| Role                                                                            | Default model (Cursor)                        | When                                                       |
+| ------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------- |
+| Daily driver (parent)                                                           | Grok 4.5                                      | Ticket loop, exploration, routine impl                     |
+| `implementer` / `feature` / `tester` / `deployer` / `refactorer` / `doc-writer` | `grok-4.5[effort=high]`                       | Clear tickets, test-first, cleanup, docs — **prefer Grok** |
+| `architect` / `interviewer` / `coordinator` / `auditor` / `product-critic`      | `claude-opus-5[effort=high]` (Fable optional) | Schema, tenancy, ambiguous design, parallel orchestration  |
+| `reviewer` / `verifier`                                                         | `gpt-5.6-sol`                                 | Independent second opinion; verifier is readonly           |
+| Cloud babysit                                                                   | Grok parent + Grok routine specialists        | Overnight `/work`-style loops                              |
 
 **Prefer Grok unless greater capability is required.** Do not route routine implementation to Sonnet. Escalate to Opus/Fable/Sol only for architect/reviewer-class work above.
 

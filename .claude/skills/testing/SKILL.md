@@ -518,7 +518,7 @@ bunx playwright test
 - Use meaningful test descriptions
 - Keep tests focused (one concept per test)
 - Use factories for test data
-- Mock third-party APIs at the network boundary (MSW); never mock the code under test or the DB layer
+- Mock third-party APIs at the network boundary (MSW); never mock the code under test or the DB layer. The one exception: LLM SDK clients get a `mock.module` stub (see `ai-integration`)
 
 ### ❌ Don't
 

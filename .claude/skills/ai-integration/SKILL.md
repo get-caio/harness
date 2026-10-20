@@ -564,7 +564,7 @@ describe("generateWorkout", () => {
 });
 ```
 
-The SDK refuses to construct when a global DOM is loaded (the `testing` skill preloads happy-dom for component tests), so a test that drives the real SDK against MSW instead of this stub needs its own `bun test` run without the DOM preload.
+Stubbing the SDK module is the harness default for LLM clients. It is the one exception to the MSW-only rule in the `HARNESS.md` Testing Policy. The SDK refuses to construct when a global DOM is loaded, and the `testing` skill preloads happy-dom for every file. Stub only the SDK client: prompt building and response parsing in `generateWorkout` still run for real.
 
 ---
 

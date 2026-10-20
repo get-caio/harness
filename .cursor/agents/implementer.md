@@ -217,11 +217,11 @@ try {
 
 Before marking any ticket as complete:
 
-| Requirement                     | Check                                                                                    |
-| ------------------------------- | ---------------------------------------------------------------------------------------- |
-| Right test type                 | User flow → e2e spec; API/DB → integration; pure logic → unit                            |
-| Tests cover acceptance criteria | Minimum 1 test per acceptance criterion                                                  |
-| Tests exercise real behavior    | Nothing under test is mocked; external APIs mocked via MSW only                          |
+| Requirement                     | Check                                                                                                |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Right test type                 | User flow → e2e spec; API/DB → integration; pure logic → unit                                        |
+| Tests cover acceptance criteria | Minimum 1 test per acceptance criterion                                                              |
+| Tests exercise real behavior    | Nothing under test is mocked; external APIs via MSW (LLM SDKs: `mock.module` stub)                   |
 | Tests pass                      | `bun test ./src ./app ./lib ./tests/integration` and the touched Playwright specs exit with status 0 |
 
 **If you think a ticket doesn't need tests:**
