@@ -111,8 +111,8 @@ Work stays test-first: write the failing test, then implement. What this policy 
 - Do not mock the module under test, the database layer, or framework internals. A test that passes only because of its mocks does not count.
 - "Renders without crashing" and snapshot-only tests never count as coverage for a criterion.
 - Tag the critical flows `@smoke`: sign-up/login, the product's core feature, and payments.
-- Before committing, run the unit and integration tests with `bun test ./src ./tests/integration` plus the Playwright specs the ticket touched (`bunx playwright test <specs>`). CI runs the whole e2e suite in the `full` tier (see `ci-cd`).
-- Never run a bare `bun test` as the gate. Bun also collects `*.spec.ts`, so it would run the Playwright specs in `tests/e2e/` under Bun, where they fail. Pass the unit and integration directories explicitly, adjusted to the repo's layout, and run e2e only through Playwright.
+- Before committing, run the unit and integration tests with `bun test ./src ./app ./lib ./tests/integration` plus the Playwright specs the ticket touched (`bunx playwright test <specs>`). CI runs the whole e2e suite in the `full` tier (see `ci-cd`).
+- Never run a bare `bun test` as the gate. Bun also collects `*.spec.ts`, so it would run the Playwright specs in `tests/e2e/` under Bun, where they fail. Pass the unit-test roots explicitly instead: the command covers `src/`, root-level `app/` and `lib/` (where colocated `*.test.ts` files live), and `tests/integration/`. Roots the repo does not have are skipped, and Bun fails only if none of them exist. Add any other root that holds unit tests, never `tests/e2e/`, and run e2e only through Playwright.
 - Deleting a mock-heavy unit test that an e2e or integration test now covers is allowed in any ticket. Say so in the commit body.
 
 ---

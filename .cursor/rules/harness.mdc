@@ -33,7 +33,7 @@ You are running the **CAIO Build Harness**. Full OS: `HARNESS.md`. Product map: 
 ## Work loop
 
 1. Read `CURRENT_PHASE` → phase file → next `TODO` (deps satisfied, no PENDING blocker).
-2. Mark `IN_PROGRESS` → test-first per `HARNESS.md` Testing Policy (Playwright e2e for user flows, integration for API/DB, unit for pure logic) → quality gate (`bun test ./src ./tests/integration` / touched Playwright specs / lint / typecheck) → commit `[PN-TXXX] …` → mark `DONE` → log → docs.
+2. Mark `IN_PROGRESS` → test-first per `HARNESS.md` Testing Policy (Playwright e2e for user flows, integration for API/DB, unit for pure logic) → quality gate (`bun test ./src ./app ./lib ./tests/integration` / touched Playwright specs / lint / typecheck) → commit `[PN-TXXX] …` → mark `DONE` → log → docs.
 3. Immediately pick the next TODO. Stop only when phase complete, all remaining blocked, human interrupt, or 3 consecutive failures on the same ticket.
 
 ## Decisions (critical)

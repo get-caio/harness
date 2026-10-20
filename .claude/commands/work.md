@@ -83,7 +83,7 @@ The environment is configured with `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=70` for aggr
 │     - Refactor if needed                                 │
 │           ↓                                              │
 │  8. Quality Gate                                         │
-│     - bun test ./src ./tests/integration ✓               │
+│     - bun test ./src ./app ./lib ./tests/integration ✓   │
 │     - touched Playwright specs ✓                         │
 │     - bun lint ✓                                         │
 │     - bun typecheck ✓                                    │
@@ -279,7 +279,7 @@ export function feature() {
 Before committing, run:
 
 ```bash
-bun test ./src ./tests/integration  # Unit + integration (never bare `bun test`: it picks up tests/e2e)
+bun test ./src ./app ./lib ./tests/integration  # Unit + integration (never bare `bun test`: it picks up tests/e2e)
 bunx playwright test <specs>  # E2E specs this ticket touched
 bun lint           # No lint errors
 bun typecheck      # No type errors
@@ -294,7 +294,7 @@ Every ticket MUST have tests. Before committing, verify:
 | --------------- | ------------------------------------------------------------------------ |
 | New test files? | At least one test file created or modified                               |
 | Test count      | At least 1 test per acceptance criterion                                 |
-| Tests pass      | `bun test ./src ./tests/integration` and touched Playwright specs exit 0 |
+| Tests pass      | `bun test ./src ./app ./lib ./tests/integration` and touched Playwright specs exit 0 |
 | Coverage        | Does not decrease from previous commit                                   |
 
 **If no tests:** Do NOT commit. Either:

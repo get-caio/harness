@@ -102,7 +102,7 @@ describe("TrainingPlanGenerator", () => {
 
 ```bash
 # Must all pass before committing
-bun test ./src ./tests/integration  # Unit + integration pass (never bare `bun test`: it picks up tests/e2e)
+bun test ./src ./app ./lib ./tests/integration  # Unit + integration pass (never bare `bun test`: it picks up tests/e2e)
 bunx playwright test <specs>  # E2E specs this ticket touched pass
 bun lint                   # No linting errors
 bun typecheck              # No type errors
@@ -222,7 +222,7 @@ Before marking any ticket as complete:
 | Right test type                 | User flow → e2e spec; API/DB → integration; pure logic → unit                            |
 | Tests cover acceptance criteria | Minimum 1 test per acceptance criterion                                                  |
 | Tests exercise real behavior    | Nothing under test is mocked; external APIs mocked via MSW only                          |
-| Tests pass                      | `bun test ./src ./tests/integration` and the touched Playwright specs exit with status 0 |
+| Tests pass                      | `bun test ./src ./app ./lib ./tests/integration` and the touched Playwright specs exit with status 0 |
 
 **If you think a ticket doesn't need tests:**
 
