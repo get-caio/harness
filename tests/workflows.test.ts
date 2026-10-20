@@ -83,3 +83,21 @@ describe("workflow scripts", () => {
     });
   }
 });
+
+describe("coordinate-phase test gate", () => {
+  const src = readFileSync(join(WORKFLOWS_DIR, "coordinate-phase.js"), "utf8");
+
+  it("never tells agents to run `npm test` as the gate", () => {
+    // In a harness-standard repo `npm test` is bare `bun test`, which also
+    // collects tests/e2e/*.spec.ts and fails on the Playwright specs.
+    expect(src).not.toMatch(/npm test/);
+  });
+
+  it("both the implement and merge prompts use the scoped bun test roots and Playwright", () => {
+    const scoped = /bun test \.\/src \.\/app \.\/lib \.\/tests\/integration/g;
+    // header comment + schema description + impl prompt + merge prompt
+    expect(src.match(scoped)?.length ?? 0).toBeGreaterThanOrEqual(4);
+    expect(src).toMatch(/bunx playwright test <specs>/);
+    expect(src).toMatch(/bunx playwright test\\` \(the full e2e suite\)/);
+  });
+});
