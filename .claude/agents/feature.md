@@ -243,12 +243,12 @@ If stuck for >20 minutes:
 
 Before completing any feature:
 
-| Requirement                     | Check                                                        |
-| ------------------------------- | ------------------------------------------------------------ |
-| Test files exist                | At least one `.test.ts` or `.test.tsx` file created/modified |
-| Tests cover acceptance criteria | Minimum 1 test per acceptance criterion                      |
-| Tests pass                      | `bun test ./src ./app ./lib ./tests/integration` exits with status 0     |
-| No coverage regression          | Coverage does not decrease                                   |
+| Requirement                     | Check                                                                                                                               |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Test files exist                | At least one `.test.ts`/`.test.tsx` file, or a Playwright `.spec.ts`/`.spec.tsx` under `tests/e2e`, created/modified                |
+| Tests cover acceptance criteria | Minimum 1 test per acceptance criterion                                                                                             |
+| Tests pass                      | `bun test ./src ./app ./lib ./tests/integration` and `bunx playwright test <specs>` (specs this feature touched) exit with status 0 |
+| No coverage regression          | Coverage does not decrease                                                                                                          |
 
 **If you think a feature doesn't need tests:**
 
