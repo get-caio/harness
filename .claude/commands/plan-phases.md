@@ -27,7 +27,7 @@ Group features by:
    - Always Phase 1
    - No user-facing features yet
    - Gets the codebase buildable and testable
-   - **MUST include Vitest setup and first test** (non-negotiable)
+   - **MUST include bun:test setup (bunfig.toml preload) and first test** (non-negotiable)
 
 2. **Core Value** — The main thing the product does
    - Usually Phase 2
@@ -69,7 +69,7 @@ Based on SPEC.md analysis, I propose N phases:
 **Scope:**
 
 - Project setup with Next.js + Bun + Prisma
-- **Configure Vitest and write first test** (MANDATORY)
+- **Configure bun:test and write first test** (MANDATORY)
 - **Configure test coverage reporting** (MANDATORY)
 - User authentication (method TBD — see decisions)
 - Core database schema

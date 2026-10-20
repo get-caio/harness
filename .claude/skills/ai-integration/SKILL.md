@@ -511,14 +511,14 @@ const MODEL_BY_TASK = {
 
 ```typescript
 // tests/ai/workout-generation.test.ts
-import { describe, it, expect, vi } from "vitest";
-import { generateWorkout } from "@/lib/ai/workout";
+import { describe, it, expect, mock } from "bun:test";
 
-// Mock the API for deterministic tests
-vi.mock("@anthropic-ai/sdk", () => ({
-  default: vi.fn().mockImplementation(() => ({
-    messages: {
-      create: vi.fn().mockResolvedValue({
+// Stub the SDK for deterministic tests. Register the stub before importing the
+// code under test so that module picks it up.
+mock.module("@anthropic-ai/sdk", () => ({
+  default: class {
+    messages = {
+      create: mock(async () => ({
         content: [
           {
             type: "text",
@@ -541,10 +541,11 @@ vi.mock("@anthropic-ai/sdk", () => ({
             }),
           },
         ],
-      }),
-    },
-  })),
+      })),
+    };
+  },
 }));
+const { generateWorkout } = await import("@/lib/ai/workout");
 
 describe("generateWorkout", () => {
   it("generates valid workout structure", async () => {
@@ -562,6 +563,8 @@ describe("generateWorkout", () => {
   });
 });
 ```
+
+The SDK refuses to construct when a global DOM is loaded (the `testing` skill preloads happy-dom for component tests), so a test that drives the real SDK against MSW instead of this stub needs its own `bun test` run without the DOM preload.
 
 ---
 

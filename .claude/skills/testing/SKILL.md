@@ -1,10 +1,10 @@
 ---
-description: "Patterns for Vitest + Testing Library unit and component tests — test factories, MSW handler setup, interaction tests with userEvent, and integration tests hitting a real DB. Use for in-process tests; for browser/E2E flows use e2e-testing instead."
+description: "Patterns for bun:test + Testing Library unit, component and integration tests — Bun's built-in runner, happy-dom, test factories, MSW handler setup, interaction tests with userEvent, and integration tests hitting a real DB. Use for in-process tests; for browser/E2E flows use e2e-testing instead."
 ---
 
 # Testing Skill
 
-Patterns for unit and component testing in CAIO incubator projects using Vitest and Testing Library.
+Patterns for unit and component testing in CAIO incubator projects using Bun's built-in test runner (`bun:test`) and Testing Library. The harness standardizes on Bun's runner; do not add Vitest or Jest.
 
 For E2E browser testing, see `.claude/skills/e2e-testing/SKILL.md`.
 
@@ -12,56 +12,52 @@ For E2E browser testing, see `.claude/skills/e2e-testing/SKILL.md`.
 
 ## Stack
 
-- **Vitest** — Test runner (fast, ESM-native, Jest-compatible)
+- **bun:test** — Bun's built-in runner (Jest-compatible API: `describe`, `it`, `expect`, `mock`, `spyOn`)
+- **happy-dom** — DOM for component tests, registered globally through a preload
 - **@testing-library/react** — React component testing
 - **@testing-library/jest-dom** — DOM matchers
-- **msw** — API mocking
+- **msw** (v2) — API mocking at the network boundary
 
 ## Setup
 
 ### 1. Install Dependencies
 
 ```bash
-bun add -d vitest @vitejs/plugin-react @testing-library/react @testing-library/jest-dom @testing-library/user-event msw
+bun add -d @happy-dom/global-registrator @testing-library/react @testing-library/jest-dom @testing-library/user-event msw@2
 ```
 
-### 2. Vitest Configuration
+Pin MSW to v2. MSW 3 (checked with 3.0.3 on Bun 1.3.5) does not intercept requests under `bun test`, so every mocked call reaches the network instead. Recheck before moving to v3.
+
+### 2. Bun Test Configuration
+
+```toml
+# bunfig.toml
+[test]
+preload = ["./tests/happydom.ts", "./tests/setup.ts"]
+coverageSkipTestFiles = true
+```
+
+Bun reads the `@/*` path alias from `tsconfig.json`, so no separate alias config is needed.
+
+All test files share one process, so the happy-dom preload gives every test a DOM, server tests included. Server SDKs that refuse to load in a browser-like environment (the Anthropic SDK does) need either a module stub with `mock.module` (see `ai-integration`) or a separate `bun test` run without the DOM preload. Don't try to register happy-dom per file: the module cache is shared, so the DOM leaks into later files and Testing Library's `screen` binds to the wrong document.
+
+### 3. Preload Files
 
 ```typescript
-// vitest.config.ts
-import { defineConfig } from "vitest/config";
-import react from "@vitejs/plugin-react";
-import path from "path";
+// tests/happydom.ts — must load before Testing Library touches the DOM
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
 
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    environment: "jsdom",
-    globals: true,
-    setupFiles: ["./tests/setup.ts"],
-    include: ["**/*.test.{ts,tsx}"],
-    coverage: {
-      provider: "v8",
-      reporter: ["text", "json", "html"],
-      exclude: ["node_modules/", "tests/"],
-    },
-  },
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-});
+GlobalRegistrator.register();
 ```
-
-### 3. Test Setup File
 
 ```typescript
 // tests/setup.ts
-import "@testing-library/jest-dom/vitest";
+import { afterAll, afterEach, beforeAll, expect } from "bun:test";
+import * as matchers from "@testing-library/jest-dom/matchers";
 import { cleanup } from "@testing-library/react";
-import { afterEach, beforeAll, afterAll } from "vitest";
 import { server } from "./mocks/server";
+
+expect.extend(matchers);
 
 // Clean up after each test
 afterEach(() => {
@@ -74,18 +70,34 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 ```
 
+```typescript
+// tests/matchers.d.ts — types for the jest-dom matchers on bun:test's expect
+import type { TestingLibraryMatchers } from "@testing-library/jest-dom/matchers";
+
+declare module "bun:test" {
+  interface Matchers<T> extends TestingLibraryMatchers<
+    typeof expect.stringContaining,
+    T
+  > {}
+  interface AsymmetricMatchers extends TestingLibraryMatchers {}
+}
+```
+
 ### 4. Package.json Scripts
 
 ```json
 {
   "scripts": {
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage",
-    "test:ui": "vitest --ui"
+    "test": "bun test ./src ./app ./lib ./tests/integration",
+    "test:watch": "bun test --watch ./src ./app ./lib ./tests/integration",
+    "test:coverage": "bun test --coverage ./src ./app ./lib ./tests/integration",
+    "test:integration": "bun test ./tests/integration",
+    "test:e2e": "playwright test"
   }
 }
 ```
+
+`bun test` always runs Bun's built-in runner and ignores the `test` script; `bun run test` runs the script. Either works here because the script passes the same roots.
 
 For E2E scripts, see the `e2e-testing` skill.
 
@@ -124,7 +136,7 @@ Run unit and integration tests with `bun test ./src ./app ./lib ./tests/integrat
 
 ```typescript
 // lib/utils.test.ts
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from "bun:test";
 import { cn, formatDuration, calculateProgress } from "./utils";
 
 describe("cn", () => {
@@ -168,7 +180,7 @@ describe("calculateProgress", () => {
 
 ```typescript
 // components/PlanCard.test.tsx
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'bun:test'
 import { render, screen } from '@testing-library/react'
 import { PlanCard } from './PlanCard'
 import { createTestPlan } from '@/tests/factories'
@@ -206,7 +218,7 @@ describe('PlanCard', () => {
 
 ```typescript
 // components/PlanEditor.test.tsx
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, mock } from 'bun:test'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PlanEditor } from './PlanEditor'
@@ -215,7 +227,7 @@ import { createTestPlan } from '@/tests/factories'
 describe('PlanEditor', () => {
   it('calls onSave with updated data when submitted', async () => {
     const user = userEvent.setup()
-    const onSave = vi.fn()
+    const onSave = mock()
     const plan = createTestPlan({ name: 'Original Name' })
 
     render(<PlanEditor plan={plan} onSave={onSave} />)
@@ -236,7 +248,7 @@ describe('PlanEditor', () => {
   it('shows validation error for empty name', async () => {
     const user = userEvent.setup()
 
-    render(<PlanEditor plan={createTestPlan()} onSave={vi.fn()} />)
+    render(<PlanEditor plan={createTestPlan()} onSave={mock()} />)
 
     const nameInput = screen.getByLabelText('Plan Name')
     await user.clear(nameInput)
@@ -247,7 +259,7 @@ describe('PlanEditor', () => {
 
   it('disables submit while saving', async () => {
     const user = userEvent.setup()
-    const onSave = vi.fn(() => new Promise(resolve => setTimeout(resolve, 100)))
+    const onSave = mock(() => new Promise(resolve => setTimeout(resolve, 100)))
 
     render(<PlanEditor plan={createTestPlan()} onSave={onSave} />)
 
@@ -394,7 +406,7 @@ export const server = setupServer(...handlers);
 
 ```typescript
 // tests/integration/plan-creation.test.ts
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, spyOn } from "bun:test";
 import { db } from "@/lib/db";
 import { createTestUser } from "../factories";
 
@@ -434,8 +446,8 @@ describe("Plan Creation Flow", () => {
   it("rolls back on failure", async () => {
     const user = await createTestUser();
 
-    // Force failure
-    vi.spyOn(db.week, "create").mockRejectedValueOnce(new Error("DB error"));
+    // Force failure (injecting a fault is fine; replacing the DB layer is not)
+    spyOn(db.week, "create").mockRejectedValueOnce(new Error("DB error"));
 
     await expect(
       createPlanWithWorkouts({
@@ -456,23 +468,23 @@ describe("Plan Creation Flow", () => {
 ## Commands
 
 ```bash
-# Run all tests
-bun test
+# Run all unit and integration tests (never a bare `bun test` — it collects Playwright specs)
+bun test ./src ./app ./lib ./tests/integration
 
 # Watch mode
-bun test:watch
+bun run test:watch
 
-# Run specific file
-bun test src/components/Button.test.tsx
+# Run one file (prefix ./ so Bun treats it as a path, not a name filter)
+bun test ./src/components/Button.test.tsx
 
-# Run tests matching pattern
-bun test -t "createPlan"
+# Run tests whose name matches a pattern
+bun test ./src -t "createPlan"
 
 # With coverage
-bun test:coverage
+bun run test:coverage
 
-# UI mode
-bun test:ui
+# E2E (Playwright, separate runner)
+bunx playwright test
 ```
 
 ## Test Requirements (MANDATORY)

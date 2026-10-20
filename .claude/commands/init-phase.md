@@ -255,7 +255,7 @@ Add to `progress/build-log.md`:
 
 | ID      | Title                                 | Status | Est | Blocked By |
 | ------- | ------------------------------------- | ------ | --- | ---------- |
-| P1-T00X | Configure Vitest and write first test | TODO   | S   | T001       |
+| P1-T00X | Configure bun:test and write first test| TODO   | S   | T001       |
 | P1-T00Y | Configure test coverage reporting     | TODO   | S   | T00X       |
 
 These tickets ensure testing infrastructure exists from day one. Agents are more likely to skip writing tests if setup doesn't exist than to skip using existing tooling.
@@ -277,7 +277,7 @@ These tickets ensure testing infrastructure exists from day one. Agents are more
 | P1-T002 | Configure Prisma with PostgreSQL       | TODO   | S   | T001       |
 | P1-T003 | Set up project structure               | TODO   | S   | T001       |
 | P1-T004 | Configure ESLint, Prettier, TypeScript | TODO   | S   | T001       |
-| P1-T005 | Configure Vitest and write first test  | TODO   | S   | T004       |
+| P1-T005 | Configure bun:test and write first test | TODO   | S   | T004       |
 | P1-T006 | Configure test coverage reporting      | TODO   | S   | T005       |
 
 ### Authentication
@@ -301,4 +301,4 @@ These tickets ensure testing infrastructure exists from day one. Agents are more
 | P1-T016 | Run initial migration       | TODO   | S   | T015       |
 ```
 
-**Note:** Authentication tickets now depend on T005 (Vitest setup) to enforce that tests can be written from the start.
+**Note:** Authentication tickets now depend on T005 (bun:test setup) to enforce that tests can be written from the start.

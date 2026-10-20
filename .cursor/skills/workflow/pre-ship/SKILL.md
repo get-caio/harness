@@ -133,7 +133,7 @@ bun run build
 ### 5. Testing (Confidence)
 
 ```bash
-bun test --coverage
+bun test --coverage ./src ./app ./lib ./tests/integration
 ```
 
 | Check                 | Pass Criteria                |

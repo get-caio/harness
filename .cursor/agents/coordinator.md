@@ -123,7 +123,7 @@ If you are in the manual fallback (workflow unavailable), the shape is:
 # After a WAVE completes, merge its branches BEFORE cutting the next wave's worktrees:
 git merge --no-ff worktree-feature-auth
 git merge --no-ff worktree-feature-dashboard
-bun test && bun lint && bun typecheck   # gate before proceeding
+bun test ./src ./app ./lib ./tests/integration && bun lint && bun typecheck   # gate before proceeding
 ```
 
 ## Output Format

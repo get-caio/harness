@@ -202,7 +202,7 @@ Examples:
 | Auth       | BetterAuth (or as specified) |
 | Payments   | Stripe                       |
 | Styling    | Tailwind CSS + shadcn/ui     |
-| Testing    | Vitest + Playwright          |
+| Testing    | bun:test + Playwright        |
 | Docs       | VitePress                    |
 | Deployment | Vercel                       |
 

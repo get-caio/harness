@@ -57,8 +57,8 @@ More variables will be documented here as features are added.
 ## Testing
 
 ```bash
-bun test              # Run unit tests
-bun test --coverage   # With coverage report
+bun test ./src ./app ./lib ./tests/integration              # Run unit tests
+bun test --coverage ./src ./app ./lib ./tests/integration   # With coverage report
 bun run test:e2e      # Playwright e2e tests
 ```
 

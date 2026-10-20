@@ -300,12 +300,12 @@ bun audit          # No high/critical vulnerabilities
 
 Every ticket MUST have tests. Before committing, verify:
 
-| Check           | Requirement                                |
-| --------------- | ------------------------------------------ |
-| New test files? | At least one test file created or modified |
-| Test count      | At least 1 test per acceptance criterion   |
+| Check           | Requirement                                                              |
+| --------------- | ------------------------------------------------------------------------ |
+| New test files? | At least one test file created or modified                               |
+| Test count      | At least 1 test per acceptance criterion                                 |
 | Tests pass      | `bun test ./src ./app ./lib ./tests/integration` and touched Playwright specs exit 0 |
-| Coverage        | Does not decrease from previous commit     |
+| Coverage        | Does not decrease from previous commit                                   |
 
 **If no tests:** Do NOT commit. Either:
 

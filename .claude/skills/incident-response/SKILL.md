@@ -146,7 +146,7 @@ git checkout -b hotfix/incident-[date]-[description]
 # No refactoring, no "while we're here"
 
 # Test locally
-bun test
+bun test ./src ./app ./lib ./tests/integration
 bun run build
 
 # Deploy directly (skip normal PR process for SEV-1)

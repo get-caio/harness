@@ -193,7 +193,7 @@ export async function featureAction(input: FeatureInput) {
 
 ```typescript
 // src/components/feature/feature-component.test.tsx
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'bun:test'
 import { render, screen } from '@testing-library/react'
 import { FeatureComponent } from './feature-component'
 

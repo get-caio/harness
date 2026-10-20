@@ -32,7 +32,7 @@ graph TD
 | API        | tRPC                         |
 | Auth       | BetterAuth (or as specified) |
 | Styling    | Tailwind CSS + shadcn/ui     |
-| Testing    | Vitest + Playwright          |
+| Testing    | bun:test + Playwright        |
 | Deployment | Vercel                       |
 
 ## Request Flow

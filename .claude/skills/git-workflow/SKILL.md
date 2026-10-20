@@ -177,7 +177,7 @@ git add src/lib/db.ts
 git rebase --continue
 
 # 4. Verify
-bun test
+bun test ./src ./app ./lib ./tests/integration
 bun typecheck
 ```
 
@@ -222,7 +222,7 @@ These are configured in `.claude/settings.json` but also set up locally:
 bunx lint-staged
 
 # Pre-push: run tests and build
-bun test && bun build
+bun test ./src ./app ./lib ./tests/integration && bun build
 ```
 
 ## Release Process

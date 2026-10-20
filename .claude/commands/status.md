@@ -62,7 +62,7 @@ Display the current state of the project including phase progress, tickets, and 
 
 From progress/build-log.md:
 
-- [YYYY-MM-DD HH:MM] Completed P1-T005: Set up Vitest
+- [YYYY-MM-DD HH:MM] Completed P1-T005: Set up bun:test
 - [YYYY-MM-DD HH:MM] Completed P1-T004: Configure linting
 - [YYYY-MM-DD HH:MM] Started Phase 1
 
@@ -101,7 +101,7 @@ From progress/build-log.md:
 | Test files        | X      | >0        | ✅/❌  |
 | Test:source ratio | 0.X    | >0.3      | ✅/❌  |
 | Coverage          | X%     | >60%      | ✅/❌  |
-| Vitest configured | Yes/No | Yes       | ✅/❌  |
+| bun:test configured | Yes/No | Yes     | ✅/❌  |
 
 ⚠️ **Zero tests is a critical blocker.** If test count is 0 after Phase 1, work should stop until tests are added.
 

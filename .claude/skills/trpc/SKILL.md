@@ -399,7 +399,7 @@ const updatePlan = trpc.plan.update.useMutation({
 
 ```typescript
 // tests/routers/plan.test.ts
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "bun:test";
 import { createCallerFactory } from "@trpc/server";
 import { appRouter } from "@/server/routers";
 import { createTestContext } from "@/tests/helpers";
