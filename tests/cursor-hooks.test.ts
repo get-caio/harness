@@ -162,6 +162,12 @@ describe("Cursor dual-harness surface", () => {
       expect(existsSync(join(root, ".claude/skills", archived))).toBe(false);
       expect(pluginSkills).not.toContain(`skills/${archived}`);
     }
+    const pluginCommands: string[] = JSON.parse(
+      readFileSync(join(root, ".claude/.claude-plugin/plugin.json"), "utf8"),
+    ).includes.commands;
+    for (const file of readdirSync(join(root, ".claude/commands"))) {
+      expect(pluginCommands).toContain(`commands/${file}`);
+    }
     for (const entry of pluginSkills) {
       expect(existsSync(join(root, ".claude", entry, "SKILL.md"))).toBe(true);
     }

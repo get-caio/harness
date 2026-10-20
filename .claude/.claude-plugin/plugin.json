@@ -75,7 +75,8 @@
       "commands/red-team.md",
       "commands/pre-ship.md",
       "commands/design-review.md",
-      "commands/clarify.md"
+      "commands/clarify.md",
+      "commands/codex-review.md"
     ],
     "agents": [
       "agents/architect.md",
