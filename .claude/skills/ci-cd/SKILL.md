@@ -39,7 +39,10 @@ on:
 
 # A new push to a PR cancels the in-flight run for that PR. Main runs are never cancelled.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Pull requests dedupe per branch (a new push cancels the in-flight run). Everything else groups per
+  # commit: with cancel-in-progress off, GitHub still drops a *queued* run when another arrives in the
+  # same group, so clustered merges to main were skipping CI entirely.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
