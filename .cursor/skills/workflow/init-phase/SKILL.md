@@ -157,11 +157,11 @@ Phase N-1 exported the following types and schemas. **Every ticket in this phase
 - [ ] Criterion 2
 - [ ] All tests pass
 
-**Required Tests:** [MANDATORY - specify what tests are needed]
+**Required Tests:** [MANDATORY - pick types per the HARNESS.md Testing Policy]
 
-- [ ] Unit test: [describe test case]
-- [ ] Unit test: [describe test case]
-- [ ] Integration test: [if applicable]
+- [ ] E2E (Playwright): [user flow this ticket changes; add `@smoke` if it is a critical flow]
+- [ ] Integration: [API route / server action against the test DB, if applicable]
+- [ ] Unit: [pure logic only, if applicable]
 
 ⚠️ If "Required Tests" is empty or says "N/A", a spec decision is required for human approval before this ticket can be marked DONE.
 
@@ -214,7 +214,7 @@ Each ticket should be independently completable. When generating tickets:
 2. Frontend UI with dummy/mock data
 3. Backend API once UI reveals what's actually needed
 4. Integration (connect frontend to real API)
-5. Tests throughout (TDD still applies per component)
+5. Tests throughout, test-first per the HARNESS.md Testing Policy (the integration ticket owns the e2e spec for the flow)
 
 This approach:
 

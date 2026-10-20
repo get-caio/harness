@@ -321,8 +321,9 @@ for (let w = 0; w < wavePlan.length; w++) {
            Do not modify files outside that ownership set — another agent may own them.
 
            Read first: progress/conventions.md, progress/dead-ends.md, and the relevant docs/ pages
-           and skills for what this ticket touches (see CLAUDE.md mappings). Follow TDD — failing test
-           first. Before committing, run whichever quality-gate scripts this repo actually defines in
+           and skills for what this ticket touches (see CLAUDE.md mappings). Work test-first per the HARNESS.md
+           Testing Policy — a failing Playwright e2e spec first for user-facing flows, integration
+           tests against a real test DB for API/DB work, unit tests only for pure logic. Before committing, run whichever quality-gate scripts this repo actually defines in
            package.json (e.g. \`npm run typecheck\`, \`npm test\`, \`npm run lint\`) — check the scripts
            block first; do not invoke a runner the repo hasn't configured.
 

@@ -8,6 +8,8 @@ Patterns for unit and component testing in CAIO incubator projects using Vitest 
 
 For E2E browser testing, see `.claude/skills/e2e-testing/SKILL.md`.
 
+**Which test to write comes from the Testing Policy in `HARNESS.md`.** User-facing flows get a Playwright e2e spec first. This skill covers the rest: integration tests against a real test database for API routes and server actions, and unit tests for pure logic. Do not use component tests with mocked data layers as a substitute for an e2e spec.
+
 ## Stack
 
 - **Vitest** — Test runner (fast, ESM-native, Jest-compatible)
@@ -497,12 +499,12 @@ bun test:ui
 
 ### ✅ Do
 
-- Write tests before code (TDD)
+- Write tests before code, picking the type from the HARNESS.md Testing Policy
 - Test behavior, not implementation
 - Use meaningful test descriptions
 - Keep tests focused (one concept per test)
 - Use factories for test data
-- Mock external dependencies
+- Mock third-party APIs at the network boundary (MSW); never mock the code under test or the DB layer
 
 ### ❌ Don't
 

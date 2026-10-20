@@ -335,6 +335,46 @@ describe("codex-review-loop state machine", () => {
     expect(calls).toHaveLength(1);
   });
 
+  it("the CLI reviewer does not pin a model and checks the codex CLI", async () => {
+    const { calls } = await runLoop({ pr: 123 }, (label) => {
+      if (label === "scope") return SCOPE_PR;
+      if (label === "review:1") return review();
+      if (label === "gate") return GATE_GREEN;
+      throw new Error(`unexpected agent call: ${label}`);
+    });
+    const reviewPrompt = calls.find((c) => c.label === "review:1")!.prompt;
+    expect(reviewPrompt).toContain("codex exec --color never review");
+    expect(reviewPrompt).not.toMatch(/gpt-|sol\b/i);
+    expect(calls[0]!.prompt).toContain("codex --version");
+  });
+
+  it("the GitHub reviewer requests @codex review on the PR and skips the CLI check", async () => {
+    const { result, calls } = await runLoop(
+      { pr: 123, reviewer: "github" },
+      (label) => {
+        if (label === "scope") return SCOPE_PR;
+        if (label === "review:1") return review();
+        if (label === "gate") return GATE_GREEN;
+        throw new Error(`unexpected agent call: ${label}`);
+      },
+    );
+    const reviewPrompt = calls.find((c) => c.label === "review:1")!.prompt;
+    expect(reviewPrompt).toContain('gh pr comment 123 --body "@codex review"');
+    expect(reviewPrompt).not.toContain("codex exec");
+    expect(calls[0]!.prompt).not.toContain("codex --version");
+    expect(result.status).toBe("mergeable");
+    expect(result.scope.reviewer).toBe("github");
+  });
+
+  it("the GitHub reviewer without a PR blocks before any agent runs", async () => {
+    const { result, calls } = await runLoop({ reviewer: "github" }, () => {
+      throw new Error("no agent should run");
+    });
+    expect(result.status).toBe("blocked");
+    expect(result.problem).toContain("needs a PR");
+    expect(calls).toHaveLength(0);
+  });
+
   it("local mode never reports mergeable", async () => {
     const { result } = await runLoop(undefined, (label) => {
       if (label === "scope") return { ...SCOPE_PR, pr: null, prState: null };

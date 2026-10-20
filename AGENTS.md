@@ -53,7 +53,9 @@ Prefer these from `.claude/skills/` when relevant. Full prefer / situational / d
 
 **Allowlist:** `testing`, `security`, `database-migrations`, `git-workflow`, `payments`, `design-routing`, `nextjs-bun-prisma` / `drizzle-orm`, `trpc`, `ci-cd`, `bun-runtime`, `code-quality`, `vitepress`
 
-**Do not auto-load** (unless this product names them below): `shopify-remix`, `woocommerce`, `wordpress-plugin`, `heroku-deploy`, `cloudflare-dns`, `mysql-planetscale`, `pinecone`, broad SEO suites.
+**Do not auto-load** (unless this product names them below): `svg-animation`, broad SEO suites.
+
+**Archived** (in the harness repo's `archive/skills/`, not shipped): `shopify-remix`, `woocommerce`, `wordpress-plugin`, `heroku-deploy`, `cloudflare-dns`, `mysql-planetscale`, `pinecone`. Copy one into `.claude/skills/` if this product needs it.
 
 ### Product overrides
 

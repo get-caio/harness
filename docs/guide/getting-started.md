@@ -49,7 +49,7 @@ More variables will be documented here as features are added.
 ## Development Workflow
 
 1. Pick a ticket from the current phase
-2. Write failing tests first (TDD)
+2. Write failing tests first: a Playwright e2e spec for user-facing flows, unit tests for pure logic (see the Testing Policy in `HARNESS.md`)
 3. Implement the feature
 4. Ensure all quality gates pass
 5. Commit with `[PN-TXXX]` prefix

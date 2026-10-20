@@ -14,7 +14,7 @@ You are running the **CAIO Build Harness**. Full OS: `HARNESS.md`. Product map: 
 - **Escalate only when needed:** architect/interviewer/coordinator/auditor/product-critic → Opus (Fable optional); reviewer/verifier → Sol.
 - **Always spawn from `.cursor/agents/*` in Cursor.** If a product repo only has `.claude/agents/` (`model: sonnet`), Cursor will use Sonnet — copy `.cursor/` from this harness.
 - **Skills:** live in `.claude/skills/` only — never copy into `.cursor/skills/`. Workflow slash skills are the exception (`.cursor/skills/workflow/`).
-- **Skill diet (Phase B):** load **allowlist first**; load situational skills only when the ticket clearly needs them; **do not auto-load** marketplace/platform skills (Shopify, WordPress, Woo, Heroku, SEO suites, Pinecone, etc.) unless `AGENTS.md` or the ticket names them. Full tables: `HARNESS.md` → Available Skills.
+- **Skill diet (Phase B):** load **allowlist first**; load situational skills only when the ticket clearly needs them; **do not auto-load** SEO suites or `svg-animation` unless `AGENTS.md` or the ticket names them. Shopify, WordPress, Woo, Heroku, Cloudflare DNS, PlanetScale and Pinecone skills are archived in `archive/skills/` and not shipped. Full tables: `HARNESS.md` → Available Skills.
 - **Allowlist (prefer):** `testing`, `security`, `database-migrations`, `git-workflow`, `payments`, `design-routing`, `drizzle-orm` / `nextjs-bun-prisma`, `trpc`, `ci-cd`, `bun-runtime`, `code-quality`, `vitepress` (docs tickets).
 - **Claude Code compat:** thin `CLAUDE.md` → `HARNESS.md`. `.claude/agents` keep `sonnet`/`opus`/`haiku` for Claude Code only — Cursor must not use those aliases for routine work.
 
@@ -33,7 +33,7 @@ You are running the **CAIO Build Harness**. Full OS: `HARNESS.md`. Product map: 
 ## Work loop
 
 1. Read `CURRENT_PHASE` → phase file → next `TODO` (deps satisfied, no PENDING blocker).
-2. Mark `IN_PROGRESS` → TDD → quality gate (`bun test` / lint / typecheck) → commit `[PN-TXXX] …` → mark `DONE` → log → docs.
+2. Mark `IN_PROGRESS` → test-first per `HARNESS.md` Testing Policy (Playwright e2e for user flows, integration for API/DB, unit for pure logic) → quality gate (`bun test` / touched Playwright specs / lint / typecheck) → commit `[PN-TXXX] …` → mark `DONE` → log → docs.
 3. Immediately pick the next TODO. Stop only when phase complete, all remaining blocked, human interrupt, or 3 consecutive failures on the same ticket.
 
 ## Decisions (critical)
@@ -51,11 +51,11 @@ You are running the **CAIO Build Harness**. Full OS: `HARNESS.md`. Product map: 
 
 ## Quality (non-negotiable)
 
-- Every ticket has tests that assert acceptance criteria (no `expect(true).toBe(true)` / bare `toBeDefined()`).
+- Every ticket has tests that assert acceptance criteria (no `expect(true).toBe(true)` / bare `toBeDefined()`). Tests must exercise real behavior: never mock the code under test or the DB layer; mock third-party APIs only via MSW.
 - Import types from `lib/**/types.ts` / prior phase type manifest — do not reinvent.
 - Fail loudly (structured logs); no silent swallow.
 - Surgical diffs — no drive-by refactors.
-- One PR per feature; push once per logical change, not per commit. When the feature is complete (and after each batch of fixes): run Codex/Sol review loop to a terminal state when that workflow exists.
+- One PR per feature; push once per logical change, not per commit. When the feature is complete (and after each batch of fixes): run the Codex review loop (`/codex-review`, local CLI or `github` for Codex's PR review) to a terminal state when that workflow exists.
 - Anything under `.github/`: read `HARNESS.md` → CI and Process Changes. State the cost, wait for approval. `runs-on: self-hosted` only.
 
 ## Before UI / schema / auth

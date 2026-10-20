@@ -142,13 +142,28 @@ describe("Cursor dual-harness surface", () => {
     ]) {
       expect(harness).toContain(`\`${skill}\``);
     }
-    for (const banned of [
+    expect(harness).toContain("Archived — not shipped with the plugin");
+    const pluginSkills: string[] = JSON.parse(
+      readFileSync(join(root, ".claude/.claude-plugin/plugin.json"), "utf8"),
+    ).includes.skills;
+    for (const archived of [
       "shopify-remix",
       "woocommerce",
       "wordpress-plugin",
       "heroku-deploy",
+      "cloudflare-dns",
+      "mysql-planetscale",
+      "pinecone",
     ]) {
-      expect(harness).toContain(`\`${banned}\``);
+      expect(harness).toContain(`\`${archived}\``);
+      expect(
+        existsSync(join(root, "archive/skills", archived, "SKILL.md")),
+      ).toBe(true);
+      expect(existsSync(join(root, ".claude/skills", archived))).toBe(false);
+      expect(pluginSkills).not.toContain(`skills/${archived}`);
+    }
+    for (const entry of pluginSkills) {
+      expect(existsSync(join(root, ".claude", entry, "SKILL.md"))).toBe(true);
     }
 
     const rules = readFileSync(join(root, ".cursor/rules/harness.mdc"), "utf8");

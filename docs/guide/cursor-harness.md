@@ -56,11 +56,11 @@ If `/check-decisions` creates new PENDING files, **stop coding** those tickets. 
 
 ```
 Grok parent
-  → bun test / lint / typecheck
+  → bun test / touched Playwright specs / lint / typecheck
   → Spawn reviewer (Sol, readonly)
   → Spawn verifier (Sol, readonly) — acceptance criteria vs diff/tests
   → Open/update PR
-  → Run Codex/Sol review loop to a terminal state when available
+  → Run the Codex review loop (local CLI, or `github` for Codex's PR review) to a terminal state when available
 ```
 
 Humans still merge to `main`. Agents never push/merge to `prod` (hook-enforced).
