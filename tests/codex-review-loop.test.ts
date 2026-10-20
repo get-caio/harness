@@ -360,6 +360,19 @@ describe("codex-review-loop state machine", () => {
     );
     const reviewPrompt = calls.find((c) => c.label === "review:1")!.prompt;
     expect(reviewPrompt).toContain('gh pr comment 123 --body "@codex review"');
+    // Codex's replies can sit past page 1 of a long PR's reviews/comments.
+    for (const endpoint of [
+      "pulls/123/reviews",
+      "pulls/123/comments",
+      "issues/123/comments",
+    ]) {
+      expect(reviewPrompt).toContain(
+        `gh api --paginate repos/{owner}/{repo}/${endpoint}`,
+      );
+    }
+    // The early "running" summary comment is not an answer; 👍 on the request means clean.
+    expect(reviewPrompt).toContain('code_review.status "running"');
+    expect(reviewPrompt).toContain("reactions");
     expect(reviewPrompt).not.toContain("codex exec");
     expect(calls[0]!.prompt).not.toContain("codex --version");
     expect(result.status).toBe("mergeable");

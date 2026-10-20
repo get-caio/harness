@@ -127,7 +127,7 @@ While tests green:
 
 ```bash
 # All must pass
-bun test           # ✓ Tests pass
+bun test ./src ./tests/integration  # ✓ Unit + integration pass (never bare `bun test`: it picks up tests/e2e)
 bunx playwright test <specs>  # ✓ E2E specs this feature touched pass
 bun lint           # ✓ No lint errors
 bun typecheck      # ✓ No type errors
@@ -247,7 +247,7 @@ Before completing any feature:
 | ------------------------------- | ------------------------------------------------------------ |
 | Test files exist                | At least one `.test.ts` or `.test.tsx` file created/modified |
 | Tests cover acceptance criteria | Minimum 1 test per acceptance criterion                      |
-| Tests pass                      | `bun test` exits with status 0                               |
+| Tests pass                      | `bun test ./src ./tests/integration` exits with status 0     |
 | No coverage regression          | Coverage does not decrease                                   |
 
 **If you think a feature doesn't need tests:**

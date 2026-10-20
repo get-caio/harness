@@ -116,6 +116,8 @@ tests/
 
 For E2E test structure, see `.claude/skills/e2e-testing/SKILL.md`.
 
+Run unit and integration tests with `bun test ./src ./tests/integration`, not a bare `bun test`. Bun also collects `*.spec.ts` files, so a bare run would pick up the Playwright specs in `tests/e2e/` and fail on them. Run those with `bunx playwright test`.
+
 ## Test Patterns
 
 ### Unit Test: Pure Functions

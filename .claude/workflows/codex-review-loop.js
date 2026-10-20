@@ -251,16 +251,29 @@ for (let n = 0; n < checkinEvery; n++) {
       ? `1. Request a review from Codex's GitHub code review on PR #${scope.pr}:
    a. Record the current head SHA (\`gh pr view ${scope.pr} --json headRefOid\`) and the time.
    b. Post the request: \`gh pr comment ${scope.pr} --body "@codex review"\`. Post exactly one
-      request per iteration; never post any other comment.
+      request per iteration; never post any other comment. The command prints the comment URL;
+      record the id after "#issuecomment-" as the request comment id.
    c. Wait for Codex's answer. Poll with one shell until-loop that pauses 60 seconds between
-      checks and gives up after 15 minutes. Look for a review or comment whose author login
-      contains "codex" (e.g. chatgpt-codex-connector[bot]), created after your request:
-      \`gh api repos/{owner}/{repo}/pulls/${scope.pr}/reviews\`,
-      \`gh api repos/{owner}/{repo}/pulls/${scope.pr}/comments\` (inline comments; group them by
-      pull_request_review_id), and \`gh api repos/{owner}/{repo}/issues/${scope.pr}/comments\`
-      (Codex replies there when it finds nothing).
-   d. Codex's review body plus its inline comments are the review output. A reply saying it found
-      no issues is a clean review: reviewRan=true, empty findings.
+      checks and gives up after 15 minutes. Codex posts as a bot whose login contains "codex"
+      (e.g. chatgpt-codex-connector[bot]). These endpoints return 30 items per page, oldest
+      first, so always pass --paginate and keep only items created/submitted after your request
+      time:
+      \`gh api --paginate repos/{owner}/{repo}/pulls/${scope.pr}/reviews\`,
+      \`gh api --paginate repos/{owner}/{repo}/pulls/${scope.pr}/comments\` (inline comments; group
+      them by pull_request_review_id),
+      \`gh api --paginate repos/{owner}/{repo}/issues/${scope.pr}/comments\`, and
+      \`gh api --paginate repos/{owner}/{repo}/issues/comments/<request comment id>/reactions\`.
+      Codex also posts a "codex-pull-request-review-summary" issue comment with an embedded
+      codex-review-state. It appears within seconds with code_review.status "running" and is NOT
+      an answer; ignore it while it says "running". Codex is done when any one of these holds:
+      - a codex review submitted after your request whose commit_id is the head SHA from (a)
+        (it has findings);
+      - a +1 (👍) reaction by the codex bot on the request comment (clean, no findings);
+      - the summary comment's codex-review-state shows code_review.status "completed"
+        (has_any_findings=false means clean; true means wait for the review itself).
+   d. Codex's review body plus its inline comments are the review output. A 👍 reaction on the
+      request comment, or a completed summary state with has_any_findings=false, is a clean
+      review: reviewRan=true, empty findings.
 2. If nothing from Codex arrives within 15 minutes, or a gh command fails, set reviewRan=false with
    a failureNote (say whether Codex code review may not be enabled for this repo) and stop.`
       : `1. Run: \`codex exec --color never review --base ${scope.base} 2>&1\` from the repo root
