@@ -19,6 +19,8 @@ Surface security vulnerabilities, code quality issues, and tech debt before exte
 - Cold assessment of acquired/inherited codebases
 - Pre-DD preparation
 
+This is the fast, checklist-driven scan. For a deep, multi-agent vulnerability hunt with structured `findings.json` output and independent verification of every finding, load `security-audit` (vendored from Cloudflare) instead. For live exploitation against a running instance, use `red-team`.
+
 ## Execution Modes
 
 ### Quick Scan (5-10 min)
