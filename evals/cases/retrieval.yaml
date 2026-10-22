@@ -150,7 +150,7 @@ cases:
   # ── Code Quality/Audit ──
   - id: ret-028
     task: "Run a full security and code quality audit on the codebase before the v1 launch"
-    expected: [code-audit, code-quality, security]
+    expected: [code-audit, security-audit, code-quality, security]
     not_expected: [design-craft, local-seo, shopify-remix]
 
   - id: ret-029
@@ -231,3 +231,14 @@ cases:
     task: "Run a multi-perspective deliberation to decide between PostgreSQL and MongoDB for the project"
     expected: [council]
     not_expected: [svg-animation, shopify-remix, local-seo]
+
+  # ── Deep Security Audit ──
+  - id: ret-043
+    task: "Do a comprehensive source-level vulnerability hunt across the repo: map trust boundaries, assign isolated hunters per subsystem, and produce verified findings with severity and the smallest fix"
+    expected: [security-audit]
+    not_expected: [design-craft, local-seo, svg-animation]
+
+  - id: ret-044
+    task: "Is this webhook handler vulnerable to replay attacks? Walk me through how you'd check and what the fix would be"
+    expected: [security-audit, security]
+    not_expected: [vitepress, interaction-motion, react-native]

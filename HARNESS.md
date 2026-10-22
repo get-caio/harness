@@ -250,7 +250,7 @@ Compressed rules for removed skills (`auth`, `observability`, `stripe-billing`) 
 | `design-minimalist`, `design-brutalist`, `design-redesign`                                                                                             | Only if DESIGN.md / ticket picks that aesthetic |
 | `e2e-testing`, `msw-mock-api`, `react-best-practices`, `react-native`                                                                                  | E2E, mocks, RN tickets                          |
 | `ai-integration`, `mcp-server`, `multi-agent-coordination`, `context-engineering`, `evaluation`, `council`                                             | AI / agent / eval work                          |
-| `code-audit`, `red-team`, `data-protection`, `gdpr-consent`, `incident-response`, `debug`                                                              | Audit, security test, compliance, incidents     |
+| `code-audit`, `security-audit`, `red-team`, `data-protection`, `gdpr-consent`, `incident-response`, `debug`                                            | Audit, security test, compliance, incidents     |
 | `redis-caching`, `resend-email`, `data-migration`, `contract-testing`, `turborepo`                                                                     | Infra matching the ticket                       |
 | `seo-routing` (+ `seo-foundations`, `local-seo`, `aeo-geo`, `seo-*`)                                                                                   | SEO tickets only — start at `seo-routing`       |
 

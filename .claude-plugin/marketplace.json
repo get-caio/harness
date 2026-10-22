@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "caio-build-harness",
-      "version": "3.6.1",
+      "version": "3.7.0",
       "description": "Autonomous development framework with phased execution, multi-agent coordination, and safety gates.",
       "source": "./.claude",
       "tags": ["development", "agents", "team", "full-stack"]
