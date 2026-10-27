@@ -11,7 +11,7 @@ Two reviewer sources, both billed to the ChatGPT subscription rather than the Op
 
 Use `github` when Codex already reviews PRs automatically or when the local CLI isn't set up. It is slower per iteration (Codex takes a few minutes to post) and needs a PR.
 
-**This loop is MANDATORY on every PR** (see the Codex Review Gate in `/work` and CLAUDE.md Notes for Agents #33): run it after `gh pr create` and after pushing new commits to an open PR, and drive it to a terminal state before picking up the next ticket. Local mode (no PR) remains optional.
+**This loop is MANDATORY on every PR** (see the Codex Review Gate in `/work` and CLAUDE.md Notes for Agents #33): run it after `gh pr create` and after each round of fixes pushed to an open PR (not `[skip ci]` work-in-progress pushes), and drive it to a terminal state before starting the next feature. Local mode (no PR) remains optional.
 
 ## Usage
 

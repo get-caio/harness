@@ -91,25 +91,28 @@ git rebase main
 # Work on feature
 # ... implement, test, commit ...
 
-# Before PR: rebase again
+# Push as often as you like — CI does not run on a branch with no PR
+git push -u origin feature/my-branch
+
+# Feature complete and CI expected to pass: rebase, then open the PR
 git fetch origin
 git rebase origin/main
-
-# Create PR
-gh pr create --title "[P1-T001] Add user auth" --base main
+gh pr create --title "[P1] Add user auth (T001–T004)" --base main
 ```
+
+One PR per feature, not per ticket, opened only when the feature is complete. Pushes, `[skip ci]`, labels and the open-PR limit follow `HARNESS.md` → **Pull Requests and Pushes**.
 
 ## PR Conventions
 
 ### PR Title Format
 
 ```
-[PN-TXXX] Brief description
+[PN] Feature description (TXXX–TYYY)
 
 Examples:
-[P1-T001] Add user authentication with BetterAuth
-[P2-T008] Implement training plan creation form
-[P1-T003] Fix login redirect after OAuth callback
+[P1] Add user authentication with BetterAuth (T001–T004)
+[P2] Implement training plan creation form (T008–T011)
+[P1-T003] Fix login redirect after OAuth callback   ← a single-ticket feature or fix
 ```
 
 ### PR Description Template
@@ -119,9 +122,9 @@ Examples:
 
 - What this PR does (1-3 bullet points)
 
-## Ticket
+## Tickets
 
-[P1-T001] — Link to ticket in phase file
+[P1-T001], [P1-T002] — Links to tickets in phase file
 
 ## Changes
 
@@ -152,7 +155,7 @@ Examples:
 
 ### Prevention
 
-1. **Small, frequent PRs** — easier to merge
+1. **One PR per feature, merged promptly** — easier to merge
 2. **Rebase daily** — stay close to main
 3. **Own distinct files** — avoid overlapping work
 4. **Communicate** — Slack/standup when touching shared code
@@ -194,7 +197,7 @@ bun typecheck
 ## Code Review Flow
 
 ```
-1. Engineer creates PR with [PN-TXXX] prefix
+1. Engineer creates PR with [PN] prefix once the feature is complete
 2. Agent reviewer runs automatically (via /review-pr)
 3. Agent posts review comments
 4. Human reviewer reviews (focuses on architecture, not lint)
@@ -251,6 +254,8 @@ git merge --squash feature/P1-T001-user-auth
 git commit -m "[P1-T001] Add user authentication with BetterAuth"
 git push origin main
 ```
+
+**Check the squash message for `[skip ci]` before merging.** By default GitHub's squash message lists every commit message in the PR, so a `[skip ci]` work-in-progress commit carries into the commit on `main` and CI does not run on the merge. Edit the message in the merge dialog, pass an explicit one (`gh pr merge --squash --subject "..." --body "..."`), or set the repository's squash default to "Pull request title and description" (Settings → General → Pull Requests).
 
 ### Rebase on feature branches (not merge)
 
