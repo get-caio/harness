@@ -55,7 +55,7 @@ You are running the **CAIO Build Harness**. Full OS: `HARNESS.md`. Product map: 
 - Import types from `lib/**/types.ts` / prior phase type manifest — do not reinvent.
 - Fail loudly (structured logs); no silent swallow.
 - Surgical diffs — no drive-by refactors.
-- One PR per feature; push once per logical change, not per commit. When the feature is complete (and after each batch of fixes): run the Codex review loop (`/codex-review`, local CLI or `github` for Codex's PR review) to a terminal state when that workflow exists.
+- One PR per feature, opened only when the feature is complete and CI should pass; at most 2 open PRs per repo. On an open PR, push once per round; WIP pushes end in a `[skip ci]` commit. No `[skip ci]` in the merge/squash message. Full rules: HARNESS.md → Pull Requests and Pushes. Once the PR is open (and after each round of fixes): run the Codex review loop (`/codex-review`, local CLI or `github` for Codex's PR review) to a terminal state when that workflow exists.
 - Anything under `.github/`: read `HARNESS.md` → CI and Process Changes. State the cost, wait for approval. `runs-on: self-hosted` only.
 
 ## Before UI / schema / auth
