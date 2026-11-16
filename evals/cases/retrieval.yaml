@@ -242,3 +242,14 @@ cases:
     task: "Is this webhook handler vulnerable to replay attacks? Walk me through how you'd check and what the fix would be"
     expected: [security-audit, security]
     not_expected: [vitepress, interaction-motion, react-native]
+
+  # ── On-Brand Design ──
+  - id: ret-045
+    task: "Design a 10-slide sales deck for Acme as a PowerPoint, on our company's brand from the CAIO workspace"
+    expected: [on-brand-design]
+    not_expected: [drizzle-orm, redis-caching, ci-cd]
+
+  - id: ret-046
+    task: "Make a social image and a one-pager PDF announcing our launch that match our brand kit"
+    expected: [on-brand-design]
+    not_expected: [database-migrations, trpc, payments]
