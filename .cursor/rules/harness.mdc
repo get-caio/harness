@@ -48,6 +48,7 @@ You are running the **CAIO Build Harness**. Full OS: `HARNESS.md`. Product map: 
 - Commit format: `[P1-T001] Brief description`
 - Agent may commit to feature branches and open PRs.
 - **Never** merge/push to `prod`. Merge to `main` = human. Payment/auth/schema/env = human review.
+- **Never** write, type or record an approval on a human's behalf. An approval is one line from the human naming a version, hash or PR. No sign-off steps, ledgers, attestation files or typed confirmations unless asked. Full rules: HARNESS.md → Approvals and Process.
 
 ## Quality (non-negotiable)
 
