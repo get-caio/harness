@@ -180,3 +180,4 @@ design-craft (emotional polish — FEEL)
 | Terminal / tactical dashboard    | `design-brutalist` + `ui-patterns` + `visual-design`                                   |
 | Redesign / upgrade existing UI   | `design-redesign` + `design-taste-frontend` + `visual-design`                          |
 | Audit AI-slop in a legacy UI     | `design-redesign` + `design-taste-frontend`                                            |
+| On-brand deck/PDF/page/email     | `on-brand-design` (the Go brand brief sets colour, type and logos)                     |

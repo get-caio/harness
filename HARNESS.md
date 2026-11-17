@@ -248,6 +248,7 @@ Compressed rules for removed skills (`auth`, `observability`, `stripe-billing`) 
 | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
 | `design-philosophy`, `visual-design`, `ui-patterns`, `design-system`, `design-craft`, `design-taste-frontend`, `interaction-motion`, `shadcn-tailwind` | Via `design-routing` for UI work                |
 | `design-minimalist`, `design-brutalist`, `design-redesign`                                                                                             | Only if DESIGN.md / ticket picks that aesthetic |
+| `on-brand-design`                                                                                                                                      | On-brand deliverables from a Go brand kit       |
 | `e2e-testing`, `msw-mock-api`, `react-best-practices`, `react-native`                                                                                  | E2E, mocks, RN tickets                          |
 | `ai-integration`, `mcp-server`, `multi-agent-coordination`, `context-engineering`, `evaluation`, `council`                                             | AI / agent / eval work                          |
 | `code-audit`, `security-audit`, `red-team`, `data-protection`, `gdpr-consent`, `incident-response`, `debug`                                            | Audit, security test, compliance, incidents     |
