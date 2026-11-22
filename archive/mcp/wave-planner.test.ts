@@ -5,7 +5,7 @@ import {
   filesOverlap,
   planWaves,
   type Ticket,
-} from "../.claude/mcp/wave-planner";
+} from "./wave-planner";
 
 const t = (
   id: string,
@@ -101,7 +101,7 @@ describe("planWaves", () => {
 describe("parity with coordinate-phase.js inline planner", () => {
   it("workflow buildWavePlan matches planWaves on the cascade fixture", () => {
     const src = readFileSync(
-      join(import.meta.dir, "../.claude/workflows/coordinate-phase.js"),
+      join(import.meta.dir, "../workflows/coordinate-phase.js"),
       "utf8",
     );
     const grab = (name: string): string => {

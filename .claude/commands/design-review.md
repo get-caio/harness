@@ -227,11 +227,11 @@ Areas where we could add polish:
 
 Run `/design-review` at:
 
-| Phase              | When                             |
-| ------------------ | -------------------------------- |
-| Phase 2 complete   | After core UI built              |
-| Before PR          | Every feature PR with UI changes |
-| Before `/pre-ship` | Final visual polish check        |
+| Phase            | When                             |
+| ---------------- | -------------------------------- |
+| Phase 2 complete | After core UI built              |
+| Before PR        | Every feature PR with UI changes |
+| Before shipping  | Final visual polish check        |
 
 ---
 

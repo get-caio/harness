@@ -100,7 +100,7 @@ git rebase origin/main
 gh pr create --title "[P1] Add user auth (T001–T004)" --base main
 ```
 
-One PR per feature, not per ticket, opened only when the feature is complete. Pushes, `[skip ci]`, labels and the open-PR limit follow `HARNESS.md` → **Pull Requests and Pushes**.
+One PR per feature, not per ticket, opened only when the feature is complete. Pushes, `[skip ci]`, labels and the open-PR limit follow the harness `HARNESS.md` (`../../HARNESS.md` from this skill's base directory) → **Pull Requests and Pushes**.
 
 ## PR Conventions
 
@@ -218,7 +218,7 @@ For a team of 4:
 
 ## Git Hooks (Local)
 
-These are configured in `.claude/settings.json` but also set up locally:
+The harness plugin's hooks enforce these in opted-in repos; also set them up locally:
 
 ```bash
 # Pre-commit: lint staged files
@@ -234,7 +234,7 @@ bun test ./src ./app ./lib ./tests/integration && bun build
 1. All phase tickets DONE
 2. Run /audit — fix any issues
 3. Create release branch: release/v1.0.0
-4. Run /pre-ship checklist
+4. Walk the pre-ship checks (migrations, env vars, webhooks, rollback plan)
 5. Human reviews and merges to prod
 6. Tag: git tag v1.0.0
 7. Deploy (human-triggered)

@@ -1,6 +1,6 @@
 # AGENTS.md — Product Map
 
-> **Fill this in per product repo.** The harness OS lives in `HARNESS.md`. This file is the thin product-specific map so agents don't guess stack or layout.
+> **Fill this in per product repo.** The operating rules live in the harness plugin's `HARNESS.md`. This file is the thin product-specific map so agents don't guess stack or layout.
 
 ## Product
 
@@ -47,15 +47,9 @@ List the routes, packages, or services agents touch most often:
 
 - …
 
-## Skill allowlist (suggested)
+## Skills
 
-Prefer these from `.claude/skills/` when relevant. Full prefer / situational / do-not-auto-load tables: `HARNESS.md` → Available Skills. Playbook: `docs/guide/cursor-harness.md`.
-
-**Allowlist:** `testing`, `security`, `database-migrations`, `git-workflow`, `payments`, `design-routing`, `nextjs-bun-prisma` / `drizzle-orm`, `trpc`, `ci-cd`, `bun-runtime`, `code-quality`, `vitepress`
-
-**Do not auto-load** (unless this product names them below): `svg-animation`, broad SEO suites.
-
-**Archived** (in the harness repo's `archive/skills/`, not shipped): `shopify-remix`, `woocommerce`, `wordpress-plugin`, `heroku-deploy`, `cloudflare-dns`, `mysql-planetscale`, `pinecone`. Copy one into `.claude/skills/` if this product needs it.
+Skills come from the harness plugin and load on demand; see `HARNESS.md` → Skills. Name the ones this product leans on, and any it should never load.
 
 ### Product overrides
 
@@ -63,10 +57,6 @@ List extra skills this product should treat as allowlist (or ban):
 
 - …
 
-## Local rules
+## Gates
 
-Product-specific Cursor rules (e.g. `**/engine/**`, `**/api/**`) belong in `.cursor/rules/*.mdc` in the **product** repo — not in the harness template.
-
-## Daily driver
-
-Parent model: **Grok 4.5**. Routine agents (`implementer`, `feature`, …) pin `grok-4.5[effort=high]` — not Sonnet. Morning: `/status` → `/check-decisions`. Work: `/work`. Hard design: `architect` (Opus). Before PR: `reviewer` + `verifier` (Sol). Overnight: Cloud Agent + stop-continue hook. Ensure `.cursor/agents/` is present in this repo.
+Gate switches for this repo live in `.claude/harness.json` (see the harness `INSTALL.md`). Note here any gate that is off and why.

@@ -1,204 +1,63 @@
 # CAIO Build Harness
 
-A structured harness for autonomous AI development of CAIO incubator projects.
+A Claude Code plugin for building CAIO projects with agents: safety gates that actually block, a fixed model for who does what across sessions, review workflows, and domain skills.
 
-**Daily driver:** Cursor + Grok (conductor). **Specialists:** Claude Opus / Fable and OpenAI Sol via pinned subagents. **Compat:** Claude Code still works through a thin `CLAUDE.md`.
+## What it does
 
-## Overview
+- **Gates.** Hooks that stop a commit or push when it would touch prod, add to a merged PR, include a credential, or break the type check. They block with exit 2, and let the command through when the check itself cannot run.
+- **Sessions and delegation.** A Fable orchestrator talks to the stakeholder and advises Opus sub-sessions; sub-sessions spawn Opus or Sonnet subagents by complexity. Questions flow up to the orchestrator, which answers the low-impact ones and logs every answer.
+- **Decisions.** Spec and architecture questions are files with a status, so nothing gets guessed and nothing gets lost.
+- **Review.** `review-ticket`, the Codex review loop on every PR, `phase-gate` at phase boundaries, `design-review` after UI work.
+- **Skills.** 51 domain skills, loaded on demand.
 
-- **Phased development** — Large specs split into manageable phases
-- **Decision gates** — Spec ambiguities resolved before building
-- **Continuous execution** — Work through tickets until blocked or complete
-- **Quality guardrails** — test-first (e2e for user flows), security checks, complexity limits
-- **Multi-model routing** — Cheap parent (Grok); expensive models only on specialists
+The full rules are in [`.claude/HARNESS.md`](.claude/HARNESS.md).
 
-## Quick Start (Cursor — preferred)
+## Install
 
-### Prerequisites
+```
+/plugin install caio-build-harness --marketplace get-caio/harness
+```
 
-1. GitHub repo already exists
-2. Cursor with Agent mode
-3. Spec document ready (`SPEC.md`)
+See [`INSTALL.md`](INSTALL.md) for the full steps. In short: install the plugin once per machine, then commit `.claude/harness.json` in each repo that should use it. Repos set up before 4.0 need the migration in that file; until they do it, their old copied hooks keep running and still do not block.
 
-### Initial Setup
+## Layout
+
+```
+.claude/                    # the plugin
+├── .claude-plugin/plugin.json
+├── HARNESS.md              # operating rules
+├── hooks/                  # hooks.json + gate scripts
+├── agents/                 # 7 agents
+├── workflows/              # 4 deterministic workflows
+├── commands/               # 4 slash commands
+└── skills/                 # domain skills
+.claude-plugin/marketplace.json
+AGENTS.md                   # product-map template for product repos
+archive/                    # retired commands, agents, workflows, skills, Cursor mirror
+evals/                      # skill retrieval / absorption / quality evals
+tests/                      # hook and workflow tests
+docs/, specs/, progress/    # scaffold examples
+```
+
+## Developing
 
 ```bash
-# 1. Copy harness surfaces into your project
-cp -r harness/.claude your-project/
-cp -r harness/.cursor your-project/
-cp -r harness/specs your-project/
-cp -r harness/docs your-project/
-cp -r harness/progress your-project/
-cp harness/HARNESS.md your-project/
-cp harness/AGENTS.md your-project/
-cp harness/CLAUDE.md your-project/
-cp harness/.mcp.json your-project/
-cp harness/.gitignore your-project/
-
-# 2. Add your spec + fill the product map
-cp your-spec.md your-project/specs/SPEC.md
-# Edit your-project/AGENTS.md with stack/paths
-
-# 3. Open in Cursor, set parent model to Grok 4.5
-cd your-project
-# Agent: /status → /check-decisions → /work
+bun install
 ```
-
-### Claude Code (compat)
 
 ```bash
-# Same copy as above (includes .claude/ + thin CLAUDE.md → HARNESS.md)
-cd your-project && claude
+bun test
 ```
 
-### Development Flow
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  1. /plan-phases                                            │
-│     Analyze SPEC.md → Propose phase breakdown               │
-│                         ↓                                    │
-│  2. Human approves phases                                   │
-│                         ↓                                    │
-│  3. /init-phase 1                                           │
-│     Generate tickets for Phase 1                            │
-│                         ↓                                    │
-│  4. /check-decisions                                        │
-│     Identify spec ambiguities → Create PENDING decisions    │
-│                         ↓                                    │
-│  5. Human resolves decisions                                │
-│     PENDING → DECIDED                                        │
-│                         ↓                                    │
-│  6. /work                                                   │
-│     Execute tickets continuously until phase complete        │
-│                         ↓                                    │
-│  7. /init-phase 2                                           │
-│     Repeat for next phase                                   │
-└─────────────────────────────────────────────────────────────┘
+```bash
+bun run typecheck
 ```
 
-## Directory Structure
+Bump the version in both manifests on every release. Retire things into `archive/` with their eval cases.
 
-```
-project/
-├── HARNESS.md              # Model-agnostic OS (phases, tickets, gates)
-├── AGENTS.md               # Product map (stack, APIs — fill per repo)
-├── CLAUDE.md               # Thin pointer → HARNESS.md (Claude Code compat)
-├── .cursor/
-│   ├── rules/harness.mdc   # Always-on ticket loop + model routing
-│   ├── agents/             # Model-pinned specialists (Cursor wins on clash)
-│   ├── skills/workflow/    # Slash-only: /work /status /check-decisions …
-│   ├── hooks.json          # Prod-push block, .env protect, stop-continue
-│   └── environment.json    # Cloud Agent install
-├── .claude/
-│   ├── commands/           # Claude Code slash commands (canon)
-│   ├── agents/             # Claude Code agents (opus/sonnet/haiku aliases)
-│   ├── skills/             # Domain skills (shared with Cursor — do not copy)
-│   ├── workflows/          # Deterministic multi-agent scripts
-│   └── settings.json       # Claude Code permissions & hooks
-├── specs/                  # SPEC, phases, decisions, design
-├── docs/                   # VitePress living docs
-├── progress/               # build-log, conventions, dead-ends
-└── .mcp.json
-```
+## What changed in 4.0
 
-See [docs/guide/cursor-harness.md](docs/guide/cursor-harness.md) for the Cursor daily-driver playbook (morning → `/work` → PR gates → Cloud overnight). Skill diet (allowlist vs do-not-auto-load) lives in `HARNESS.md` → Available Skills.
-
-## Model routing
-
-| Role                                                                | Model                        |
-| ------------------------------------------------------------------- | ---------------------------- |
-| Parent (daily driver)                                               | Grok 4.5                     |
-| implementer / feature / tester / deployer / refactorer / doc-writer | `grok-4.5[effort=high]`      |
-| architect / interviewer / coordinator / auditor / product-critic    | Claude Opus (Fable optional) |
-| reviewer / verifier                                                 | OpenAI Sol                   |
-
-Prefer Grok for routine work; escalate to Opus/Sol only when needed. Product repos must include `.cursor/agents/` or Cursor may fall through to `.claude/agents` (`sonnet`). See `HARNESS.md`.
-
-## Commands
-
-Cursor slash skills (`.cursor/skills/workflow/`) and Claude Code commands (`.claude/commands/`):
-
-| Command            | Purpose                                  |
-| ------------------ | ---------------------------------------- |
-| `/plan-phases`     | Analyze spec and propose phase breakdown |
-| `/init-phase N`    | Generate tickets for phase N             |
-| `/check-decisions` | Find spec ambiguities for current phase  |
-| `/work`            | Execute tickets continuously             |
-| `/status`          | Report current progress                  |
-| `/pre-ship`        | Final production checklist               |
-| `/decision`        | Create a decision document               |
-| `/clarify`         | Ask clarifying questions                 |
-
-## Decision Types
-
-### Spec Decisions (`specs/decisions/`)
-
-Product/business clarifications:
-
-- Which auth provider?
-- What are the pricing tiers?
-- Is feature X in V1 or V2?
-
-Created when SPEC.md is ambiguous. Human must resolve before work proceeds.
-
-### Architecture Decisions (`docs/decisions/`)
-
-Technical implementation choices:
-
-- Caching strategy?
-- Database schema design?
-- API structure?
-
-Created during implementation when multiple valid approaches exist.
-
-## Ticket Statuses
-
-| Status        | Meaning                |
-| ------------- | ---------------------- |
-| `TODO`        | Ready to work          |
-| `IN_PROGRESS` | Currently implementing |
-| `BLOCKED`     | Waiting on decision    |
-| `DONE`        | Complete and committed |
-| `SKIPPED`     | Explicitly skipped     |
-
-## Skills Included
-
-~59 domain skills live in `.claude/skills/` (shared; do not copy into `.cursor/skills/`).
-
-**Allowlist (prefer):** `testing`, `security`, `database-migrations`, `git-workflow`, `payments`, `design-routing`, `nextjs-bun-prisma` / `drizzle-orm`, `trpc`, `ci-cd`, `bun-runtime`, `code-quality`, `vitepress`.
-
-Auth / observability / stripe-billing rules live as compressed skill rules in `HARNESS.md` (those skill folders were removed after absorption evals). Full prefer / situational / do-not-auto-load tables: `HARNESS.md` → Available Skills.
-
-## Safety Guardrails
-
-### Pre-commit Hooks
-
-- Secret detection (blocks hardcoded credentials)
-- Security-sensitive file warnings
-
-### Post-commit Hooks
-
-- Type checking
-- Test execution
-- Security audit on dependency install
-
-### Blocked Actions
-
-- Push to prod branch
-- Merge to prod
-- Destructive database operations (prompt confirmation)
-
-## Human Checkpoints
-
-| Action                  | Approval     |
-| ----------------------- | ------------ |
-| Approve phase breakdown | Human        |
-| Resolve spec decisions  | Human        |
-| Merge to main           | Human        |
-| Deploy to production    | Human only   |
-| Payment/auth changes    | Human review |
-| Schema migrations       | Human review |
+A usage review of four months of sessions across five repos found that the phase-loop commands were never typed, several agents and workflows were never run, and every "BLOCKED" hook exited 1, which does not block. 4.0 fixes the gates, moves them into the plugin, replaces the Cursor-first model routing with the orchestrator model, and archives what was not used. Three skills with no use and no measured effect were archived; the other unused skills stayed because the last eval baseline still showed them helping when loaded.
 
 ## License
 

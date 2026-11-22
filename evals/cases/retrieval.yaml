@@ -46,12 +46,12 @@ cases:
   # ── Payments ──
   - id: ret-009
     task: "Integrate Stripe for monthly subscriptions with a customer portal"
-    expected: [payments, security]
+    expected: [security]
     not_expected: [react-native, vitepress, svg-animation]
 
   - id: ret-010
     task: "Handle Stripe webhooks for subscription lifecycle events"
-    expected: [payments, security]
+    expected: [security]
     not_expected: [design-craft, local-seo, pinecone]
 
   # ── AI ──
@@ -142,10 +142,6 @@ cases:
     not_expected: [turborepo, shopify-remix, pinecone]
 
   # ── Email ──
-  - id: ret-027
-    task: "Set up transactional emails for welcome, password reset, and invoice using Resend"
-    expected: [resend-email]
-    not_expected: [react-native, drizzle-orm, cloudflare-dns]
 
   # ── Code Quality/Audit ──
   - id: ret-028
@@ -227,10 +223,6 @@ cases:
     not_expected: [react-native, payments, ai-integration]
 
   # ── Orchestration ──
-  - id: ret-042
-    task: "Run a multi-perspective deliberation to decide between PostgreSQL and MongoDB for the project"
-    expected: [council]
-    not_expected: [svg-animation, shopify-remix, local-seo]
 
   # ── Deep Security Audit ──
   - id: ret-043

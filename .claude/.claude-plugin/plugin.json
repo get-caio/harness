@@ -1,7 +1,7 @@
 {
   "name": "caio-build-harness",
-  "version": "3.9.0",
-  "description": "CAIO Build Harness — autonomous development framework with phased execution, multi-agent coordination, and safety gates for team projects.",
+  "version": "4.0.0",
+  "description": "CAIO Build Harness \u2014 blocking safety gates, orchestrated sessions, review workflows and domain skills for team projects.",
   "author": {
     "name": "CAIO",
     "url": "https://github.com/get-caio"
@@ -18,7 +18,6 @@
       "skills/code-quality",
       "skills/context-engineering",
       "skills/contract-testing",
-      "skills/council",
       "skills/data-migration",
       "skills/data-protection",
       "skills/database-migrations",
@@ -44,12 +43,10 @@
       "skills/multi-agent-coordination",
       "skills/nextjs-bun-prisma",
       "skills/on-brand-design",
-      "skills/payments",
       "skills/react-best-practices",
       "skills/react-native",
       "skills/red-team",
       "skills/redis-caching",
-      "skills/resend-email",
       "skills/security",
       "skills/security-audit",
       "skills/seo-agent-playbook",
@@ -66,35 +63,28 @@
       "skills/vitepress"
     ],
     "commands": [
-      "commands/work.md",
-      "commands/coordinate.md",
-      "commands/init-phase.md",
-      "commands/plan-phases.md",
-      "commands/check-decisions.md",
-      "commands/status.md",
-      "commands/decision.md",
       "commands/audit.md",
-      "commands/red-team.md",
-      "commands/pre-ship.md",
-      "commands/design-review.md",
-      "commands/clarify.md",
-      "commands/codex-review.md"
+      "commands/codex-review.md",
+      "commands/decision.md",
+      "commands/design-review.md"
     ],
     "agents": [
-      "agents/architect.md",
       "agents/auditor.md",
-      "agents/coordinator.md",
-      "agents/deployer.md",
       "agents/doc-writer.md",
       "agents/feature.md",
       "agents/implementer.md",
-      "agents/interviewer.md",
       "agents/product-critic.md",
       "agents/refactorer.md",
-      "agents/reviewer.md",
-      "agents/tester.md"
+      "agents/reviewer.md"
     ],
-    "settings": "settings.json"
+    "workflows": [
+      "workflows/codex-review-loop.js",
+      "workflows/design-review.js",
+      "workflows/phase-gate.js",
+      "workflows/review-ticket.js"
+    ],
+    "hooks": "hooks/hooks.json",
+    "docs": ["HARNESS.md"]
   },
   "scaffold": {
     "directories": [
@@ -115,7 +105,8 @@
       "specs/CURRENT_PHASE": "1",
       "progress/build-log.md": "# Build Log\n\nProgress log for the project.\n",
       "progress/dead-ends.md": "# Dead Ends\n\nFailed approaches logged here to prevent repeating mistakes.\n",
-      "progress/conventions.md": "# Conventions\n\nEstablished patterns and conventions for this project.\n"
+      "progress/conventions.md": "# Conventions\n\nEstablished patterns and conventions for this project.\n",
+      ".claude/harness.json": "{}\n"
     }
   }
 }

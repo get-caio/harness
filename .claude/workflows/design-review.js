@@ -3,7 +3,7 @@ export const meta = {
   description:
     "Visual polish audit after UI phases — a global static scan plus three design lenses (visual foundations, UX patterns + a11y, state coverage + delight) over every route, critical/high findings adversarially verified, one prioritized report.",
   whenToUse:
-    "After a UI phase completes (CLAUDE.md note 20) or before /pre-ship on UI-heavy work. The design skills are already factored into lenses; this runs them per-route instead of one context skimming the whole app. Pass { page: '/dashboard' } to scope to one route, { maxRoutes: 20 } to widen the cap.",
+    "After a UI phase completes or before shipping UI-heavy work. The design skills are already factored into lenses; this runs them per-route instead of one context skimming the whole app. Pass { page: '/dashboard' } to scope to one route, { maxRoutes: 20 } to widen the cap.",
   phases: [
     {
       title: "Inventory",

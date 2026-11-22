@@ -46,26 +46,6 @@ cases:
   # ══════════════════════════════════
   # COUNCIL (multi-agent deliberation)
   # ══════════════════════════════════
-  - id: abs-council-001
-    skill: council
-    task: >
-      Write a TypeScript function that orchestrates a multi-perspective
-      deliberation on a design decision. It should spawn 4 advisor roles
-      (Visionary, Critic, Pragmatist, Recorder), run structured rounds
-      where each advisor responds, and produce a synthesized recommendation.
-    assertions:
-      - pattern: "visionary|critic|pragmatist|recorder"
-        expect: present
-        description: "Implements the four advisor roles"
-      - pattern: "round|turn|iteration|phase"
-        expect: present
-        description: "Structures deliberation in rounds"
-      - pattern: "synthesi|consensus|recommendation|summary"
-        expect: present
-        description: "Produces a synthesized output"
-      - pattern: "role|persona|system.*prompt|advisor"
-        expect: present
-        description: "Assigns distinct perspectives to each role"
 
   # ══════════════════════════════════
   # DESIGN ROUTING

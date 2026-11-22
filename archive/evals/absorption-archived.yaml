@@ -327,3 +327,117 @@ cases:
       - pattern: "review.*app|ephemeral|PR.*app"
         expect: present
         description: Enables review apps for pull request environments
+
+  - id: abs-resend-email-001
+    skill: resend-email
+    task: >
+      Implement a magic link email send function using Resend and a React Email
+      template. The template should include a preview text, expiry notice, and
+      branded button. Also write the webhook handler for bounce and complaint
+      events.
+    assertions:
+      - pattern: "new Resend|from ['\"]resend['\"]"
+        expect: present
+        description: "Initialises the Resend client with the API key"
+      - pattern: "RESEND_API_KEY"
+        expect: present
+        description: "API key is read from environment variable RESEND_API_KEY"
+      - pattern: "<Preview>|Preview>"
+        expect: present
+        description: "React Email template includes a Preview component for inbox preview text"
+      - pattern: "email\\.bounced|bounced"
+        expect: present
+        description: "Webhook handler handles the email.bounced event"
+      - pattern: "email\\.complained|unsubscribe"
+        expect: present
+        description: "Webhook handler handles complaint events and unsubscribes the address"
+
+  - id: abs-resend-email-002
+    skill: resend-email
+    task: >
+      Write code to send a weekly digest email to a list of 200 subscribers
+      using Resend's batch API. Use a React Email template and read the sender
+      address from an environment variable. Handle the rate limit constraint.
+    assertions:
+      - pattern: "resend\\.batch\\.send|batch\\.send"
+        expect: present
+        description: "Uses Resend's batch send API for bulk delivery"
+      - pattern: "render\\s*\\("
+        expect: present
+        description: "Renders React Email template to HTML with render()"
+      - pattern: "100|chunk|slice|batch.*100"
+        expect: present
+        description: "Respects the 100 emails per batch limit by chunking recipients"
+      - pattern: "noreply@|insights@|from.*\\.ai|from.*\\.com"
+        expect: present
+        description: "Sender address uses a custom verified domain, not a public email provider"
+      - pattern: "unsubscribe|CAN-SPAM|list-unsubscribe"
+        expect: present
+        description: "Bulk email includes unsubscribe mechanism for CAN-SPAM compliance"
+
+  - id: abs-council-001
+    skill: council
+    task: >
+      Write a TypeScript function that orchestrates a multi-perspective
+      deliberation on a design decision. It should spawn 4 advisor roles
+      (Visionary, Critic, Pragmatist, Recorder), run structured rounds
+      where each advisor responds, and produce a synthesized recommendation.
+    assertions:
+      - pattern: "visionary|critic|pragmatist|recorder"
+        expect: present
+        description: "Implements the four advisor roles"
+      - pattern: "round|turn|iteration|phase"
+        expect: present
+        description: "Structures deliberation in rounds"
+      - pattern: "synthesi|consensus|recommendation|summary"
+        expect: present
+        description: "Produces a synthesized output"
+      - pattern: "role|persona|system.*prompt|advisor"
+        expect: present
+        description: "Assigns distinct perspectives to each role"
+
+  - id: abs-pay-gen-001
+    skill: payments
+    task: >
+      Implement a subscription checkout flow: a server action that creates a
+      Stripe Checkout session (getting or creating a Stripe customer first),
+      and a client-side button component that calls it and redirects to Stripe.
+    assertions:
+      - pattern: "stripe\\.customers\\.create|customers\\.create"
+        expect: present
+        description: "Creates a Stripe customer object"
+      - pattern: "stripeCustomerId|customerId|customer_id"
+        expect: present
+        description: "Stores and reuses Stripe customer ID"
+      - pattern: "stripe\\.checkout\\.sessions\\.create|checkout\\.sessions\\.create"
+        expect: present
+        description: "Creates a Stripe Checkout session"
+      - pattern: "mode.*subscription|subscription.*mode"
+        expect: present
+        description: "Sets checkout mode to subscription"
+      - pattern: "success_url|cancel_url"
+        expect: present
+        description: "Provides success and cancel redirect URLs"
+
+  - id: abs-pay-gen-002
+    skill: payments
+    task: >
+      Write a subscription status checker utility and a server action that
+      creates a Stripe Customer Portal session so users can manage their
+      billing. Gate a premium feature in a server action using the subscription check.
+    assertions:
+      - pattern: "hasActiveSubscription|subscription.*status|status.*active"
+        expect: present
+        description: "Checks subscription active status"
+      - pattern: "stripeCurrentPeriodEnd|current_period_end|periodEnd"
+        expect: present
+        description: "Checks subscription expiry date, not just status"
+      - pattern: "stripe\\.billingPortal\\.sessions\\.create|billingPortal"
+        expect: present
+        description: "Creates a Stripe Customer Portal session"
+      - pattern: "requireSubscription|throw.*[Uu]nauthorized|throw.*[Ss]ubscription"
+        expect: present
+        description: "Guards premium feature behind subscription check"
+      - pattern: "Unauthorized|403|subscription required"
+        expect: present
+        description: "Returns appropriate error when subscription is missing"
