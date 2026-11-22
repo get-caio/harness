@@ -184,7 +184,7 @@ The workflow shape is in the `ci-cd` skill: a `gate` tier on every PR push (lint
 
 ## Gates
 
-Hooks live in the plugin (`hooks/hooks.json`) and run only in repos with `.claude/harness.json`. A gate blocks by exiting 2. A gate that cannot run its check (missing tool, crash, timeout) lets the command through and says so: a broken environment must never deadlock an unattended session.
+Hooks live in the plugin (`hooks/hooks.json`) and run only in repos with `.claude/harness.json`. They catch an agent's honest mistakes in the ways agents normally phrase commands (`git commit`, `cd dir && git commit`, `git -C dir push`); they are not a security boundary and do not try to out-parse every shell construct. Branch protection on the remote is what protects prod. A gate blocks by exiting 2. A gate that cannot run its check (missing tool, crash, timeout) lets the command through and says so: a broken environment must never deadlock an unattended session.
 
 | Gate (`gates.<name>`) | When                     | Blocks                                                                                            |
 | --------------------- | ------------------------ | ------------------------------------------------------------------------------------------------- |

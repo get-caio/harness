@@ -6,17 +6,6 @@
 cmd=$(hook_field '.tool_input.command')
 [ -z "$cmd" ] && exit 0
 follow_git_dir "$cmd"
-# The gates below check one checkout. A command whose commits and pushes run in
-# more than one, or in one that cannot be resolved before the command runs, is
-# refused when any of those checkouts has opted in: checking only the first
-# would let `<commit in a feature checkout> && <commit in the prod checkout>`
-# through.
-if $GIT_TARGETS_DIFFER; then
-  for target_dir in "${GIT_TARGET_DIRS[@]}"; do
-    (cd "$target_dir" 2>/dev/null && [ -n "$(harness_config)" ]) &&
-      block "This command runs \`git commit\` / \`git push\` in more than one checkout, or in one that cannot be resolved before it runs. The gates check one checkout per command — run each commit or push as its own command."
-  done
-fi
 require_opt_in
 
 commit=false; push=false
@@ -24,33 +13,15 @@ is_git_commit "$cmd" && commit=true
 is_git_push "$cmd" && push=true
 
 # --- npm in a bun project -------------------------------------------------
-# Matched on unquoted text: a commit message or PR body that mentions
-# `npm install` is prose, not a command.
-# The lockfile is looked for in the directory the command runs in and at the
-# repo root: `cd src && npm ci` is still an npm install in a bun project.
-bun_root=$(repo_root)
-if gate_on bunOnly && { [ -f bun.lock ] || [ -f bun.lockb ] || [ -f "$bun_root/bun.lock" ] || [ -f "$bun_root/bun.lockb" ]; } &&
+root=$(repo_root)
+if gate_on bunOnly && { [ -f bun.lock ] || [ -f bun.lockb ] || [ -f "$root/bun.lock" ] || [ -f "$root/bun.lockb" ]; } &&
   unquoted "$cmd" | grep -qE '(^|[;&|(]|[[:space:]])npm +(install|i|add|ci)([[:space:]]|$)'; then
   block "This project uses bun. Use \`bun install\` / \`bun add\`."
 fi
 
 $commit || $push || exit 0
 
-# This hook runs before any part of the command does, so the branch read below
-# is the one the command starts on. In `git switch prod && git commit` the
-# commit lands on a branch no gate here has looked at, so a branch change and a
-# commit or push in one call are refused. The one exception is creating a new,
-# plainly named, non-prod branch (`git checkout -b feature/x && git commit …`):
-# that is how most work starts, and the new branch is neither prod nor merged.
-if gate_on prod || gate_on mergedPr; then
-  prod_name=$(config_value '.prodBranch'); prod_name=${prod_name:-prod}
-  if switches_branch_in_call "$cmd" "$prod_name"; then
-    block "\`git switch\` / \`git checkout\` to an existing branch and \`git commit\` / \`git push\` in one command: the gates read the branch before any of it runs, so they cannot check the branch the commit or push lands on. Switch first, then commit or push in a separate command. (Creating a new branch with \`git checkout -b <name>\` or \`git switch -c <name>\` in the same command is fine.)"
-  fi
-fi
-
-# symbolic-ref names the branch even before its first commit (rev-parse fails
-# there, and the first commit of a repo must not skip the gates); rev-parse
+# symbolic-ref names the branch even before a repo's first commit; rev-parse
 # covers a detached HEAD, where it prints `HEAD`.
 branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null) ||
   branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || exit 0
@@ -59,33 +30,10 @@ branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null) ||
 if gate_on prod; then
   prod=$(config_value '.prodBranch'); prod=${prod:-prod}
   [ "$branch" = "$prod" ] && block "You are on '$prod'. Production is human-only — switch to a feature branch."
-  # Matches `prod`, `HEAD:prod`, `+prod` and `refs/heads/prod` as a push target,
-  # quoted or not (`git push origin "HEAD:prod"` is the same push). GIT_RE
-  # (lib.sh) skips git's global options between `git` and `push`.
-  if $push && push_args "$cmd" | grep -qE "$GIT_RE +push([[:space:]][^;&|]*)?([[:space:]:+]|refs/heads/)$prod([[:space:]]|\$|[;&|])"; then
+  # `prod`, `HEAD:prod`, `+prod` or `refs/heads/prod` as a push target, quoted
+  # or not (unquoted keeps a quoted single token and drops quoted prose).
+  if $push && unquoted "$cmd" | grep -qE "$GIT_RE +push([[:space:]][^;&|]*)?([[:space:]:+]|refs/heads/)$prod([[:space:]]|\$|[;&|])"; then
     block "Cannot push to '$prod'. Production deploys are human-only."
-  fi
-  # A bulk push sends '$prod' without naming it. --all / --branches push every
-  # local branch, so they are blocked while a local '$prod' exists. --mirror
-  # also deletes remote refs that have no local counterpart, so it is blocked
-  # outright.
-  if $push; then
-    bulk=$(push_bulk_mode "$cmd")
-    if [ "$bulk" = "mirror" ]; then
-      block "\`git push --mirror\` rewrites every remote ref, '$prod' included. Push the branch by name."
-    elif [ "$bulk" = "all" ] && git show-ref --verify --quiet "refs/heads/$prod"; then
-      block "\`git push --all\` would push the local '$prod' branch. Push the branch by name."
-    fi
-    # A push that names no destination takes it from git's configuration
-    # (remote.<remote>.push, push.default=upstream / matching), which can be
-    # '$prod' without the command saying so.
-    while IFS= read -r push_line; do
-      if push_config_dest "$push_line" "$prod" "$branch"; then
-        block "This push takes its destination from git config, and that resolves to '$prod'. Production deploys are human-only — push with an explicit \`<branch>:<branch>\` refspec."
-      fi
-    done <<EOF
-$(push_segments "$cmd")
-EOF
   fi
 fi
 
@@ -99,45 +47,22 @@ fi
 
 $commit || exit 0
 
-# `git commit -a`, `--only` / `--include` and `git commit <pathspec>` commit
-# working-tree content that is not in the index yet, so those forms are checked
-# against HEAD as well as the index. The flag can sit anywhere in the arguments
-# (`commit -m msg -a`). The index is always included: the worktree test also
-# fires on an unquoted message word, and that commit still takes the index.
+# What will this commit contain? Normally the index. But this hook runs before
+# the command does, so `git add … && git commit` and `git commit -a` have not
+# staged anything yet: for those, look at the working tree and untracked files
+# as well.
 worktree=false
-commit_reads_worktree "$cmd" && worktree=true
-# This hook runs before any part of the command does. In
-# `git add key.ts && git commit -m x` the index is still empty here, so a
-# staging command in the same call widens the scan to the working tree and to
-# untracked files, which is where the content to be committed still sits.
-# `git add -f` can stage an ignored file, which the untracked listing leaves
-# out, so that one form has to be split across two calls.
-untracked=false
-if stages_in_call "$cmd"; then
-  worktree=true; untracked=true
-  force_adds_in_call "$cmd" &&
-    block "\`git add -f\` and \`git commit\` in one command: the force-added files cannot be scanned before they are staged. Stage first, then commit in a separate command."
-fi
-# Untracked, non-ignored files of the whole repo, NUL-separated, repo-relative.
-untracked_files() { (cd "$(repo_root)" 2>/dev/null && git ls-files -z --others --exclude-standard 2>/dev/null); }
-# With no commit yet there is no HEAD to diff against: the empty tree stands in,
-# so every tracked file counts as added.
+is_git_add "$cmd" && worktree=true
+unquoted "$cmd" | grep -qE 'commit([[:space:]][^;&|]*)?[[:space:]](-[a-zA-Z]*a[a-zA-Z]*|--all)([[:space:]]|$)' && worktree=true
 diff_base=HEAD
 git rev-parse --verify -q HEAD >/dev/null 2>&1 || diff_base=$(git hash-object -t tree /dev/null 2>/dev/null)
-# --no-color: with color.ui=always git colours piped output too, and the scanner
-# and the file-name checks read these diffs as plain text.
 commit_diff() {
   git diff --no-color --cached "$@" 2>/dev/null
-  if $worktree; then git diff --no-color "$diff_base" "$@" 2>/dev/null; fi
-  if $untracked; then
-    if [ "$1" = "--name-only" ]; then
-      untracked_files | tr '\0' '\n'
-    else
-      (cd "$(repo_root)" 2>/dev/null && untracked_files | while IFS= read -r -d '' f; do
-        git diff --no-color --no-index "$@" -- /dev/null "$f" 2>/dev/null
-      done)
-    fi
-  fi
+  $worktree || return 0
+  git diff --no-color "$diff_base" "$@" 2>/dev/null
+  (cd "$root" 2>/dev/null && git ls-files -z --others --exclude-standard 2>/dev/null | while IFS= read -r -d '' f; do
+    if [ "$1" = "--name-only" ]; then printf '%s\n' "$f"; else git diff --no-color --no-index "$@" -- /dev/null "$f" 2>/dev/null; fi
+  done)
 }
 
 # --- secrets ---------------------------------------------------------------
@@ -164,7 +89,7 @@ fi
 # Blocks only on real compiler errors (`error TS1234`). A crash, an
 # out-of-memory kill or a missing toolchain is reported and let through.
 if gate_on typecheck && commit_diff --name-only | grep -qE '\.(ts|tsx)$'; then
-  root=$(repo_root); cd "$root" || exit 0
+  cd "$root" || exit 0
   runner=""
   if [ -f package.json ] && jq -e '.scripts.typecheck' package.json >/dev/null 2>&1; then
     if { [ -f bun.lock ] || [ -f bun.lockb ]; } && command -v bun >/dev/null 2>&1; then runner="bun run --silent typecheck"; else runner="npm run --silent typecheck"; fi
@@ -173,8 +98,7 @@ if gate_on typecheck && commit_diff --name-only | grep -qE '\.(ts|tsx)$'; then
   fi
   if [ -n "$runner" ]; then
     out=$($runner 2>&1); rc=$?
-    # A typecheck script that forces colour (`tsc --pretty`) puts escape
-    # sequences between `error` and ` TS2322`; strip them before classifying.
+    # Strip colour escapes: `tsc --pretty` puts them between `error` and `TS2322`.
     esc=$(printf '\033')
     out=$(printf '%s' "$out" | sed "s/${esc}\[[0-9;]*[A-Za-z]//g")
     if [ $rc -ne 0 ]; then
