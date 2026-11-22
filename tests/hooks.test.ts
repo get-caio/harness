@@ -441,6 +441,180 @@ cd ${elsewhere}"`).code,
     expect(bash("git push origin prod-fixes").code).toBe(0);
   });
 
+  test("commits and pushes in more than one checkout are refused", () => {
+    // A second opted-in checkout, sitting on prod. The shared repo is on main.
+    const target = mkdtempSync(join(tmpdir(), "harness-target-"));
+    const plain = mkdtempSync(join(tmpdir(), "harness-plain-"));
+    sh(
+      "git init -q -b prod && git config user.email t@t.t && git config user.name t && mkdir .claude && echo '{}' > .claude/harness.json && git add -A && git commit -qm init",
+      target,
+    );
+    sh("git init -q -b main", plain);
+    const c = 'commit --allow-empty -m "x"';
+    try {
+      const blocked = [
+        `git -C ${repo} ${c} && git -C ${target} ${c}`,
+        `git -C "${repo}" ${c}; git -C "${target}" ${c}`,
+        `cd ${repo} && git ${c} && cd ${target} && git ${c}`,
+        `(cd ${repo} && git ${c}); (cd ${target} && git ${c})`,
+        `git -C ${repo} ${c} && git -C ${target} push origin feature`,
+        `git -C ${repo} push origin feature && git -C ${target} ${c}`,
+        `cd ${repo} && git ${c} && git -C ${target} push`,
+        `pushd ${repo} && git ${c} && popd && cd ${target} && git ${c}`,
+        // A checkout that has not opted in does not hide one that has.
+        `git -C ${plain} ${c} && git -C ${target} ${c}`,
+        // Somewhere that cannot be resolved may be the prod checkout.
+        `git -C ${repo} ${c} && git -C "$ELSEWHERE" ${c}`,
+        `git -C ${repo} ${c} && cd "$ELSEWHERE" && git ${c}`,
+        `git -C ${repo} ${c} && git -C $(echo ${target}) ${c}`,
+        `git -C ${repo} ${c} && git -C \`echo ${target}\` ${c}`,
+        `git -C ${repo} ${c} && cd $(echo ${target}) && git ${c}`,
+        `git -C ${repo} ${c} && x=$(git -C ${target} ${c})`,
+      ].map((cmd) => outside(cmd).code);
+      expect(blocked).toEqual(blocked.map(() => 2));
+      // Two unresolved places: the hook cwd stands in for both.
+      expect(bash(`git -C "$A" ${c} && git -C "$B" ${c}`).code).toBe(2);
+      expect(
+        outside(`git -C ${repo} ${c} && git -C ${target} ${c}`).err,
+      ).toContain("more than one checkout");
+      // -C moves one invocation only: the second commit runs in the hook cwd.
+      expect(
+        hook("pre-bash.sh", {
+          cwd: target,
+          tool_input: { command: `git -C ${repo} ${c} && git ${c}` },
+        }).code,
+      ).toBe(2);
+
+      // One checkout, however often it is named, is checked as before.
+      const allowed = [
+        `git ${c} && git push origin feature`,
+        `git ${c} && git push`,
+        `git add -A && git ${c} && git push -u origin HEAD`,
+        `git -C ${repo} ${c} && git -C ${repo} push origin feature`,
+        `git -C ${repo} ${c} && git -C ${repo}/src push origin feature`,
+        `cd ${repo} && git ${c} && cd src && git push origin feature`,
+        `(cd ${repo} && git ${c}) && git -C ${repo} push origin feature`,
+        // One unknown place, twice, is one checkout.
+        `cd "$DIR" && git ${c} && git push origin feature`,
+        // Other git commands may point anywhere.
+        `git -C ${target} status && git ${c} && git -C ${target} log -1`,
+        // A message body is prose, stray quote and all.
+        `git commit --allow-empty -m "$(cat <<'EOF'\nfix: the "gate\n\ncd ${target}\ngit -C ${target} commit -m y\ngit push origin prod-ish\nEOF\n)"`,
+        `git commit --allow-empty -F - <<'EOF'\ncd ${target} && git commit -m y\nEOF\ngit push origin feature`,
+      ].map((cmd) => bash(cmd).code);
+      expect(allowed).toEqual(allowed.map(() => 0));
+      // No checkout involved has opted in: nothing to gate.
+      expect(
+        outside(`git -C ${plain} ${c} && git -C "$ELSEWHERE" ${c}`).code,
+      ).toBe(0);
+    } finally {
+      rmSync(target, { recursive: true, force: true });
+      rmSync(plain, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  test("blocks a push whose configured destination is prod", () => {
+    const cfg = (args: string) => sh(`git config ${args}`);
+    const codes = (cmds: string[]) => cmds.map((cmd) => bash(cmd).code);
+    const implicit = [
+      "git push",
+      "git push origin",
+      "git push --force-with-lease origin 2> /dev/null",
+      "git push origin +main",
+      "git push origin HEAD",
+      "git commit --allow-empty -m x && git -c a=b push",
+    ];
+    const explicit = [
+      "git push origin HEAD:refs/heads/feature",
+      "git push origin --tags",
+      "git push upstream main",
+    ];
+    cfg("push.default simple");
+    try {
+      // Nothing configured: the destination is the branch's own name.
+      expect(codes([...implicit, ...explicit])).toEqual(
+        [...implicit, ...explicit].map(() => 0),
+      );
+
+      // remote.<remote>.push sends the branch to prod.
+      cfg("remote.origin.push HEAD:refs/heads/prod");
+      expect(codes(implicit)).toEqual(implicit.map(() => 2));
+      expect(codes(explicit)).toEqual(explicit.map(() => 0));
+      expect(bash("git push").err).toContain("git config");
+      expect(bash("git push --recurse-submodules no origin").code).toBe(2);
+      for (const spec of ["refs/heads/main:refs/heads/prod", "+main:prod"]) {
+        cfg(`--replace-all remote.origin.push '${spec}'`);
+        expect(codes(["git push", "git push origin main"])).toEqual([2, 2]);
+      }
+      // A mapping for another branch or to another name is not a prod push.
+      cfg("--replace-all remote.origin.push refs/heads/other:refs/heads/prod");
+      expect(codes(["git push origin main", "git push origin HEAD"])).toEqual([
+        0, 0,
+      ]);
+      cfg("--replace-all remote.origin.push HEAD:refs/heads/prod-fixes");
+      expect(codes(["git push", "git push origin main"])).toEqual([0, 0]);
+      // A pattern carries a local prod branch, when there is one.
+      cfg("--replace-all remote.origin.push 'refs/heads/*:refs/heads/*'");
+      expect(codes(["git push", "git push origin"])).toEqual([0, 0]);
+      sh("git branch -f prod");
+      expect(codes(["git push", "git push origin"])).toEqual([2, 2]);
+      expect(bash("git push origin main").code).toBe(0);
+      sh("git branch -D prod");
+      cfg("--unset-all remote.origin.push");
+
+      // The remote the push falls back to is read from config too.
+      cfg("remote.deploy.push HEAD:refs/heads/prod");
+      expect(codes(["git push", "git push origin"])).toEqual([0, 0]);
+      expect(codes(["git push deploy", "git push --repo=deploy"])).toEqual([
+        2, 2,
+      ]);
+      cfg("remote.pushDefault deploy");
+      expect(codes(["git push", "git push origin"])).toEqual([2, 0]);
+      cfg("--unset remote.pushDefault");
+      cfg("branch.main.pushRemote deploy");
+      expect(bash("git push").code).toBe(2);
+      cfg("--unset branch.main.pushRemote");
+      cfg("branch.main.remote deploy");
+      expect(bash("git push").code).toBe(2);
+      cfg("--unset branch.main.remote");
+      cfg("--unset-all remote.deploy.push");
+
+      // push.default=upstream follows branch.<name>.merge.
+      cfg("branch.main.remote origin");
+      cfg("branch.main.merge refs/heads/prod");
+      expect(codes(["git push", "git push origin main"])).toEqual([0, 0]);
+      cfg("push.default upstream");
+      expect(codes(implicit)).toEqual(implicit.map(() => 2));
+      // A named branch goes to its upstream on whichever remote is named, and
+      // an unrelated configured refspec does not change that.
+      expect(codes(explicit)).toEqual([0, 0, 2]);
+      cfg("remote.origin.push refs/heads/other:refs/heads/x");
+      expect(codes(["git push", "git push origin main"])).toEqual([0, 2]);
+      cfg("--unset-all remote.origin.push");
+      cfg("branch.main.merge refs/heads/main");
+      expect(codes(["git push", "git push origin main"])).toEqual([0, 0]);
+
+      // push.default=matching pushes a local prod branch along.
+      cfg("push.default matching");
+      expect(bash("git push").code).toBe(0);
+      sh("git branch -f prod");
+      expect(codes(["git push", "git push origin"])).toEqual([2, 2]);
+      expect(bash("git push origin main").code).toBe(0);
+    } finally {
+      sh("git branch -D prod");
+      for (const key of [
+        "remote.origin.push",
+        "remote.deploy.push",
+        "remote.pushDefault",
+        "branch.main.pushRemote",
+        "branch.main.remote",
+        "branch.main.merge",
+        "push.default",
+      ])
+        cfg(`--unset-all ${key}`);
+    }
+  }, 60_000);
+
   test("blocks a commit made while on prod", () => {
     sh("git checkout -qb prod");
     expect(bash('git commit -m "x"').code).toBe(2);

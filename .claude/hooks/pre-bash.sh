@@ -6,6 +6,17 @@
 cmd=$(hook_field '.tool_input.command')
 [ -z "$cmd" ] && exit 0
 follow_git_dir "$cmd"
+# The gates below check one checkout. A command whose commits and pushes run in
+# more than one, or in one that cannot be resolved before the command runs, is
+# refused when any of those checkouts has opted in: checking only the first
+# would let `<commit in a feature checkout> && <commit in the prod checkout>`
+# through.
+if $GIT_TARGETS_DIFFER; then
+  for target_dir in "${GIT_TARGET_DIRS[@]}"; do
+    (cd "$target_dir" 2>/dev/null && [ -n "$(harness_config)" ]) &&
+      block "This command runs \`git commit\` / \`git push\` in more than one checkout, or in one that cannot be resolved before it runs. The gates check one checkout per command — run each commit or push as its own command."
+  done
+fi
 require_opt_in
 
 commit=false; push=false
@@ -47,6 +58,16 @@ if gate_on prod; then
     elif [ "$bulk" = "all" ] && git show-ref --verify --quiet "refs/heads/$prod"; then
       block "\`git push --all\` would push the local '$prod' branch. Push the branch by name."
     fi
+    # A push that names no destination takes it from git's configuration
+    # (remote.<remote>.push, push.default=upstream / matching), which can be
+    # '$prod' without the command saying so.
+    while IFS= read -r push_line; do
+      if push_config_dest "$push_line" "$prod" "$branch"; then
+        block "This push takes its destination from git config, and that resolves to '$prod'. Production deploys are human-only — push with an explicit \`<branch>:<branch>\` refspec."
+      fi
+    done <<EOF
+$(push_segments "$cmd")
+EOF
   fi
 fi
 
