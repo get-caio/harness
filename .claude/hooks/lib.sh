@@ -16,10 +16,16 @@ hook_field() { printf '%s' "$HOOK_INPUT" | jq -r "$1 // empty" 2>/dev/null; }
 HOOK_CWD=$(hook_field '.cwd')
 [ -n "$HOOK_CWD" ] && [ -d "$HOOK_CWD" ] && cd "$HOOK_CWD" || true
 
-# `git -C <dir> …` runs against another checkout; follow it.
+# `git -C <dir> …` runs against another checkout; follow it. The directory may
+# be quoted (`git -C "/path with spaces" …`), so take the quoted span whole and
+# strip its quotes before testing it.
 follow_git_dir() {
   local dir
-  dir=$(printf '%s' "$1" | grep -oE 'git +-C +[^ ]+' | head -1 | sed -E 's/^git +-C +//')
+  dir=$(printf '%s' "$1" | grep -oE 'git +-C +("[^"]*"|'"'"'[^'"'"']*'"'"'|[^ ]+)' | head -1 | sed -E 's/^git +-C +//')
+  case "$dir" in
+    \"*\") dir=${dir#\"}; dir=${dir%\"} ;;
+    \'*\') dir=${dir#\'}; dir=${dir%\'} ;;
+  esac
   [ -n "$dir" ] && [ -d "$dir" ] && cd "$dir" || true
 }
 
@@ -55,5 +61,9 @@ push_args() {
   printf '%s' "$1" | tr '\n' ' ' | sed -E 's/"([^"'"'"';&|[:space:]]*)"/\1/g; s/'"'"'([^"'"'"';&|[:space:]]*)'"'"'/\1/g; s/"[^"]*"//g; s/'"'"'[^'"'"']*'"'"'//g'
 }
 
-is_git_commit() { unquoted "$1" | grep -qE '(^|[;&|(]|[[:space:]])git( +-C +[^ ]+)? +commit([[:space:]]|$)'; }
-is_git_push() { unquoted "$1" | grep -qE '(^|[;&|(]|[[:space:]])git( +-C +[^ ]+)? +push([[:space:]]|$)'; }
+# The -C directory is optional in the pattern: unquoted() deletes a quoted one
+# (`git -C "/repo" commit` arrives here as `git -C  commit`), and that is still
+# a commit. Rewriting the quoted directory instead would re-pair quotes and
+# could swallow a real command, so the matcher is widened and the text is not.
+is_git_commit() { unquoted "$1" | grep -qE '(^|[;&|(]|[[:space:]])git( +-C( +[^ ]+)?)? +commit([[:space:]]|$)'; }
+is_git_push() { unquoted "$1" | grep -qE '(^|[;&|(]|[[:space:]])git( +-C( +[^ ]+)?)? +push([[:space:]]|$)'; }

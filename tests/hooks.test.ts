@@ -162,6 +162,66 @@ describe("pre-bash gates", () => {
     expect(bash('git push origin "prod-fixes"').code).toBe(0);
   });
 
+  // These run from outside the repo, so the gate only fires if the hook both
+  // recognises the command and follows the quoted -C directory.
+  const outside = (command: string) =>
+    hook("pre-bash.sh", { cwd: tmpdir(), tool_input: { command } });
+
+  test("a quoted -C directory does not get a prod push past the gate", () => {
+    expect(outside(`git -C "${repo}" push origin prod`).code).toBe(2);
+    expect(outside(`git -C '${repo}' push origin prod`).code).toBe(2);
+    expect(outside(`git -C "${repo}" push origin "HEAD:prod"`).code).toBe(2);
+    expect(outside(`git -C "${repo}" push origin feature`).code).toBe(0);
+  });
+
+  test("a quoted -C directory does not get a commit past the gate", () => {
+    sh("git checkout -qb prod");
+    expect(outside(`git -C "${repo}" commit -m "test"`).code).toBe(2);
+    expect(outside(`git -C '${repo}' commit -m 'test'`).code).toBe(2);
+    sh("git checkout -q main && git branch -qD prod");
+  });
+
+  test("a quoted -C directory with spaces is followed and gated", () => {
+    const spaced = mkdtempSync(join(tmpdir(), "harness hooks "));
+    try {
+      sh(
+        "git init -q -b main && git config user.email t@t.t && git config user.name t",
+        spaced,
+      );
+      mkdirSync(join(spaced, ".claude"));
+      writeFileSync(join(spaced, ".claude/harness.json"), "{}");
+      sh("git add -A && git commit -qm init", spaced);
+      expect(outside(`git -C "${spaced}" push origin prod`).code).toBe(2);
+      expect(outside(`git -C '${spaced}' push origin HEAD:prod`).code).toBe(2);
+      expect(outside(`git -C "${spaced}" push origin feature`).code).toBe(0);
+      sh("git checkout -qb prod", spaced);
+      expect(outside(`git -C "${spaced}" commit -m "x"`).code).toBe(2);
+    } finally {
+      rmSync(spaced, { recursive: true, force: true });
+    }
+  });
+
+  test("prose that mentions git -C is still not a command", () => {
+    expect(bash('git commit -m "docs: git -C x push origin prod"').code).toBe(
+      0,
+    );
+    expect(
+      bash(`git commit -m 'never run git -C "/x" push origin prod'`).code,
+    ).toBe(0);
+    expect(
+      bash('gh pr create --title "x" --body "git -C x commit, then push prod"')
+        .code,
+    ).toBe(0);
+  });
+
+  test("a message ending in git -C does not hide the push after it", () => {
+    expect(
+      bash(
+        'git commit -m "note: git -C " && git push origin prod && echo "done"',
+      ).code,
+    ).toBe(2);
+  });
+
   test("does not mistake other branch names for prod", () => {
     expect(bash("git push -u origin feature/product-page").code).toBe(0);
     expect(bash("git push origin prod-fixes").code).toBe(0);
