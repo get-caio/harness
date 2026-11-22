@@ -471,9 +471,33 @@ EOF
   esac
   return 1
 }
-# True when the command also runs `git switch` or `git checkout`, matched on
-# unquoted text like the commit itself.
-switches_branch_in_call() { unquoted "$1" | grep -qE "(^|[;&|(]|[[:space:]])$GIT_RE +(switch|checkout)([[:space:]]|$)"; }
+# True when the command also runs a `git switch` or `git checkout` whose target
+# the gates cannot vouch for, matched on unquoted text like the commit itself.
+#
+# One form is safe and very common, so it is allowed: creating a NEW branch with
+# a plain literal name that is not the prod branch (`git checkout -b feature/x`,
+# `git switch -c feature/x`, `git switch --create feature/x`), optionally from a
+# start point. The commit then lands on that new branch, which has no PR and is
+# not prod. Every other form (switching to an existing branch, -B / -C, `--`,
+# a quoted or computed name) is still refused alongside a commit or push.
+#   $1 command   $2 prod branch name
+switches_branch_in_call() {
+  local text prod="$2" seg rest name
+  text=$(unquoted "$1")
+  printf '%s' "$text" | grep -qE "(^|[;&|(]|[[:space:]])$GIT_RE +(switch|checkout)([[:space:]]|$)" || return 1
+  # Check each switch/checkout invocation, one per command segment.
+  while IFS= read -r seg; do
+    printf '%s' "$seg" | grep -qE "(^|[(]|[[:space:]])$GIT_RE +(switch|checkout)([[:space:]]|$)" || continue
+    rest=$(printf '%s' "$seg" | sed -E "s/^.*$GIT_RE +(switch|checkout)[[:space:]]+//")
+    case "$seg" in
+      *switch*) printf '%s' "$rest" | grep -qE '^(-c|--create)[[:space:]]+[A-Za-z0-9][A-Za-z0-9._/-]*([[:space:]]+[A-Za-z0-9][A-Za-z0-9._/~^-]*)?[[:space:]]*$' || return 0 ;;
+      *) printf '%s' "$rest" | grep -qE '^-b[[:space:]]+[A-Za-z0-9][A-Za-z0-9._/-]*([[:space:]]+[A-Za-z0-9][A-Za-z0-9._/~^-]*)?[[:space:]]*$' || return 0 ;;
+    esac
+    name=$(printf '%s' "$rest" | awk '{print $2}')
+    [ "$name" = "$prod" ] && return 0
+  done <<<"$(printf '%s' "$text" | tr ';&|' '\n\n\n')"
+  return 1
+}
 # True when the command also runs a staging command (`git add`, `git stage`,
 # `git rm`, `git mv`), matched on unquoted text like the commit itself.
 stages_in_call() { unquoted "$1" | grep -qE "(^|[;&|(]|[[:space:]])$GIT_RE +(add|stage|rm|mv)([[:space:]]|$)"; }

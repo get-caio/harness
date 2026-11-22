@@ -39,11 +39,14 @@ $commit || $push || exit 0
 # This hook runs before any part of the command does, so the branch read below
 # is the one the command starts on. In `git switch prod && git commit` the
 # commit lands on a branch no gate here has looked at, so a branch change and a
-# commit or push in one call are refused, whatever their order and whatever the
-# checkout names (`git checkout -- file` included: telling the forms apart from
-# the text is not reliable enough to gate on).
-if { gate_on prod || gate_on mergedPr; } && switches_branch_in_call "$cmd"; then
-  block "\`git switch\` / \`git checkout\` and \`git commit\` / \`git push\` in one command: the gates read the branch before any of it runs, so they cannot check the branch the commit or push lands on. Switch first, then commit or push in a separate command."
+# commit or push in one call are refused. The one exception is creating a new,
+# plainly named, non-prod branch (`git checkout -b feature/x && git commit …`):
+# that is how most work starts, and the new branch is neither prod nor merged.
+if gate_on prod || gate_on mergedPr; then
+  prod_name=$(config_value '.prodBranch'); prod_name=${prod_name:-prod}
+  if switches_branch_in_call "$cmd" "$prod_name"; then
+    block "\`git switch\` / \`git checkout\` to an existing branch and \`git commit\` / \`git push\` in one command: the gates read the branch before any of it runs, so they cannot check the branch the commit or push lands on. Switch first, then commit or push in a separate command. (Creating a new branch with \`git checkout -b <name>\` or \`git switch -c <name>\` in the same command is fine.)"
+  fi
 fi
 
 # symbolic-ref names the branch even before its first commit (rev-parse fails

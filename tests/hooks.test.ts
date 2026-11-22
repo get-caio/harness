@@ -629,7 +629,8 @@ cd ${elsewhere}"`).code,
       const blocked = [
         'git switch prod && git commit --allow-empty -m "test"',
         'git checkout prod; git commit --allow-empty -m "test"',
-        'git switch -c prod2 && git commit -m "x"',
+        'git switch -c prod && git commit -m "x"',
+        'git checkout -b "$(echo prod)" && git commit -m "x"',
         'git checkout -B prod && git commit -m "x"',
         'git -c a=b switch prod && git -c a=b commit -m "x"',
         "git switch prod && git push",
@@ -637,7 +638,7 @@ cd ${elsewhere}"`).code,
         // Not told apart from a branch change: split it into two calls.
         'git checkout -- src/a.ts && git commit -m "x"',
       ].map((c) => bash(c));
-      expect(blocked.map((r) => r.code)).toEqual([2, 2, 2, 2, 2, 2, 2, 2]);
+      expect(blocked.map((r) => r.code)).toEqual([2, 2, 2, 2, 2, 2, 2, 2, 2]);
       expect(blocked[0]!.err).toContain("Switch first");
       const fine = [
         "git switch prod",
@@ -645,8 +646,14 @@ cd ${elsewhere}"`).code,
         'git commit -m "docs: run git switch prod first"',
         'git commit -m "x" && echo "then git checkout prod"',
         "git push origin feature",
+        // Creating a new, plainly named, non-prod branch and committing in one
+        // call is how most work starts; it must not be refused.
+        'git checkout -b feature/x && git add -A && git commit -m "add a"',
+        'git switch -c feature/y && git commit -am "wip"',
+        'git switch --create prod2 && git commit -m "x"',
+        'git checkout -b fix/z origin/main && git commit -m "x"',
       ].map((c) => bash(c).code);
-      expect(fine).toEqual([0, 0, 0, 0, 0]);
+      expect(fine).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0]);
     } finally {
       sh("git branch -qD prod");
     }
