@@ -294,6 +294,32 @@ describe("pre-bash gates", () => {
     sh("git commit -qm auth");
   });
 
+  test("-a / --all anywhere in the commit arguments scans the working tree", () => {
+    // Unstaged credential in a tracked file, empty index: only `commit -a`
+    // would pick it up, wherever the flag sits.
+    writeFileSync(
+      join(repo, "src/auth.ts"),
+      `export const k = "${FAKE_STRIPE_KEY}";\n`,
+    );
+    const codes = [
+      "git commit -am update",
+      "git commit -m update -a",
+      "git commit -m update --all",
+      'git commit -m "update" -a',
+      'git commit --amend -m "update" -a',
+    ].map((c) => bash(c).code);
+    // Not the flag: a quoted message, another command's -a, long options.
+    const staged = [
+      'git commit -m "fix -a flag"',
+      'git commit -m "document --all"',
+      "git commit -m update && ls -a",
+      "git commit --amend --allow-empty --author=a -m update",
+    ].map((c) => bash(c).code);
+    sh("git checkout -q -- src/auth.ts");
+    expect(codes).toEqual([2, 2, 2, 2, 2]);
+    expect(staged).toEqual([0, 0, 0, 0]);
+  });
+
   test("blocks on real TypeScript errors", () => {
     setTypecheck('echo "src/a.ts(1,1): error TS2322: nope"; exit 2');
     writeFileSync(join(repo, "src/a.ts"), "export const a = 1;\n");

@@ -66,4 +66,14 @@ push_args() {
 # a commit. Rewriting the quoted directory instead would re-pair quotes and
 # could swallow a real command, so the matcher is widened and the text is not.
 is_git_commit() { unquoted "$1" | grep -qE '(^|[;&|(]|[[:space:]])git( +-C( +[^ ]+)?)? +commit([[:space:]]|$)'; }
+# True when a `git commit` in the command carries -a / --all anywhere in its
+# arguments (`commit -am x`, `commit -m x -a`, `commit -m x --all`). Read from
+# the unquoted text, one commit segment at a time, so a message that mentions
+# " -a " and a later `ls -a` do not count. A short-flag cluster has one leading
+# dash, which keeps --amend / --author / --allow-empty out.
+commit_stages_all() {
+  unquoted "$1" |
+    grep -oE '(^|[;&|(]|[[:space:]])git( +-C( +[^ ]+)?)? +commit([[:space:]][^;&|]*)?' |
+    grep -qE '[[:space:]](-[a-zA-Z]*a[a-zA-Z]*|--all)([[:space:]]|$)'
+}
 is_git_push() { unquoted "$1" | grep -qE '(^|[;&|(]|[[:space:]])git( +-C( +[^ ]+)?)? +push([[:space:]]|$)'; }

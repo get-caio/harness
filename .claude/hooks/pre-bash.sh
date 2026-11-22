@@ -46,7 +46,8 @@ fi
 $commit || exit 0
 
 # `git commit -a` stages at commit time, so compare against HEAD in that case.
-if printf '%s' "$cmd" | grep -qE 'commit +(-[a-zA-Z]*a[a-zA-Z]*|--all)([[:space:]]|$)'; then
+# The flag can sit anywhere in the arguments (`commit -m msg -a`).
+if commit_stages_all "$cmd"; then
   diff_args="HEAD"
 else
   diff_args="--cached"
