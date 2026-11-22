@@ -471,6 +471,9 @@ EOF
   esac
   return 1
 }
+# True when the command also runs `git switch` or `git checkout`, matched on
+# unquoted text like the commit itself.
+switches_branch_in_call() { unquoted "$1" | grep -qE "(^|[;&|(]|[[:space:]])$GIT_RE +(switch|checkout)([[:space:]]|$)"; }
 # True when the command also runs a staging command (`git add`, `git stage`,
 # `git rm`, `git mv`), matched on unquoted text like the commit itself.
 stages_in_call() { unquoted "$1" | grep -qE "(^|[;&|(]|[[:space:]])$GIT_RE +(add|stage|rm|mv)([[:space:]]|$)"; }

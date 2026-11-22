@@ -35,7 +35,22 @@ if gate_on bunOnly && { [ -f bun.lock ] || [ -f bun.lockb ] || [ -f "$bun_root/b
 fi
 
 $commit || $push || exit 0
-branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || exit 0
+
+# This hook runs before any part of the command does, so the branch read below
+# is the one the command starts on. In `git switch prod && git commit` the
+# commit lands on a branch no gate here has looked at, so a branch change and a
+# commit or push in one call are refused, whatever their order and whatever the
+# checkout names (`git checkout -- file` included: telling the forms apart from
+# the text is not reliable enough to gate on).
+if { gate_on prod || gate_on mergedPr; } && switches_branch_in_call "$cmd"; then
+  block "\`git switch\` / \`git checkout\` and \`git commit\` / \`git push\` in one command: the gates read the branch before any of it runs, so they cannot check the branch the commit or push lands on. Switch first, then commit or push in a separate command."
+fi
+
+# symbolic-ref names the branch even before its first commit (rev-parse fails
+# there, and the first commit of a repo must not skip the gates); rev-parse
+# covers a detached HEAD, where it prints `HEAD`.
+branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null) ||
+  branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || exit 0
 
 # --- production is human-only ---------------------------------------------
 if gate_on prod; then
@@ -102,9 +117,13 @@ if stages_in_call "$cmd"; then
 fi
 # Untracked, non-ignored files of the whole repo, NUL-separated, repo-relative.
 untracked_files() { (cd "$(repo_root)" 2>/dev/null && git ls-files -z --others --exclude-standard 2>/dev/null); }
+# With no commit yet there is no HEAD to diff against: the empty tree stands in,
+# so every tracked file counts as added.
+diff_base=HEAD
+git rev-parse --verify -q HEAD >/dev/null 2>&1 || diff_base=$(git hash-object -t tree /dev/null 2>/dev/null)
 commit_diff() {
   git diff --cached "$@" 2>/dev/null
-  if $worktree; then git diff HEAD "$@" 2>/dev/null; fi
+  if $worktree; then git diff "$diff_base" "$@" 2>/dev/null; fi
   if $untracked; then
     if [ "$1" = "--name-only" ]; then
       untracked_files | tr '\0' '\n'
@@ -149,6 +168,10 @@ if gate_on typecheck && commit_diff --name-only | grep -qE '\.(ts|tsx)$'; then
   fi
   if [ -n "$runner" ]; then
     out=$($runner 2>&1); rc=$?
+    # A typecheck script that forces colour (`tsc --pretty`) puts escape
+    # sequences between `error` and ` TS2322`; strip them before classifying.
+    esc=$(printf '\033')
+    out=$(printf '%s' "$out" | sed "s/${esc}\[[0-9;]*[A-Za-z]//g")
     if [ $rc -ne 0 ]; then
       if printf '%s' "$out" | grep -qE 'error TS[0-9]+'; then
         printf '%s\n' "$out" | grep -E 'error TS[0-9]+' | head -30 >&2

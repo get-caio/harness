@@ -621,6 +621,75 @@ cd ${elsewhere}"`).code,
     sh("git checkout -q main");
   });
 
+  test("a branch change and a commit or push in one call are refused", () => {
+    // The hook reads the branch before the command runs: on main here, the
+    // commit or push below would land on prod.
+    sh("git branch -q prod");
+    try {
+      const blocked = [
+        'git switch prod && git commit --allow-empty -m "test"',
+        'git checkout prod; git commit --allow-empty -m "test"',
+        'git switch -c prod2 && git commit -m "x"',
+        'git checkout -B prod && git commit -m "x"',
+        'git -c a=b switch prod && git -c a=b commit -m "x"',
+        "git switch prod && git push",
+        "git checkout prod && git push origin HEAD",
+        // Not told apart from a branch change: split it into two calls.
+        'git checkout -- src/a.ts && git commit -m "x"',
+      ].map((c) => bash(c));
+      expect(blocked.map((r) => r.code)).toEqual([2, 2, 2, 2, 2, 2, 2, 2]);
+      expect(blocked[0]!.err).toContain("Switch first");
+      const fine = [
+        "git switch prod",
+        "git checkout -b feature",
+        'git commit -m "docs: run git switch prod first"',
+        'git commit -m "x" && echo "then git checkout prod"',
+        "git push origin feature",
+      ].map((c) => bash(c).code);
+      expect(fine).toEqual([0, 0, 0, 0, 0]);
+    } finally {
+      sh("git branch -qD prod");
+    }
+  }, 60_000);
+
+  test("the first commit of a repo is gated like any other", () => {
+    const fresh = mkdtempSync(join(tmpdir(), "harness-unborn-"));
+    const at = (command: string) =>
+      hook("pre-bash.sh", { cwd: fresh, tool_input: { command } });
+    try {
+      sh(
+        "git init -q -b main && git config user.email t@t.t && git config user.name t",
+        fresh,
+      );
+      mkdirSync(join(fresh, ".claude"));
+      writeFileSync(join(fresh, ".claude/harness.json"), "{}");
+      writeFileSync(
+        join(fresh, "key.ts"),
+        `export const k = "${FAKE_STRIPE_KEY}";\n`,
+      );
+      // Untracked: only the same-call add puts it in scope.
+      expect(at('git commit -m "init"').code).toBe(0);
+      expect(at('git add key.ts && git commit -m "init"').code).toBe(2);
+      // Tracked through intent-to-add, content still only in the working tree.
+      sh("git add -N key.ts", fresh);
+      expect(at('git commit -am "init"').code).toBe(2);
+      expect(at('git commit -m "init" key.ts').code).toBe(2);
+      sh("git add key.ts", fresh);
+      const staged = at('git commit -m "init"');
+      expect(staged.code).toBe(2);
+      expect(staged.err).toContain("look like real credentials");
+      sh("git rm -q --cached key.ts && rm key.ts", fresh);
+      expect(at('git commit --allow-empty -m "init"').code).toBe(0);
+      // An unborn prod branch is still prod.
+      sh("git symbolic-ref HEAD refs/heads/prod", fresh);
+      const onProd = at('git commit --allow-empty -m "init"');
+      expect(onProd.code).toBe(2);
+      expect(onProd.err).toContain("Production is human-only");
+    } finally {
+      rmSync(fresh, { recursive: true, force: true });
+    }
+  }, 60_000);
+
   test("blocks npm install in a bun project only", () => {
     expect(bash("npm install left-pad").code).toBe(0);
     writeFileSync(join(repo, "bun.lock"), "");
@@ -841,6 +910,18 @@ cd ${elsewhere}"`).code,
     const r = bash('git commit -m "a"');
     expect(r.code).toBe(2);
     expect(r.err).toContain("TS2322");
+  });
+
+  test("blocks on TypeScript errors in colourised (--pretty) output", () => {
+    // tsc --pretty puts colour escapes between `error` and ` TS2322`.
+    setTypecheck(
+      "printf '\\033[96msrc/a.ts\\033[0m:1:1 - \\033[91merror\\033[0m\\033[90m TS2322: \\033[0mnope\\n'; exit 2",
+    );
+    sh("git add -A");
+    const r = bash('git commit -m "a"');
+    expect(r.code).toBe(2);
+    expect(r.err).toContain("error TS2322");
+    expect(r.err).not.toContain("\x1b");
   });
 
   test("does not block when the typechecker crashes without compiler errors", () => {
