@@ -9,6 +9,7 @@ Create a decision document when encountering an ambiguity or choice that require
 **Use when:** The product specification is unclear or ambiguous.
 
 Examples:
+
 - Which auth provider should we use?
 - What happens when a user cancels mid-subscription?
 - Is this feature in V1 or V2?
@@ -19,6 +20,7 @@ Examples:
 **Use when:** Implementation choices exist during development.
 
 Examples:
+
 - Should we cache this at the edge or in Redis?
 - How should we structure the AI prompt system?
 - Should this be a server action or API route?
@@ -37,11 +39,13 @@ Ask: "Is this a product/business question or a technical implementation question
 ### 2. Get Next Number
 
 **For Spec Decisions:**
+
 ```bash
 ls specs/decisions/ | wc -l  # Add 1 for next number
 ```
 
 **For Architecture Decisions:**
+
 ```bash
 ls docs/decisions/ | wc -l  # Add 1 for next number
 ```
@@ -67,6 +71,7 @@ ls docs/decisions/ | wc -l  # Add 1 for next number
 [Why this decision matters. What the spec says or doesn't say.]
 
 **From SPEC.md (if applicable):**
+
 > [Relevant quote]
 
 **The ambiguity:**
@@ -79,14 +84,17 @@ ls docs/decisions/ | wc -l  # Add 1 for next number
 [Description of this option]
 
 **Pros:**
+
 - Pro 1
 - Pro 2
 
 **Cons:**
+
 - Con 1
 - Con 2
 
 **If we choose this:**
+
 - Implication 1
 - Implication 2
 
@@ -95,14 +103,17 @@ ls docs/decisions/ | wc -l  # Add 1 for next number
 [Description of this option]
 
 **Pros:**
+
 - Pro 1
 - Pro 2
 
 **Cons:**
+
 - Con 1
 - Con 2
 
 **If we choose this:**
+
 - Implication 1
 - Implication 2
 
@@ -145,6 +156,7 @@ Add to `progress/build-log.md`:
 
 ```markdown
 ### Decision Created: SD-001
+
 **Date:** YYYY-MM-DD HH:MM
 **Title:** Auth provider choice
 **Blocks:** P1-T006, P1-T007, P1-T008
@@ -156,11 +168,13 @@ Add to `progress/build-log.md`:
 ## File Naming
 
 **Spec Decisions:** `specs/decisions/NNN-short-name.md`
+
 - `001-auth-provider.md`
 - `002-vector-database.md`
 - `003-trial-period-length.md`
 
 **Architecture Decisions:** `docs/decisions/NNN-short-name.md`
+
 - `001-caching-strategy.md`
 - `002-prompt-architecture.md`
 - `003-error-handling-approach.md`
@@ -176,9 +190,10 @@ When human resolves a decision:
    - Fill in "Decision" section
    - Fill in "Rationale" section
 
-2. Agent detects resolved decision (on next `/work` or `/status`)
+2. Agent detects resolved decision (at the start of the next session, via the SessionStart reminder)
 
 3. Agent unblocks affected tickets:
+
    ```markdown
    | PN-TXXX | Title | TODO | M | - | - |
    ```
@@ -208,6 +223,7 @@ Which authentication library should we use for this project?
 The spec mentions "BetterAuth" in the tech stack (Section 4.2) but BetterAuth is less common than NextAuth/Auth.js. Need to confirm this is intentional.
 
 **From SPEC.md:**
+
 > Backend: ... BetterAuth (authentication) ...
 
 ## Options
@@ -217,11 +233,13 @@ The spec mentions "BetterAuth" in the tech stack (Section 4.2) but BetterAuth is
 BetterAuth is a newer auth library with built-in support for many providers.
 
 **Pros:**
+
 - Mentioned in spec
 - Good React Native support
 - Simple API
 
 **Cons:**
+
 - Smaller community
 - Less documentation
 - Fewer examples online
@@ -231,11 +249,13 @@ BetterAuth is a newer auth library with built-in support for many providers.
 Industry standard for Next.js authentication.
 
 **Pros:**
+
 - Large community
 - Extensive documentation
 - Many adapters available
 
 **Cons:**
+
 - V5 migration ongoing
 - Not mentioned in spec
 
@@ -269,10 +289,12 @@ Workout generation uses Claude API which costs money per call. Similar workouts 
 Generate fresh every time.
 
 **Pros:**
+
 - Simplest implementation
 - Always personalized
 
 **Cons:**
+
 - Higher API costs
 - Slower response times
 
@@ -281,10 +303,12 @@ Generate fresh every time.
 Cache based on hashed parameters (sport, type, duration, level).
 
 **Pros:**
+
 - Reduces API calls significantly
 - Fast subsequent requests
 
 **Cons:**
+
 - Less personalization
 - Cache invalidation complexity
 
@@ -293,10 +317,12 @@ Cache based on hashed parameters (sport, type, duration, level).
 Store generated workouts in vector DB, retrieve similar ones and adapt.
 
 **Pros:**
+
 - Best balance of personalization and cost
 - Builds training library
 
 **Cons:**
+
 - More complex implementation
 - Requires vector DB setup
 

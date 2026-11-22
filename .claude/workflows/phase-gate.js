@@ -1,7 +1,7 @@
 export const meta = {
   name: "phase-gate",
   description:
-    "Phase-boundary gate — auditor, product-critic, and code-audit fan out in parallel, findings are adversarially verified, the type manifest is generated, and a zero-behavior refactor pass lands. Confirmed criticals block /init-phase N+1.",
+    "Phase-boundary gate — auditor, product-critic, and code-audit fan out in parallel, findings are adversarially verified, the type manifest is generated, and a zero-behavior refactor pass lands. Confirmed criticals block starting phase N+1.",
   whenToUse:
     "Every ticket in the current phase is DONE and the next phase has not been initialized. Replaces the remembered 4-step checklist the CURRENT_PHASE hook echoes (auditor, product-critic, refactorer, /audit) and the mandatory /audit types manifest.",
   phases: [
@@ -16,7 +16,7 @@ export const meta = {
     {
       title: "Manifest",
       detail:
-        "generate specs/phases/PHASE-N-type-manifest.md (mandatory before /init-phase N+1) — runs concurrently with Verify",
+        "generate specs/phases/PHASE-N-type-manifest.md (mandatory before starting phase N+1) — runs concurrently with Verify",
     },
     {
       title: "Cleanup",
@@ -31,14 +31,14 @@ export const meta = {
 //
 // The CURRENT_PHASE hook only ECHOES a 4-step checklist (spawn auditor, spawn
 // product-critic, spawn refactorer, run /audit) — exactly the remembered-not-
-// structural failure mode coordinate-phase was built to kill. This workflow makes
+// structural failure mode deterministic workflows exist to kill. This workflow makes
 // the phase boundary structural:
 //
 //   1. The three read-only inspectors always run, always in parallel, and their
 //      findings are deduped across lenses before anything acts on them.
 //   2. Every critical/high finding is adversarially verified (criticals by a
 //      3-skeptic majority) so plausible-but-wrong findings don't become tickets.
-//   3. The type manifest — mandatory before /init-phase N+1 per CLAUDE.md, but
+//   3. The type manifest — mandatory before starting phase N+1 per CLAUDE.md, but
 //      previously enforced by nothing — is generated unconditionally.
 //   4. The refactorer runs LAST, only against confirmed cleanup findings, and
 //      only commits on a green gate. Inspections never read mid-refactor code.
@@ -216,7 +216,7 @@ ${READ_ONLY_RULES}`,
   {
     key: "code",
     agentType: null,
-    prompt: `Read .claude/skills/code-audit/SKILL.md and run the quick-scan portion against this
+    prompt: `Load the \`code-audit\` skill and run the quick-scan portion against this
 repo for ${phaseRef}: hardcoded secrets, dependency vulnerabilities (\`bun audit\` or
 \`npm audit\`), unvalidated input (req.body used without zod/schema parse), missing auth checks
 on protected routes, and complexity hotspots (files > 400 lines, functions > 40 lines).
@@ -385,7 +385,7 @@ Data:
 - Cleanup pass: ${JSON.stringify(cleanup)}
 
 End with the next action: if the gate FAILED, list the blockers as tickets to fix before
-/init-phase N+1; if it PASSED, state that the phase boundary is clear and /init-phase N+1 may run.`,
+starting phase N+1; if it PASSED, state that the phase boundary is clear and starting phase N+1 may run.`,
   { label: "report", phase: "Report" },
 );
 

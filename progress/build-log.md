@@ -106,6 +106,7 @@ Template for session end:
 
 ---
 -->
+
 2026-02-06 21:41 - Dependency installed: bun add -D vitepress
 2026-02-06 21:47 - Dependency installed: bun add -D vitepress-plugin-mermaid mermaid
 2026-03-19 11:34 - Dependency installed: bun add @anthropic-ai/sdk yaml
@@ -136,21 +137,26 @@ baseline). The prior baseline was 2026-03-19 on `claude-sonnet-4-20250514`.
 **Branch:** `cursor/cursor-harness-ca82`
 **Note:** Domain skills remain in `.claude/skills/` (no copy). Claude Code remains compatible.
 
-
 ## 2026-08-07 — Phase B+C: Skill diet + daily-driver playbook
 
 **Change:** Expanded skill allowlist / situational / do-not-auto-load in `HARNESS.md` + `harness.mdc`; full Cursor day playbook in `docs/guide/cursor-harness.md`; AGENTS.md overrides.
 **Branch:** `cursor/cursor-harness-ca82`
-
 
 ## 2026-08-07 — Sol review fixes (PR #10)
 
 **Change:** Hardened block-prod-push / protect-env / stop-continue hooks; Delete matcher; warn uses diff-tree; doc-writer + README/INSTALL nits; regression tests for Sol blockers.
 **Reviewer:** gpt-5.6-sol-high
 
-
 ## 2026-08-08 — Pin routine Cursor agents to Grok 4.5
 
 **Change:** `implementer`/`feature`/`tester`/`deployer`/`refactorer`/`doc-writer` now `grok-4.5[effort=high]` (not `inherit`). Docs warn that missing `.cursor/agents` falls through to `.claude` → Sonnet.
 **Why:** Product repos were spawning Sonnet implementers from Claude Code agent frontmatter.
 
+## 2026-11-22 — 4.0.0: gates that block, orchestrator model, usage-driven cuts
+
+- Usage review (about 2,400 Claude Code transcripts, July–November, five repos): phase-loop commands never typed; `coordinator`, `deployer`, `interviewer`, `refactorer` never spawned; every BLOCKED hook exited 1 and so blocked nothing (about 575 commands ran anyway).
+- Hooks moved to plugin `hooks/hooks.json` + scripts, exit 2, opt-in via `.claude/harness.json`.
+- Typecheck gate blocks only on `error TS…`: 239 of 367 past "TypeScript errors" hits were tsc running out of memory, not type errors.
+- Secret scan validated on 900 real commits (go, shed-builder-ai, sided-2027): 0 false positives after excluding test and fixture files.
+- Archived: 9 commands, 5 agents, 4 workflows, the coordinate MCP server, the Cursor mirror, 3 skills. Kept the other unused skills: the last absorption baseline shows most still help when loaded.
+- Not verified: a live plugin-loaded session denying a commit (the CLI in the build shell was not authenticated). `claude plugin validate` passes.

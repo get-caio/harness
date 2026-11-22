@@ -216,51 +216,6 @@ cases:
   # ══════════════════════════════════
   # PAYMENTS (generic Stripe patterns)
   # ══════════════════════════════════
-  - id: abs-pay-gen-001
-    skill: payments
-    task: >
-      Implement a subscription checkout flow: a server action that creates a
-      Stripe Checkout session (getting or creating a Stripe customer first),
-      and a client-side button component that calls it and redirects to Stripe.
-    assertions:
-      - pattern: "stripe\\.customers\\.create|customers\\.create"
-        expect: present
-        description: "Creates a Stripe customer object"
-      - pattern: "stripeCustomerId|customerId|customer_id"
-        expect: present
-        description: "Stores and reuses Stripe customer ID"
-      - pattern: "stripe\\.checkout\\.sessions\\.create|checkout\\.sessions\\.create"
-        expect: present
-        description: "Creates a Stripe Checkout session"
-      - pattern: "mode.*subscription|subscription.*mode"
-        expect: present
-        description: "Sets checkout mode to subscription"
-      - pattern: "success_url|cancel_url"
-        expect: present
-        description: "Provides success and cancel redirect URLs"
-
-  - id: abs-pay-gen-002
-    skill: payments
-    task: >
-      Write a subscription status checker utility and a server action that
-      creates a Stripe Customer Portal session so users can manage their
-      billing. Gate a premium feature in a server action using the subscription check.
-    assertions:
-      - pattern: "hasActiveSubscription|subscription.*status|status.*active"
-        expect: present
-        description: "Checks subscription active status"
-      - pattern: "stripeCurrentPeriodEnd|current_period_end|periodEnd"
-        expect: present
-        description: "Checks subscription expiry date, not just status"
-      - pattern: "stripe\\.billingPortal\\.sessions\\.create|billingPortal"
-        expect: present
-        description: "Creates a Stripe Customer Portal session"
-      - pattern: "requireSubscription|throw.*[Uu]nauthorized|throw.*[Ss]ubscription"
-        expect: present
-        description: "Guards premium feature behind subscription check"
-      - pattern: "Unauthorized|403|subscription required"
-        expect: present
-        description: "Returns appropriate error when subscription is missing"
 
   # ══════════════════════════════════
   # AI INTEGRATION

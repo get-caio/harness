@@ -11,15 +11,16 @@ When the agent encounters something unclear in SPEC.md, it creates a decision do
 `{NNN}-{short-name}.md`
 
 Examples:
+
 - `001-auth-provider.md`
 - `002-vector-database.md`
 - `003-trial-period-length.md`
 
 ## Decision Statuses
 
-| Status | Meaning |
-|--------|---------|
-| PENDING | Needs human input |
+| Status  | Meaning                 |
+| ------- | ----------------------- |
+| PENDING | Needs human input       |
 | DECIDED | Human has made a choice |
 
 ## Workflow
@@ -38,6 +39,7 @@ Examples:
 Technical/implementation decisions go in `docs/decisions/`, not here.
 
 This directory is specifically for **product specification** clarifications:
+
 - Business rules
 - Feature scope
 - Technology choices specified (or not) in the spec

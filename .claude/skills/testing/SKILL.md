@@ -8,7 +8,32 @@ Patterns for unit and component testing in CAIO incubator projects using Bun's b
 
 For E2E browser testing, see `.claude/skills/e2e-testing/SKILL.md`.
 
-**Which test to write comes from the Testing Policy in `HARNESS.md`.** User-facing flows get a Playwright e2e spec first. This skill covers the rest: integration tests against a real test database for API routes and server actions, and unit tests for pure logic. Do not use component tests with mocked data layers as a substitute for an e2e spec.
+**Which test to write comes from the Testing Policy below.** User-facing flows get a Playwright e2e spec first. This skill covers the rest: integration tests against a real test database for API routes and server actions, and unit tests for pure logic. Do not use component tests with mocked data layers as a substitute for an e2e spec.
+
+## Testing Policy — test where the bugs are
+
+Agent-written unit tests tend to check the agent's own assumptions. They mock the database, the router, or the component under test, and stay green while the real flow is broken. Tests here must fail when a real user would hit a bug.
+
+Work stays test-first: write the failing test, then implement. What this policy sets is **which** test comes first:
+
+| Ticket touches                                                                  | Write first                                                        | Skill            |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ---------------- |
+| A user-facing flow (page, form, auth, checkout, anything a user clicks through) | Playwright e2e that walks each acceptance criterion through the UI | `e2e-testing`    |
+| An API route, server action, or DB query                                        | Integration test against a real test database (no ORM mocks)       | `testing`        |
+| Pure logic (pricing, calculations, parsers, validation, state machines)         | Unit test                                                          | `testing`        |
+| A third-party API (Stripe, email)                                               | Mock at the network boundary only (MSW)                            | `msw-mock-api`   |
+| An LLM SDK client (Anthropic, OpenAI)                                           | Stub the SDK module with `mock.module` (the one exception to MSW)  | `ai-integration` |
+
+**Rules**
+
+- Every acceptance criterion maps to at least one test that would fail if the feature broke for a real user.
+- Do not mock the module under test, the database layer, or framework internals. A test that passes only because of its mocks does not count.
+- Mock third-party APIs with MSW at the network boundary. **Exception: LLM SDK clients** may be stubbed with `mock.module("<sdk>", …)` before importing the code under test. The happy-dom preload gives every test file a browser-like global, and LLM SDKs refuse to construct there, so MSW can't reach them in the shared run. Stub only the SDK client; the code that builds the prompt and parses the response still runs for real. Everything else stays on MSW.
+- "Renders without crashing" and snapshot-only tests never count as coverage for a criterion.
+- Tag the critical flows `@smoke`: sign-up/login, the product's core feature, and payments.
+- Before committing, run the unit and integration tests with `bun test ./src ./app ./lib ./tests/integration` plus the Playwright specs the ticket touched (`bunx playwright test <specs>`). CI runs the whole e2e suite in the `full` tier (see the `ci-cd` skill).
+- Never run a bare `bun test` as the gate. Bun also collects `*.spec.ts`, so it would run the Playwright specs in `tests/e2e/` under Bun, where they fail. Pass the unit-test roots explicitly instead: the command covers `src/`, root-level `app/` and `lib/` (where colocated `*.test.ts` files live), and `tests/integration/`. Roots the repo does not have are skipped, and Bun fails only if none of them exist. Add any other root that holds unit tests, never `tests/e2e/`, and run e2e only through Playwright.
+- Deleting a mock-heavy unit test that an e2e or integration test now covers is allowed in any ticket. Say so in the commit body.
 
 ## Stack
 
@@ -513,7 +538,7 @@ bunx playwright test
 
 ### ✅ Do
 
-- Write tests before code, picking the type from the HARNESS.md Testing Policy
+- Write tests before code, picking the type from the Testing Policy above
 - Test behavior, not implementation
 - Use meaningful test descriptions
 - Keep tests focused (one concept per test)

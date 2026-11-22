@@ -57,7 +57,7 @@ cases:
       The service has createUser and findById methods. Include a mock for a
       database dependency and test that createUser throws on an empty name.
     assertions:
-      - pattern: "from ['\"]bun:test['\"]"
+      - pattern: 'from [''"]bun:test[''"]'
         expect: present
         description: "Imports test utilities from bun:test, not jest or vitest"
       - pattern: "mock\\("
@@ -69,7 +69,7 @@ cases:
       - pattern: "\\.toThrow|toThrowError"
         expect: present
         description: "Verifies that createUser throws on invalid input"
-      - pattern: "import.*jest|require.*jest|from ['\"]vitest['\"]"
+      - pattern: 'import.*jest|require.*jest|from [''"]vitest[''"]'
         expect: absent
         description: "Does not import Jest or Vitest — uses native bun:test"
 
@@ -111,8 +111,8 @@ cases:
     assertions:
       - pattern: "\"\\^build\""
         expect: present
-        description: "build task dependsOn [\"^build\"] to enforce topological order"
-      - pattern: "\"outputs\""
+        description: 'build task dependsOn ["^build"] to enforce topological order'
+      - pattern: '"outputs"'
         expect: present
         description: "build task declares outputs so Turbo knows what to cache"
       - pattern: "\"cache\":\\s*false"
@@ -121,7 +121,7 @@ cases:
       - pattern: "\"persistent\":\\s*true"
         expect: present
         description: "dev task sets persistent: true for long-running servers"
-      - pattern: "\"env\""
+      - pattern: '"env"'
         expect: present
         description: "Tasks declare env vars that affect outputs for correct cache keys"
 
@@ -251,7 +251,7 @@ cases:
       handlers. Include a data factory for generating test posts. Enable mocking
       only when NEXT_PUBLIC_API_MOCKING=true.
     assertions:
-      - pattern: "setupWorker|from ['\"]msw/browser['\"]"
+      - pattern: 'setupWorker|from [''"]msw/browser[''"]'
         expect: present
         description: "Uses setupWorker from msw/browser for client-side interception"
       - pattern: "http\\.get|http\\.post|http\\.delete"
@@ -289,53 +289,6 @@ cases:
       - pattern: "toISOString\\s*\\(\\)"
         expect: present
         description: "Factory generates ISO date strings for timestamp fields"
-
-  - id: abs-resend-email-001
-    skill: resend-email
-    task: >
-      Implement a magic link email send function using Resend and a React Email
-      template. The template should include a preview text, expiry notice, and
-      branded button. Also write the webhook handler for bounce and complaint
-      events.
-    assertions:
-      - pattern: "new Resend|from ['\"]resend['\"]"
-        expect: present
-        description: "Initialises the Resend client with the API key"
-      - pattern: "RESEND_API_KEY"
-        expect: present
-        description: "API key is read from environment variable RESEND_API_KEY"
-      - pattern: "<Preview>|Preview>"
-        expect: present
-        description: "React Email template includes a Preview component for inbox preview text"
-      - pattern: "email\\.bounced|bounced"
-        expect: present
-        description: "Webhook handler handles the email.bounced event"
-      - pattern: "email\\.complained|unsubscribe"
-        expect: present
-        description: "Webhook handler handles complaint events and unsubscribes the address"
-
-  - id: abs-resend-email-002
-    skill: resend-email
-    task: >
-      Write code to send a weekly digest email to a list of 200 subscribers
-      using Resend's batch API. Use a React Email template and read the sender
-      address from an environment variable. Handle the rate limit constraint.
-    assertions:
-      - pattern: "resend\\.batch\\.send|batch\\.send"
-        expect: present
-        description: "Uses Resend's batch send API for bulk delivery"
-      - pattern: "render\\s*\\("
-        expect: present
-        description: "Renders React Email template to HTML with render()"
-      - pattern: "100|chunk|slice|batch.*100"
-        expect: present
-        description: "Respects the 100 emails per batch limit by chunking recipients"
-      - pattern: "noreply@|insights@|from.*\\.ai|from.*\\.com"
-        expect: present
-        description: "Sender address uses a custom verified domain, not a public email provider"
-      - pattern: "unsubscribe|CAN-SPAM|list-unsubscribe"
-        expect: present
-        description: "Bulk email includes unsubscribe mechanism for CAN-SPAM compliance"
 
   - id: abs-database-migrations-001
     skill: database-migrations

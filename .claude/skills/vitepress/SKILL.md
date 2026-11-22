@@ -278,7 +278,7 @@ bun run docs:build      # Build static site to docs/.vitepress/dist
 bun run docs:preview    # Preview built site locally
 ```
 
-## Integration with /work
+## Integration with ticket work
 
 After completing a ticket, the documentation subagent should:
 

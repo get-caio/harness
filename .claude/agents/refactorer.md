@@ -2,7 +2,7 @@
 name: refactorer
 description: Codebase cleanup specialist. Looks backward — finds copy-pasted patterns, missing utils, naming inconsistencies, dead code. Outputs a PR with just cleanup, no new behavior. Different incentive from implementer (ships forward) vs refactorer (cleans backward).
 tools: Read, Write, Edit, Bash, Glob, Grep, mcp__github
-model: sonnet
+model: inherit
 maxTurns: 60
 permissionMode: acceptEdits
 skills:

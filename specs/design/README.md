@@ -21,6 +21,7 @@ design/
 ## What Goes Here
 
 ### DESIGN.md
+
 - Brand colors (hex, RGB, HSL)
 - Typography (fonts, sizes, weights)
 - Spacing scale
@@ -30,12 +31,14 @@ design/
 - Do's and don'ts
 
 ### FIGMA.md
+
 - Links to Figma files (view-only or edit)
 - Export instructions
 - Version notes
 - Component library location
 
 ### assets/
+
 - Logo files (SVG preferred, PNG fallback)
 - App icons (all required sizes)
 - Favicons
@@ -45,6 +48,7 @@ design/
 ## Usage by Agent
 
 The agent should:
+
 1. Read DESIGN.md before implementing any UI
 2. Reference assets/ for logo and icon paths
 3. Follow brand guidelines for colors, typography, spacing
@@ -52,17 +56,18 @@ The agent should:
 
 ## Asset Formats
 
-| Asset | Preferred Format | Fallback |
-|-------|------------------|----------|
-| Logo | SVG | PNG (2x) |
-| App Icon | PNG 1024x1024 | - |
-| Favicon | ICO + PNG | ICO only |
-| OG Image | PNG 1200x630 | JPG |
-| Icons | SVG | PNG (2x) |
+| Asset    | Preferred Format | Fallback |
+| -------- | ---------------- | -------- |
+| Logo     | SVG              | PNG (2x) |
+| App Icon | PNG 1024x1024    | -        |
+| Favicon  | ICO + PNG        | ICO only |
+| OG Image | PNG 1200x630     | JPG      |
+| Icons    | SVG              | PNG (2x) |
 
 ## Updating Design
 
 When design changes:
+
 1. Update DESIGN.md with new specs
 2. Replace assets in assets/
 3. Note changes in FIGMA.md

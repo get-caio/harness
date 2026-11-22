@@ -2,13 +2,13 @@
 
 ## Figma Links
 
-| File | Link | Access |
-|------|------|--------|
-| Main Design | [View in Figma](https://figma.com/...) | View-only |
+| File              | Link                                   | Access    |
+| ----------------- | -------------------------------------- | --------- |
+| Main Design       | [View in Figma](https://figma.com/...) | View-only |
 | Component Library | [View in Figma](https://figma.com/...) | View-only |
-| Mobile Designs | [View in Figma](https://figma.com/...) | View-only |
+| Mobile Designs    | [View in Figma](https://figma.com/...) | View-only |
 
-<!-- 
+<!--
 Replace with actual Figma links
 Use view-only links for agent access
 -->
@@ -59,6 +59,7 @@ Figma Project
 ### App Icons
 
 Export at these sizes:
+
 - 1024x1024 (App Store)
 - 512x512 (Play Store)
 - 180x180 (iOS)
@@ -70,10 +71,10 @@ Export at these sizes:
 
 ## Version History
 
-| Date | Changes | Designer |
-|------|---------|----------|
-| YYYY-MM-DD | Initial design system | [Name] |
-| YYYY-MM-DD | Added mobile screens | [Name] |
+| Date       | Changes               | Designer |
+| ---------- | --------------------- | -------- |
+| YYYY-MM-DD | Initial design system | [Name]   |
+| YYYY-MM-DD | Added mobile screens  | [Name]   |
 
 ---
 
@@ -88,6 +89,7 @@ When implementing UI:
 5. **Responsive** — Figma shows mobile and desktop; implement both
 
 If design is unclear:
+
 - Create a spec decision in `specs/decisions/`
 - Reference the specific Figma frame
 - Ask human to clarify

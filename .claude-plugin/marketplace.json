@@ -9,8 +9,8 @@
   "plugins": [
     {
       "name": "caio-build-harness",
-      "version": "3.9.0",
-      "description": "Autonomous development framework with phased execution, multi-agent coordination, and safety gates.",
+      "version": "4.0.0",
+      "description": "CAIO Build Harness \u2014 blocking safety gates, orchestrated sessions, review workflows and domain skills for team projects.",
       "source": "./.claude",
       "tags": ["development", "agents", "team", "full-stack"]
     }

@@ -3,7 +3,7 @@ export const meta = {
   description:
     "Visual polish audit after UI phases — a global static scan plus three design lenses (visual foundations, UX patterns + a11y, state coverage + delight) over every route, critical/high findings adversarially verified, one prioritized report.",
   whenToUse:
-    "After a UI phase completes (CLAUDE.md note 20) or before /pre-ship on UI-heavy work. The design skills are already factored into lenses; this runs them per-route instead of one context skimming the whole app. Pass { page: '/dashboard' } to scope to one route, { maxRoutes: 20 } to widen the cap.",
+    "After a UI phase completes or before shipping UI-heavy work. The design skills are already factored into lenses; this runs them per-route instead of one context skimming the whole app. Pass { page: '/dashboard' } to scope to one route, { maxRoutes: 20 } to widen the cap.",
   phases: [
     {
       title: "Inventory",
@@ -193,20 +193,20 @@ phase("Review");
 const LENSES = [
   {
     key: "visual",
-    brief: `LENS — VISUAL FOUNDATIONS (read .claude/skills/visual-design/SKILL.md). Judge: hierarchy
+    brief: `LENS — VISUAL FOUNDATIONS (load the \`visual-design\` skill). Judge: hierarchy
 (squint test — is the primary action obvious?), typography scale and heading order, color token
 usage and contrast, spacing-scale consistency, alignment/grid.`,
   },
   {
     key: "patterns",
-    brief: `LENS — UX PATTERNS + ACCESSIBILITY (read .claude/skills/ui-patterns/SKILL.md). Judge:
+    brief: `LENS — UX PATTERNS + ACCESSIBILITY (load the \`ui-patterns\` skill). Judge:
 Nielsen heuristics (feedback, undo, recognition over recall), form patterns (labels, inline
 validation, error placement), table/list patterns, keyboard navigation and visible focus,
 responsive behavior at 320/768/1440.`,
   },
   {
     key: "states",
-    brief: `LENS — STATE COVERAGE + DELIGHT (read .claude/skills/design-craft/SKILL.md). For every
+    brief: `LENS — STATE COVERAGE + DELIGHT (load the \`design-craft\` skill). For every
 data surface on this route verify a DESIGNED state exists for: empty (not just blank), loading
 (skeleton matching content shape, not "Loading..."), error (helpful, not scary), success feedback,
 disabled, hover/focus. Missing empty/error states on a primary surface is "high". Also list

@@ -1,20 +1,18 @@
-# CLAUDE.md — Compatibility Shim
+# CLAUDE.md
 
-This project uses the **CAIO Build Harness**.
+This repo is the **CAIO Build Harness**: a Claude Code plugin whose source is `.claude/`.
 
 ## Read this first
 
-1. **`HARNESS.md`** — full operating system (phases, tickets, decisions, gates, model routing).
-2. **`AGENTS.md`** — product map (stack, APIs, repo-specific patterns). Fill in per project.
-3. **`progress/conventions.md`** — established code patterns for this repo.
+1. **`.claude/HARNESS.md`** — the operating rules the plugin ships (sessions and delegation, decisions, gates, testing, PRs, CI).
+2. **`AGENTS.md`** — the product-map template that each product repo fills in.
+3. **`progress/conventions.md`** — established patterns for this repo.
 
-Follow `HARNESS.md` for the entire session. Do not invent `DECIDED` decisions; create `PENDING` files and wait for humans.
+Do not write `DECIDED` on a decision for the stakeholder; create it `PENDING` and raise it.
 
-## Runtime
+## Working on the harness itself
 
-| Runtime                             | Parent model  | Specialists                                               | Workflows                                          |
-| ----------------------------------- | ------------- | --------------------------------------------------------- | -------------------------------------------------- |
-| **Cursor (preferred daily driver)** | Grok 4.5      | `.cursor/agents/*` (routine→Grok; Opus/Sol for hard jobs) | `.cursor/skills/workflow/` (`/work`, `/status`, …) |
-| **Claude Code**                     | as configured | `.claude/agents/*`                                        | `.claude/commands/`                                |
-
-Cursor loads this file for compat; always-on harness rules also live in `.cursor/rules/harness.mdc`. Domain skills remain under `.claude/skills/` (do not duplicate into `.cursor/skills/`).
+- Hooks live in `.claude/hooks/` and are covered by `tests/hooks.test.ts`. A gate blocks with exit 2 and nothing else; it must exit 0 when its check cannot run.
+- Bump `version` in both `.claude/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` on every release.
+- Retired pieces go to `archive/`, with their eval cases, not to the bin.
+- `bun test` and `bun run typecheck` must pass before a PR.

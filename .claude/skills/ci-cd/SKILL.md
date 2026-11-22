@@ -6,7 +6,7 @@ description: "The one CI shape for CAIO repos: a self-hosted Linux runner, a che
 
 ## Rules first
 
-The rules in `HARNESS.md` → **CI and Process Changes** govern every edit under `.github/`. In short: state the cost and wait for approval before changing CI; a green run on the commit is the evidence; keep PRs fast; cheap checks first, expensive jobs gated on them; remove or merge checks before adding one. Read that section before this file.
+The rules in the harness `HARNESS.md` (`../../HARNESS.md` from this skill's base directory) → **CI and Process Changes** govern every edit under `.github/`. In short: state the cost and wait for approval before changing CI; a green run on the commit is the evidence; keep PRs fast; cheap checks first, expensive jobs gated on them; remove or merge checks before adding one. Read that section before this file.
 
 Every workflow uses `runs-on: self-hosted`. GitHub-hosted runners (`ubuntu-latest`, `macos-*`, `windows-*`) are never used: the org's Actions spending limit is $0, so a hosted job queues forever. The runner is Linux with Docker, so service containers, `apt-get`, `sudo`, and `docker build` all work as they did on `ubuntu-latest`.
 
@@ -14,10 +14,10 @@ Every workflow uses `runs-on: self-hosted`. GitHub-hosted runners (`ubuntu-lates
 
 Two tiers in one `ci.yml`:
 
-| Tier     | Runs on                                                                    | Contents                                                      | Budget                      |
-| -------- | -------------------------------------------------------------------------- | ------------------------------------------------------------- | --------------------------- |
-| `gate`   | every PR push, every push to `main`                                        | lint, typecheck, build, unit tests, secret scan               | ≤ 5 min wall-clock on a PR  |
-| `full`   | push to `main`, nightly schedule, `workflow_dispatch`, PR labeled `ci:full` | browser / e2e, integration against a database, benchmarks, Lighthouse, long rehearsals | whatever it needs, `needs: gate` |
+| Tier   | Runs on                                                                     | Contents                                                                               | Budget                           |
+| ------ | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------- |
+| `gate` | every PR push, every push to `main`                                         | lint, typecheck, build, unit tests, secret scan                                        | ≤ 5 min wall-clock on a PR       |
+| `full` | push to `main`, nightly schedule, `workflow_dispatch`, PR labeled `ci:full` | browser / e2e, integration against a database, benchmarks, Lighthouse, long rehearsals | whatever it needs, `needs: gate` |
 
 Preview deploys are their own job, `needs: gate`, and run only on a PR labeled `preview`. Adding the label triggers the run (`labeled` is in the `pull_request` types), so a person never pushes an empty commit to get one.
 
@@ -34,7 +34,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
   schedule:
-    - cron: '17 6 * * *' # nightly full tier; the odd minute avoids the top-of-hour pile-up
+    - cron: "17 6 * * *" # nightly full tier; the odd minute avoids the top-of-hour pile-up
   workflow_dispatch:
 
 # A new push to a PR cancels the in-flight run for that PR. Main runs are never cancelled.
@@ -95,7 +95,7 @@ jobs:
           POSTGRES_USER: app_test
           POSTGRES_PASSWORD: integration-only
           POSTGRES_DB: app_test
-        ports: ['5432:5432']
+        ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U app_test" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
@@ -144,22 +144,22 @@ jobs:
 If branch protection requires a single named check, add an aggregator that treats skipped full-tier jobs as success on a PR, so an unlabeled PR can go green:
 
 ```yaml
-  ci:
-    name: CI
-    if: always()
-    needs: [gate, e2e, integration]
-    runs-on: self-hosted
-    timeout-minutes: 2
-    steps:
-      - env:
-          RESULTS: ${{ toJSON(needs) }}
-        run: |
-          node -e '
-            const needs = JSON.parse(process.env.RESULTS);
-            const bad = Object.entries(needs).filter(([n, j]) => !["success", "skipped"].includes(j.result) || (n === "gate" && j.result !== "success"));
-            bad.forEach(([n, j]) => console.error(`${n}: ${j.result}`));
-            process.exit(bad.length ? 1 : 0);
-          '
+ci:
+  name: CI
+  if: always()
+  needs: [gate, e2e, integration]
+  runs-on: self-hosted
+  timeout-minutes: 2
+  steps:
+    - env:
+        RESULTS: ${{ toJSON(needs) }}
+      run: |
+        node -e '
+          const needs = JSON.parse(process.env.RESULTS);
+          const bad = Object.entries(needs).filter(([n, j]) => !["success", "skipped"].includes(j.result) || (n === "gate" && j.result !== "success"));
+          bad.forEach(([n, j]) => console.error(`${n}: ${j.result}`));
+          process.exit(bad.length ? 1 : 0);
+        '
 ```
 
 Make `CI` the only required check. Do not require individual full-tier jobs.
@@ -182,33 +182,33 @@ Run only the jobs for what changed. Use `dorny/paths-filter` in a tiny first job
 Deploys to production are triggered by a human (`workflow_dispatch` or a push to a protected `prod` branch), never automatically from `main`. The deploy job has `environment: production` with a required reviewer. The harness `deployer` agent runs its pre-deploy checklist first; see `HARNESS.md` → Notes for Agents, rule 29.
 
 ```yaml
-  deploy:
-    name: Deploy production
-    if: github.event_name == 'workflow_dispatch'
-    needs: gate
-    runs-on: self-hosted
-    timeout-minutes: 15
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install --frozen-lockfile
-      - run: bun run build
-      - uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
-      - name: Health check
-        run: |
-          for i in {1..10}; do
-            curl -sf "$DEPLOY_URL/api/health" && exit 0
-            sleep 5
-          done
-          exit 1
-        env:
-          DEPLOY_URL: ${{ vars.PRODUCTION_URL }}
+deploy:
+  name: Deploy production
+  if: github.event_name == 'workflow_dispatch'
+  needs: gate
+  runs-on: self-hosted
+  timeout-minutes: 15
+  environment: production
+  steps:
+    - uses: actions/checkout@v4
+    - uses: oven-sh/setup-bun@v2
+    - run: bun install --frozen-lockfile
+    - run: bun run build
+    - uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: "--prod"
+    - name: Health check
+      run: |
+        for i in {1..10}; do
+          curl -sf "$DEPLOY_URL/api/health" && exit 0
+          sleep 5
+        done
+        exit 1
+      env:
+        DEPLOY_URL: ${{ vars.PRODUCTION_URL }}
 ```
 
 ## Secrets

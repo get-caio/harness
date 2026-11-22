@@ -1,234 +1,94 @@
-# CAIO Build Harness — Team Installation Guide
+# CAIO Build Harness — Install and Migrate
 
-## Overview
+The harness is a Claude Code plugin. There is one supported way to use it: install the plugin, then opt each repo in. Nothing from this repo is copied into a product repo.
 
-The Build Harness provides autonomous development capabilities: phased ticket execution, multi-agent coordination, safety gates, and domain skills.
-
-**Runtimes:**
-
-| Runtime           | Role                                                                            |
-| ----------------- | ------------------------------------------------------------------------------- |
-| **Cursor + Grok** | Preferred daily driver — parent conductor; Opus/Fable/Sol via `.cursor/agents/` |
-| **Claude Code**   | Compat — thin `CLAUDE.md` → `HARNESS.md`; commands/agents under `.claude/`      |
-
----
-
-## Quick Install (Per Engineer)
-
-### Option A: Clone the harness repo directly
+## Install (once per engineer)
 
 ```bash
-# Clone the harness repo
-git clone https://github.com/YOUR_ORG/harness.git
-
-# Copy Claude + Cursor surfaces
-cp -r harness/.claude/ YOUR_PROJECT/.claude/
-cp -r harness/.cursor/ YOUR_PROJECT/.cursor/
-cp harness/HARNESS.md YOUR_PROJECT/HARNESS.md
-cp harness/AGENTS.md YOUR_PROJECT/AGENTS.md
-cp harness/CLAUDE.md YOUR_PROJECT/CLAUDE.md
-# Edit YOUR_PROJECT/AGENTS.md with product stack/paths
+claude plugin marketplace add get-caio/harness
 ```
-
-### Option B: Use as a git submodule
 
 ```bash
-# Add harness as a submodule in your project
-cd YOUR_PROJECT
-git submodule add https://github.com/YOUR_ORG/harness.git .harness
-
-# Symlink both surfaces
-ln -s .harness/.claude .claude
-ln -s .harness/.cursor .cursor
-cp .harness/HARNESS.md HARNESS.md
-cp .harness/AGENTS.md AGENTS.md
-cp .harness/CLAUDE.md CLAUDE.md
+claude plugin install caio-build-harness@caio-build-harness-marketplace
 ```
 
-### Option C: Private marketplace (recommended for teams)
+## Turn it on in a repo
 
-Add the marketplace to your project's `.claude/settings.json`:
+The plugin's hooks do nothing until the repo opts in. Commit this file:
+
+```bash
+mkdir -p .claude && echo '{}' > .claude/harness.json
+```
+
+Then create the working directories the rules refer to:
+
+```bash
+mkdir -p specs/phases specs/decisions specs/design/assets docs/decisions progress
+```
+
+```bash
+for f in build-log dead-ends conventions; do [ -f progress/$f.md ] || echo "# ${f}" > progress/$f.md; done
+```
+
+Copy `AGENTS.md` from this repo and fill in the product's stack and paths. Keep the repo's own `CLAUDE.md` short and product-specific; a new session is pointed at the plugin's `HARNESS.md` automatically.
+
+### `.claude/harness.json`
 
 ```json
 {
-  "extraKnownMarketplaces": [
-    "https://raw.githubusercontent.com/YOUR_ORG/harness/main/marketplace.json"
-  ]
+  "prodBranch": "prod",
+  "secretScanner": "builtin",
+  "gates": {
+    "typecheck": true,
+    "secrets": true,
+    "mergedPr": true,
+    "prod": true,
+    "bunOnly": true,
+    "protectedFiles": true,
+    "testOnEdit": true,
+    "format": true,
+    "codexReview": true,
+    "sounds": true
+  }
 }
 ```
 
-Then each engineer can install via:
+Every gate defaults to on; list only the ones you turn off. `"secretScanner": "gitleaks"` swaps the built-in scanner for gitleaks where it is installed. In a monorepo where a full typecheck takes minutes or runs out of memory, set `"typecheck": false` and let CI carry it. `HARNESS.md` → Gates describes each one.
 
-```bash
-claude /install caio-build-harness
-```
+### Verify
 
-**Note:** The marketplace installs the Claude Code plugin (`.claude/`). For Cursor daily-driver use, also copy `.cursor/`, `HARNESS.md`, and `AGENTS.md` from this repo (Option A/B) until a Cursor-native distribution exists.
+In the opted-in repo, start a session and ask it to run `git push --dry-run origin prod`. The command must be refused with `BLOCKED: Cannot push to 'prod'`. Keep `--dry-run`: if the hooks are not loaded the command runs, and a dry run pushes nothing. If it does run, the plugin's hooks are not loaded: check `claude plugin list` and that `.claude/harness.json` is committed on the branch you are on.
 
----
+## Migrating a repo from 3.x
 
-## Post-Install Setup
+Before 4.0, repos held copies of the harness: hooks in `.claude/settings.json`, agents, skills, commands, and a forked harness `CLAUDE.md`. Those copies are where the old non-blocking gates still run, and they shadow the plugin. Remove them in one PR per repo:
 
-### 1. Create the project scaffold
+1. **Hooks.** Delete the `hooks` block from `.claude/settings.json` and any `.claude/hooks/*.sh` the harness put there. Delete the copied typecheck, test, e2e, lint and build hooks outright: the plugin's `typecheck` gate and the repo's CI replace them. Do **not** simply change their `exit 1` to `exit 2`. In the transcripts reviewed, about two thirds of their "TypeScript errors" hits were `tsc` running out of memory, so a literal flip would block every commit. Confirm the repo has CI on pull requests before removing the test hooks. A hook the product wrote for itself may stay; if it is meant to block, it must exit 2 and only when its check ran and failed. Also delete `model`, `customInstructions` and `env.CLAUDE_CODE_SUBAGENT_MODEL`.
+2. **Agents.** Delete `.claude/agents/` files that came from the harness. A local `implementer.md` or `feature.md` wins over the plugin's and keeps the old Sonnet pin and skill preloads.
+3. **Skills, commands, workflows.** Delete copied `.claude/skills/<name>/`, `.claude/commands/` and `.claude/workflows/` entries that exist in the plugin. Keep product-specific ones.
+4. **`CLAUDE.md`.** Replace the forked harness text with the product's own notes. Anything general belongs in a PR to this repo.
+5. **Cursor.** Delete `.cursor/agents`, `.cursor/skills/workflow` and the harness `.cursor/hooks*` if the repo is no longer driven from Cursor.
+6. **Opt in.** Add `.claude/harness.json`, then run the Verify step.
 
-The harness expects these directories to exist:
+If a repo vendored the harness as a `.harness` submodule or symlinked `.claude`, remove the submodule or symlink first.
 
-```bash
-mkdir -p specs/phases specs/decisions specs/design/assets
-mkdir -p docs/decisions docs/architecture docs/api docs/components docs/guide
-mkdir -p progress
+## Updating
 
-# Initialize phase tracking
-echo "1" > specs/CURRENT_PHASE
+Three things must line up before an installed machine sees a new version:
 
-# Initialize progress files
-echo "# Build Log" > progress/build-log.md
-echo "# Dead Ends" > progress/dead-ends.md
-echo "# Conventions" > progress/conventions.md
-```
+1. The change is merged to `main`; the marketplace tracks `main`.
+2. `version` is bumped to the same value in `.claude/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`.
+3. The engineer pulls it: `/plugin marketplace update caio-build-harness-marketplace`, then `/reload-plugins`. Auto-update is off by default for third-party marketplaces.
 
-### 2. Add your spec
+## What is included
 
-Place your product specification at `specs/SPEC.md`. This is the master reference document that drives all development.
+| Piece     | Contents                                                                                       |
+| --------- | ---------------------------------------------------------------------------------------------- |
+| Gates     | `hooks/hooks.json` and scripts: prod, merged PR, secrets, typecheck, bun-only, protected files |
+| Rules     | `HARNESS.md`                                                                                   |
+| Agents    | `implementer`, `feature`, `refactorer`, `reviewer`, `auditor`, `product-critic`, `doc-writer`  |
+| Workflows | `review-ticket`, `codex-review-loop`, `phase-gate`, `design-review`                            |
+| Commands  | `/codex-review`, `/decision`, `/audit`, `/design-review`                                       |
+| Skills    | 51 domain skills                                                                               |
 
-### 3. Verify the installation
-
-**Cursor:** open Agent with parent model **Grok 4.5**, run `/status`.
-
-**Claude Code:**
-
-```bash
-claude /status
-# Should show: Current Phase, ticket counts, etc.
-```
-
----
-
-## Team Configuration
-
-### Per-Engineer Settings
-
-**Cursor:** set the Agent parent model to **Grok 4.5**. Specialists are pinned in `.cursor/agents/*` (routine → Grok; architect → Opus; reviewer → Sol). **You must copy `.cursor/`** — if only `.claude/agents/` is present, Cursor will run `implementer` as Sonnet. Do not set Opus/Fable/Sol as the parent default.
-
-**Claude Code:** `.claude/settings.json` handles most configuration; personal overrides go in `.claude/settings.local.json` (gitignored):
-
-```json
-{
-  "model": "opus"
-}
-```
-
-### Environment Variables
-
-These are set automatically by `.claude/settings.json`:
-
-| Variable                          | Value    | Purpose                                   |
-| --------------------------------- | -------- | ----------------------------------------- |
-| `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` | `70`     | Compact context at 70% (extends sessions) |
-| `CLAUDE_CODE_SUBAGENT_MODEL`      | `sonnet` | Default subagent model                    |
-
----
-
-## Updating the Harness
-
-### Option A: Direct copy
-
-```bash
-cd harness && git pull
-cp -r .claude/ YOUR_PROJECT/.claude/
-cp -r .cursor/ YOUR_PROJECT/.cursor/
-cp HARNESS.md AGENTS.md CLAUDE.md YOUR_PROJECT/
-```
-
-### Option B: Submodule
-
-```bash
-cd YOUR_PROJECT
-git submodule update --remote .harness
-```
-
-### Option C: Marketplace
-
-Updates are **not** fully automatic for a private/third-party marketplace like this one. Three
-things must line up before an installed project sees a new version:
-
-1. **Changes are merged to `main`** — the marketplace tracks the `main` branch, so PR branches are
-   invisible until merged.
-2. **The version is bumped** — update detection is version-gated. Bump `version` in **both**
-   `.claude/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` to the **same** new
-   value on every release (the `plugin.json` value wins silently, so a stale one masks the
-   marketplace entry).
-3. **The engineer pulls the update** — auto-update is **off by default** for third-party
-   marketplaces. Either:
-   - enable it once: set `"autoUpdate": true` on this marketplace in `.claude/settings.json`
-     `extraKnownMarketplaces` (then updates are fetched at session start and activated with
-     `/reload-plugins`), or
-   - update manually: `/plugin marketplace update caio-build-harness` then `/reload-plugins`.
-
-Engineers who installed via **Option A (`cp -r`)** never receive updates — they hold a frozen copy.
-**Option B (symlink)** updates only when the linked harness clone is `git pull`ed.
-
----
-
-## What's Included
-
-### Domain skills (~59 in `.claude/skills/`)
-
-Prefer the allowlist (`testing`, `security`, `database-migrations`, `git-workflow`, `payments`, `design-routing`, stack skills). Do not auto-load marketplace platforms (Shopify/Woo/WP/Heroku/…). See `HARNESS.md` → Available Skills.
-
-### 11 Commands
-
-| Command            | Purpose                                |
-| ------------------ | -------------------------------------- |
-| `/work`            | Execute tickets continuously           |
-| `/init-phase N`    | Generate tickets for phase N           |
-| `/plan-phases`     | Analyze spec, propose phases           |
-| `/check-decisions` | Find spec ambiguities blocking a phase |
-| `/status`          | Report current state                   |
-| `/decision`        | Create a decision document             |
-| `/audit`           | Security and code quality audit        |
-| `/red-team`        | Adversarial security testing           |
-| `/pre-ship`        | Final production checklist             |
-| `/design-review`   | Visual polish audit                    |
-| `/clarify`         | Clarify requirements                   |
-
-### Agents (Cursor model IDs in `.cursor/agents/`)
-
-| Agent                                                                           | Cursor model          | Purpose                                |
-| ------------------------------------------------------------------------------- | --------------------- | -------------------------------------- |
-| `feature` / `implementer` / `tester` / `deployer` / `refactorer` / `doc-writer` | `grok-4.5[effort=high]` | Implementation, tests, docs (prefer Grok) |
-| `architect` / `interviewer` / `coordinator` / `auditor` / `product-critic`      | Opus (Fable optional) | Hard thinking                          |
-| `reviewer` / `verifier`                                                         | Sol                   | Independent review (verifier readonly) |
-
-Claude Code agents under `.claude/agents/` keep `opus` / `sonnet` / `haiku` aliases for Claude Code only — do not rely on them in Cursor.
-
-### Safety Hooks
-
-**Cursor (`.cursor/hooks.json`):**
-
-- Block `git push` / merge to `prod`
-- Protect `.env*` from agent writes
-- Warn on auth/api/payment/schema edits
-- Optional stop-continue when TODO tickets remain
-
-**Claude Code (`.claude/settings.json`):**
-
-- Pre-commit: secrets detection, type checking, test running
-- Production guard + dependency audit hooks
-
-Hooks are **not** a substitute for GitHub Actions CI.
-
----
-
-## Workflow Summary
-
-```
-1. Human provides specs/SPEC.md
-2. /plan-phases → propose phase breakdown
-3. /init-phase 1 → generate tickets
-4. /check-decisions → find ambiguities
-5. Human resolves PENDING decisions
-6. /work → agent executes tickets continuously
-7. /audit → catch issues after phases
-8. /pre-ship → final checklist before production
-```
+Hooks are not a substitute for CI.
