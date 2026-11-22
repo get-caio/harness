@@ -8,7 +8,7 @@ import {
   existsSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 
 // The gates are only worth having if they stop the command. Claude Code blocks
 // a tool call on exit code 2 and on nothing else, so every test here asserts
@@ -256,6 +256,145 @@ describe("pre-bash gates", () => {
     ).toBe(2);
   });
 
+  test("git global options before the subcommand do not bypass the gates", () => {
+    expect(bash("git -c core.quotePath=false push origin prod").code).toBe(2);
+    expect(bash('git -c "core.quotePath=false" push origin prod').code).toBe(2);
+    expect(bash("git --no-pager push origin HEAD:prod").code).toBe(2);
+    expect(
+      bash("git -P -c a=b --no-replace-objects push origin prod").code,
+    ).toBe(2);
+    expect(bash("git -c a=b push --mirror origin").code).toBe(2);
+    expect(bash("git -c a=b push origin feature").code).toBe(0);
+    expect(outside(`git --no-pager -C "${repo}" push origin prod`).code).toBe(
+      2,
+    );
+    expect(outside(`git -c a=b -C ${repo} push origin prod`).code).toBe(2);
+    expect(
+      outside(`git --git-dir=${repo}/.git --work-tree=${repo} push origin prod`)
+        .code,
+    ).toBe(2);
+    expect(outside(`git --git-dir ${repo}/.git push origin prod`).code).toBe(2);
+    expect(outside(`git --work-tree "${repo}" push origin prod`).code).toBe(2);
+    sh("git checkout -qb prod");
+    try {
+      expect(
+        bash('git -c core.quotePath=false commit --allow-empty -m "test"').code,
+      ).toBe(2);
+      expect(bash('git -c "a=b" commit -m "x"').code).toBe(2);
+      expect(bash('git --no-pager commit -m "x"').code).toBe(2);
+      expect(outside(`git --no-pager -C ${repo} commit -m "x"`).code).toBe(2);
+      expect(outside(`git -c a=b -C "${repo}" commit -m "x"`).code).toBe(2);
+      // Not commits: a valueless option does not swallow the subcommand, and
+      // quoted prose that spells these forms out is still prose.
+      expect(bash("git --no-pager log commit").code).toBe(0);
+      expect(
+        bash(
+          'gh pr create --title "x" --body "git -c a=b commit, then git --no-pager push origin prod"',
+        ).code,
+      ).toBe(0);
+    } finally {
+      sh("git checkout -q main && git branch -qD prod");
+    }
+    expect(
+      bash('git commit -m "docs: never git -c a=b push origin prod"').code,
+    ).toBe(0);
+  });
+
+  test("git global options do not hide commit flags from the scan", () => {
+    writeFileSync(
+      join(repo, "src/globals.ts"),
+      `export const k = "${FAKE_STRIPE_KEY}";\n`,
+    );
+    try {
+      // Untracked and unstaged: only the same-call `git add` puts it in scope.
+      expect(
+        bash('git -c a=b add src/globals.ts && git -c a=b commit -m "x"').code,
+      ).toBe(2);
+      expect(
+        bash('git --no-pager add -f src/globals.ts && git commit -m "x"').code,
+      ).toBe(2);
+    } finally {
+      rmSync(join(repo, "src/globals.ts"), { force: true });
+    }
+  });
+
+  test("cd before git is followed to the target checkout", () => {
+    // tmpdir() is the parent of the test repo, so a bare basename is a
+    // relative path from the hook cwd.
+    const base = basename(repo);
+    expect(outside(`cd ${repo} && git push origin prod`).code).toBe(2);
+    expect(outside(`cd "${repo}" && git push origin "HEAD:prod"`).code).toBe(2);
+    expect(outside(`cd ${repo} && git push origin feature`).code).toBe(0);
+    expect(outside(`cd ${base} && git push origin prod`).code).toBe(2);
+    expect(outside(`cd ${base}/src && git push origin prod`).code).toBe(2);
+    expect(outside(`pushd ${repo} && git push origin prod`).code).toBe(2);
+    expect(outside(`cd ${repo}\ngit push origin prod`).code).toBe(2);
+    expect(
+      outside(`cd ${tmpdir()} && git -C ${base} push origin prod`).code,
+    ).toBe(2);
+    expect(
+      outside(`cd ${repo}/src && git -c a=b -C .. push origin prod`).code,
+    ).toBe(2);
+    sh("git checkout -qb prod");
+    try {
+      expect(outside(`cd ${repo} && git commit -m "x"`).code).toBe(2);
+      expect(outside(`cd ${base} && git commit -m "x"`).code).toBe(2);
+      expect(outside(`cd ${repo}/src; git -C .. commit -m "x"`).code).toBe(2);
+      expect(outside(`if cd "${repo}"; then git commit -m "x"; fi`).code).toBe(
+        2,
+      );
+    } finally {
+      sh("git checkout -q main && git branch -qD prod");
+    }
+  });
+
+  test("cd that is not a real directory change does not move the check", () => {
+    const elsewhere = mkdtempSync(join(tmpdir(), "harness-elsewhere-"));
+    sh("git checkout -qb prod");
+    try {
+      // Quoted prose, another command's argument, a subshell, a heredoc body
+      // and a cd after the commit all leave the check in the repo.
+      expect(bash(`git commit -m "docs: cd ${elsewhere} first"`).code).toBe(2);
+      expect(
+        bash(`git commit -m "x
+cd ${elsewhere}"`).code,
+      ).toBe(2);
+      expect(bash(`echo cd ${elsewhere} && git commit -m "x"`).code).toBe(2);
+      expect(bash(`(cd ${elsewhere} && ls) && git commit -m "x"`).code).toBe(2);
+      expect(
+        bash(`cat > notes.sh <<EOF\ncd ${elsewhere}\nEOF\ngit commit -m "x"`)
+          .code,
+      ).toBe(2);
+      expect(
+        bash(
+          `cat > notes.sh <<-'END'\n\tcd ${elsewhere}\n\tEND\ngit commit -m "x"`,
+        ).code,
+      ).toBe(2);
+      expect(bash(`git commit -m "x" && cd ${elsewhere}`).code).toBe(2);
+      // A directory that cannot be resolved leaves the check where it was.
+      expect(bash('cd "$NOPE" && git commit -m "x"').code).toBe(2);
+      expect(bash('cd /no/such/dir && git commit -m "x"').code).toBe(2);
+      // Leaving and coming back ends in the repo, and a return that cannot be
+      // resolved falls back to where the hook started.
+      expect(
+        bash(`pushd ${elsewhere} && ls && popd && git commit -m "x"`).code,
+      ).toBe(2);
+      expect(
+        bash(`cd ${elsewhere} && ls && cd - && git commit -m "x"`).code,
+      ).toBe(2);
+      expect(
+        bash(`cd ${elsewhere} && cd "$OLDPWD" && git commit -m "x"`).code,
+      ).toBe(2);
+      expect(bash(`cd ${elsewhere} && popd; git commit -m "x"`).code).toBe(2);
+      // A real cd to somewhere else is followed.
+      expect(bash(`cd ${elsewhere} && git commit -m "x"`).code).toBe(0);
+      expect(bash(`cd "${elsewhere}"; git commit -m "x"`).code).toBe(0);
+    } finally {
+      sh("git checkout -q main && git branch -qD prod");
+      rmSync(elsewhere, { recursive: true, force: true });
+    }
+  });
+
   test("blocks a bulk push that would carry a local prod branch", () => {
     sh("git branch -f prod");
     const withProd = [
@@ -313,6 +452,9 @@ describe("pre-bash gates", () => {
     writeFileSync(join(repo, "bun.lock"), "");
     expect(bash("npm install left-pad").code).toBe(2);
     expect(bash("cd x && npm ci").code).toBe(2);
+    // A cd into a subdirectory is followed; the lockfile at the repo root
+    // still counts.
+    expect(bash("cd src && npm ci").code).toBe(2);
     expect(bash("(npm install left-pad)").code).toBe(2);
     expect(bash("bun add left-pad").code).toBe(0);
     // Quoted prose that mentions npm is not an npm command.

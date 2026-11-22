@@ -15,7 +15,10 @@ is_git_push "$cmd" && push=true
 # --- npm in a bun project -------------------------------------------------
 # Matched on unquoted text: a commit message or PR body that mentions
 # `npm install` is prose, not a command.
-if gate_on bunOnly && { [ -f bun.lock ] || [ -f bun.lockb ]; } &&
+# The lockfile is looked for in the directory the command runs in and at the
+# repo root: `cd src && npm ci` is still an npm install in a bun project.
+bun_root=$(repo_root)
+if gate_on bunOnly && { [ -f bun.lock ] || [ -f bun.lockb ] || [ -f "$bun_root/bun.lock" ] || [ -f "$bun_root/bun.lockb" ]; } &&
   unquoted "$cmd" | grep -qE '(^|[;&|(]|[[:space:]])npm +(install|i|add|ci)([[:space:]]|$)'; then
   block "This project uses bun. Use \`bun install\` / \`bun add\`."
 fi
@@ -28,9 +31,9 @@ if gate_on prod; then
   prod=$(config_value '.prodBranch'); prod=${prod:-prod}
   [ "$branch" = "$prod" ] && block "You are on '$prod'. Production is human-only — switch to a feature branch."
   # Matches `prod`, `HEAD:prod`, `+prod` and `refs/heads/prod` as a push target,
-  # quoted or not (`git push origin "HEAD:prod"` is the same push). The -C
-  # directory is optional: push_args drops a quoted one that contains spaces.
-  if $push && push_args "$cmd" | grep -qE "git( +-C( +[^ ]+)?)? +push([[:space:]][^;&|]*)?([[:space:]:+]|refs/heads/)$prod([[:space:]]|\$|[;&|])"; then
+  # quoted or not (`git push origin "HEAD:prod"` is the same push). GIT_RE
+  # (lib.sh) skips git's global options between `git` and `push`.
+  if $push && push_args "$cmd" | grep -qE "$GIT_RE +push([[:space:]][^;&|]*)?([[:space:]:+]|refs/heads/)$prod([[:space:]]|\$|[;&|])"; then
     block "Cannot push to '$prod'. Production deploys are human-only."
   fi
   # A bulk push sends '$prod' without naming it. --all / --branches push every
