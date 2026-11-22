@@ -177,7 +177,16 @@ describe("pre-bash gates", () => {
     expect(bash("npm install left-pad").code).toBe(0);
     writeFileSync(join(repo, "bun.lock"), "");
     expect(bash("npm install left-pad").code).toBe(2);
+    expect(bash("cd x && npm ci").code).toBe(2);
+    expect(bash("(npm install left-pad)").code).toBe(2);
     expect(bash("bun add left-pad").code).toBe(0);
+    // Quoted prose that mentions npm is not an npm command.
+    expect(
+      bash('git commit -m "docs: replace npm install with bun install"').code,
+    ).toBe(0);
+    expect(
+      bash('gh pr create --title "x" --body "run npm install first"').code,
+    ).toBe(0);
     rmSync(join(repo, "bun.lock"));
   });
 

@@ -13,8 +13,10 @@ is_git_commit "$cmd" && commit=true
 is_git_push "$cmd" && push=true
 
 # --- npm in a bun project -------------------------------------------------
+# Matched on unquoted text: a commit message or PR body that mentions
+# `npm install` is prose, not a command.
 if gate_on bunOnly && { [ -f bun.lock ] || [ -f bun.lockb ]; } &&
-  printf '%s' "$cmd" | grep -qE '(^|[;&|]|[[:space:]])npm +(install|i|add|ci)([[:space:]]|$)'; then
+  unquoted "$cmd" | grep -qE '(^|[;&|(]|[[:space:]])npm +(install|i|add|ci)([[:space:]]|$)'; then
   block "This project uses bun. Use \`bun install\` / \`bun add\`."
 fi
 

@@ -110,6 +110,16 @@ describe("retired pieces", () => {
     }
   });
 
+  test("commands and workflows read nothing from repo-local plugin paths", () => {
+    // A plugin-only repo has no .claude/skills or .claude/workflows of its own;
+    // skills and workflows are loaded by name.
+    for (const dir of ["commands", "workflows"])
+      for (const f of readdirSync(join(plugin, dir)))
+        expect(read(`.claude/${dir}/${f}`)).not.toMatch(
+          /\.claude\/(skills|workflows)\//,
+        );
+  });
+
   test("agents preload only skills that exist, and none is pinned to sonnet", () => {
     for (const f of readdirSync(join(plugin, "agents"))) {
       const front = read(`.claude/agents/${f}`).split("---")[1] ?? "";

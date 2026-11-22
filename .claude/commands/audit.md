@@ -18,11 +18,9 @@ Run a codebase security and quality audit using the `code-audit` skill.
 
 ## Execution
 
-### 1. Read the Skill
+### 1. Load the Skill
 
-```
-Read .claude/skills/code-audit/SKILL.md
-```
+Load the `code-audit` skill (it ships with the plugin and loads by name).
 
 ### 2. Determine Mode
 

@@ -216,7 +216,7 @@ ${READ_ONLY_RULES}`,
   {
     key: "code",
     agentType: null,
-    prompt: `Read .claude/skills/code-audit/SKILL.md and run the quick-scan portion against this
+    prompt: `Load the \`code-audit\` skill and run the quick-scan portion against this
 repo for ${phaseRef}: hardcoded secrets, dependency vulnerabilities (\`bun audit\` or
 \`npm audit\`), unvalidated input (req.body used without zod/schema parse), missing auth checks
 on protected routes, and complexity hotspots (files > 400 lines, functions > 40 lines).
