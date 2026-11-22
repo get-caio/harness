@@ -256,6 +256,47 @@ describe("pre-bash gates", () => {
     ).toBe(2);
   });
 
+  test("blocks a bulk push that would carry a local prod branch", () => {
+    sh("git branch -f prod");
+    const withProd = [
+      "git push origin --all",
+      "git push --all origin",
+      "git push origin --branches",
+      "git push origin --al",
+      'git push origin "--all"',
+      "(git push origin --all)",
+    ].map((c) => bash(c).code);
+    sh("git branch -D prod");
+    const withoutProd = [
+      "git push origin --all",
+      "git push origin --branches",
+    ].map((c) => bash(c).code);
+    expect(withProd).toEqual([2, 2, 2, 2, 2, 2]);
+    expect(withoutProd).toEqual([0, 0]);
+  });
+
+  test("blocks a mirror push, with or without a local prod branch", () => {
+    sh("git branch -D prod");
+    expect(bash("git push --mirror").code).toBe(2);
+    expect(bash("git push --mirr origin").code).toBe(2);
+    sh("git branch -f prod");
+    expect(bash("git push --mirror origin").code).toBe(2);
+    sh("git branch -D prod");
+  });
+
+  test("--all outside the push arguments is not a bulk push", () => {
+    sh("git branch -f prod");
+    const codes = [
+      'git commit -m "push --all later" && git push origin feature',
+      'git commit -m "--all" && git push origin feature',
+      "git push origin feature && ls --all",
+      "git push origin feature --tags",
+      "git push origin feature --atomic",
+    ].map((c) => bash(c).code);
+    sh("git branch -D prod");
+    expect(codes).toEqual([0, 0, 0, 0, 0]);
+  });
+
   test("does not mistake other branch names for prod", () => {
     expect(bash("git push -u origin feature/product-page").code).toBe(0);
     expect(bash("git push origin prod-fixes").code).toBe(0);
@@ -399,6 +440,82 @@ describe("pre-bash gates", () => {
     ].map((c) => bash(c).code);
     sh("git reset -q && git checkout -q -- src/auth.ts");
     expect(codes).toEqual([2, 2, 2]);
+  });
+
+  test("a staging command in the same call scans what it is about to stage", () => {
+    // The hook runs before `git add` does: the index is empty and the
+    // credential is still an unstaged edit or an untracked file.
+    writeFileSync(
+      join(repo, "src/auth.ts"),
+      `export const k = "${FAKE_STRIPE_KEY}";\n`,
+    );
+    const tracked = [
+      'git add src/auth.ts && git commit -m "update"',
+      'git add -A && git commit -m "update"',
+      'git stage src/auth.ts; git commit -m "update"',
+      '(git add -u) && git commit -m "update"',
+    ].map((c) => bash(c).code);
+    sh("git checkout -q -- src/auth.ts");
+
+    writeFileSync(
+      join(repo, "src/key.ts"),
+      `export const k = "${FAKE_STRIPE_KEY}";\n`,
+    );
+    const r = bash('git add src/key.ts && git commit -m "update"');
+    const untracked = [
+      'git add -A && git commit -m "update"',
+      'git add . && git commit -m "update"',
+      'git add -A && git commit -am "update"',
+    ].map((c) => bash(c).code);
+    // From a subdirectory the untracked file is still found.
+    const fromSubdir = hook("pre-bash.sh", {
+      cwd: join(repo, ".claude"),
+      tool_input: { command: 'git add -A && git commit -m "update"' },
+    }).code;
+    // Not a staging command: prose, and a plain commit of the clean index.
+    const clean = [
+      'git commit -m "docs: git add -A"',
+      'git commit -m "update"',
+      'echo "git add -A" && git commit -m "update"',
+    ].map((c) => bash(c).code);
+    rmSync(join(repo, "src/key.ts"));
+
+    expect(tracked).toEqual([2, 2, 2, 2]);
+    expect(r.code).toBe(2);
+    expect(r.err).toContain("look like real credentials");
+    expect(untracked).toEqual([2, 2, 2]);
+    expect(fromSubdir).toBe(2);
+    expect(clean).toEqual([0, 0, 0]);
+  });
+
+  test("a clean add-then-commit passes; a new .ts file in it is typechecked", () => {
+    writeFileSync(join(repo, "src/fresh.ts"), "export const fresh = 1;\n");
+    const ok = bash('git add -A && git commit -m "fresh"').code;
+    setTypecheck('echo "src/fresh.ts(1,1): error TS2322: nope"; exit 2');
+    const r = bash('git add src/fresh.ts && git commit -m "fresh"');
+    // package.json is modified but no .ts file is staged without the add.
+    const plain = bash('git commit -m "fresh"').code;
+    setTypecheck("true");
+    rmSync(join(repo, "src/fresh.ts"));
+    expect(ok).toBe(0);
+    expect(r.code).toBe(2);
+    expect(r.err).toContain("TS2322");
+    expect(plain).toBe(0);
+  });
+
+  test("git add -f with a commit in the same call is blocked", () => {
+    const codes = [
+      'git add -f dist/out.js && git commit -m "x"',
+      'git add --force dist/out.js && git commit -m "x"',
+      'git add -Af && git commit -m "x"',
+    ].map((c) => bash(c).code);
+    const fine = [
+      "git add -f dist/out.js",
+      'git add -A && git commit -m "x" -F msg.txt',
+      'git rm -f old.ts && git commit -m "x"',
+    ].map((c) => bash(c).code);
+    expect(codes).toEqual([2, 2, 2]);
+    expect(fine).toEqual([0, 0, 0]);
   });
 
   test("blocks on real TypeScript errors", () => {

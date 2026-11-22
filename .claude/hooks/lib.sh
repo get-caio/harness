@@ -113,3 +113,35 @@ commit_reads_worktree() {
     } END { exit !found }'
 }
 is_git_push() { unquoted "$1" | grep -qE '(^|[;&|(]|[[:space:]])git( +-C( +[^ ]+)?)? +push([[:space:]]|$)'; }
+# Prints `mirror` or `all` when a `git push` in the command is a bulk push:
+# --mirror, or --all / --branches. Read from the push segment alone, so another
+# command's --all (`ls --all`) and a quoted message do not count; a quoted
+# single token ("--all") is still an argument. git accepts any unambiguous
+# prefix of a long option (--al, --mirr), so the prefixes are matched too.
+push_bulk_mode() {
+  push_args "$1" |
+    grep -oE '(^|[;&|(]|[[:space:]])git( +-C( +[^ ]+)?)? +push([[:space:]][^;&|()]*)?' |
+    sed -E 's/^.?git( +-C( +[^ ]+)?)? +push//' |
+    awk '{
+      for (i = 1; i <= NF; i++) {
+        if ($i ~ /^--m[a-z]*$/) mirror = 1
+        else if ($i ~ /^--(all?|b[a-z]*)$/) all = 1
+      }
+    } END { if (mirror) print "mirror"; else if (all) print "all" }'
+}
+# True when the command also runs a staging command (`git add`, `git stage`,
+# `git rm`, `git mv`), matched on unquoted text like the commit itself.
+stages_in_call() { unquoted "$1" | grep -qE '(^|[;&|(]|[[:space:]])git( +-C( +[^ ]+)?)? +(add|stage|rm|mv)([[:space:]]|$)'; }
+# True when a `git add` / `git stage` in the command carries -f / --force (as a
+# flag, in a short-flag cluster, or as a long-option prefix).
+force_adds_in_call() {
+  push_args "$1" |
+    grep -oE '(^|[;&|(]|[[:space:]])git( +-C( +[^ ]+)?)? +(add|stage)([[:space:]][^;&|()]*)?' |
+    sed -E 's/^.?git( +-C( +[^ ]+)?)? +(add|stage)//' |
+    awk '{
+      for (i = 1; i <= NF; i++) {
+        if ($i == "--") break
+        if ($i ~ /^(-[a-zA-Z]*f[a-zA-Z]*|--f[a-z]*)$/) found = 1
+      }
+    } END { exit !found }'
+}

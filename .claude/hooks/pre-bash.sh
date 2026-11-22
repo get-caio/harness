@@ -33,6 +33,18 @@ if gate_on prod; then
   if $push && push_args "$cmd" | grep -qE "git( +-C( +[^ ]+)?)? +push([[:space:]][^;&|]*)?([[:space:]:+]|refs/heads/)$prod([[:space:]]|\$|[;&|])"; then
     block "Cannot push to '$prod'. Production deploys are human-only."
   fi
+  # A bulk push sends '$prod' without naming it. --all / --branches push every
+  # local branch, so they are blocked while a local '$prod' exists. --mirror
+  # also deletes remote refs that have no local counterpart, so it is blocked
+  # outright.
+  if $push; then
+    bulk=$(push_bulk_mode "$cmd")
+    if [ "$bulk" = "mirror" ]; then
+      block "\`git push --mirror\` rewrites every remote ref, '$prod' included. Push the branch by name."
+    elif [ "$bulk" = "all" ] && git show-ref --verify --quiet "refs/heads/$prod"; then
+      block "\`git push --all\` would push the local '$prod' branch. Push the branch by name."
+    fi
+  fi
 fi
 
 # --- never pile work onto a merged PR -------------------------------------
@@ -52,9 +64,32 @@ $commit || exit 0
 # fires on an unquoted message word, and that commit still takes the index.
 worktree=false
 commit_reads_worktree "$cmd" && worktree=true
+# This hook runs before any part of the command does. In
+# `git add key.ts && git commit -m x` the index is still empty here, so a
+# staging command in the same call widens the scan to the working tree and to
+# untracked files, which is where the content to be committed still sits.
+# `git add -f` can stage an ignored file, which the untracked listing leaves
+# out, so that one form has to be split across two calls.
+untracked=false
+if stages_in_call "$cmd"; then
+  worktree=true; untracked=true
+  force_adds_in_call "$cmd" &&
+    block "\`git add -f\` and \`git commit\` in one command: the force-added files cannot be scanned before they are staged. Stage first, then commit in a separate command."
+fi
+# Untracked, non-ignored files of the whole repo, NUL-separated, repo-relative.
+untracked_files() { (cd "$(repo_root)" 2>/dev/null && git ls-files -z --others --exclude-standard 2>/dev/null); }
 commit_diff() {
   git diff --cached "$@" 2>/dev/null
   if $worktree; then git diff HEAD "$@" 2>/dev/null; fi
+  if $untracked; then
+    if [ "$1" = "--name-only" ]; then
+      untracked_files | tr '\0' '\n'
+    else
+      (cd "$(repo_root)" 2>/dev/null && untracked_files | while IFS= read -r -d '' f; do
+        git diff --no-index "$@" -- /dev/null "$f" 2>/dev/null
+      done)
+    fi
+  fi
 }
 
 # --- secrets ---------------------------------------------------------------
