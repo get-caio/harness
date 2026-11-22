@@ -725,6 +725,24 @@ cd ${elsewhere}"`).code,
     sh("git reset -q && rm src/k.ts");
   });
 
+  test("blocks a staged credential when git colours piped diffs", () => {
+    writeFileSync(join(repo, ".claude/harness.json"), "{}");
+    sh("git config color.ui always");
+    writeFileSync(
+      join(repo, "src/k.ts"),
+      `export const k = "${FAKE_STRIPE_KEY}";\n`,
+    );
+    sh("git add src/k.ts");
+    const staged = bash('git commit -m "k"');
+    sh("git reset -q");
+    // Not staged yet: scanned through the worktree and untracked diffs.
+    const sameCall = bash('git add src/k.ts && git commit -m "k"');
+    sh("git config --unset color.ui && rm src/k.ts");
+    expect(staged.code).toBe(2);
+    expect(staged.err).toContain("look like real credentials");
+    expect(sameCall.code).toBe(2);
+  });
+
   test("gitleaks, when selected and installed, blocks the same credential", () => {
     if (Bun.spawnSync(["bash", "-c", "command -v gitleaks"]).exitCode !== 0)
       return;
@@ -984,6 +1002,40 @@ describe("post-edit test run", () => {
     expect(post("src/sum.ts").code).toBe(0);
   });
 
+  test("a config/setup word in a directory above the file does not skip the test", () => {
+    const parent = mkdtempSync(join(tmpdir(), "review-setup-hooks-"));
+    const other = join(parent, "config-service");
+    mkdirSync(join(other, ".claude"), { recursive: true });
+    mkdirSync(join(other, "src"));
+    sh("git init -q -b main", other);
+    writeFileSync(join(other, ".claude/harness.json"), "{}");
+    writeFileSync(
+      join(other, "src/sum.ts"),
+      "export const sum = (a: number, b: number) => a - b;\n",
+    );
+    writeFileSync(
+      join(other, "src/sum.test.ts"),
+      'import { expect, test } from "bun:test";\nimport { sum } from "./sum";\ntest("sum", () => expect(sum(1, 2)).toBe(3));\n',
+    );
+    // A config file itself is still left alone.
+    writeFileSync(join(other, "src/app.config.ts"), "export default {};\n");
+    writeFileSync(
+      join(other, "src/app.config.test.ts"),
+      'import { expect, test } from "bun:test";\ntest("x", () => expect(1).toBe(2));\n',
+    );
+    const run = (file: string) =>
+      hook("post-edit.sh", {
+        cwd: other,
+        tool_input: { file_path: join(other, file) },
+      });
+    const bad = run("src/sum.ts");
+    const config = run("src/app.config.ts");
+    rmSync(parent, { recursive: true, force: true });
+    expect(bad.code).toBe(2);
+    expect(bad.err).toContain("Test failed");
+    expect(config.code).toBe(0);
+  });
+
   test("stays silent for a file with no test", () => {
     writeFileSync(join(repo, "src/lonely.ts"), "export const x = 1;\n");
     const r = post("src/lonely.ts");
@@ -1011,6 +1063,21 @@ describe("secret-scan", () => {
         "+++ b/a.sh\n+DATABASE_URL=postgres://app:Sup3rS3cretPw@db.internal/prod\n",
       ),
     ).toBe(1);
+  });
+
+  test("flags a key in a coloured diff", () => {
+    const e = "\x1b";
+    expect(
+      scan(
+        `${e}[1m+++ b/src/a.ts${e}[m\n${e}[32m+${e}[m${e}[32mconst k = "${FAKE_GITHUB_TOKEN}";${e}[m\n`,
+      ),
+    ).toBe(1);
+    // The test-file exemption still reads the coloured header.
+    expect(
+      scan(
+        `${e}[1m+++ b/src/a.test.ts${e}[m\n${e}[32m+${e}[m${e}[32mconst k = "${FAKE_GITHUB_TOKEN}";${e}[m\n`,
+      ),
+    ).toBe(0);
   });
 
   test("a placeholder word elsewhere on the line does not hide a real key", () => {

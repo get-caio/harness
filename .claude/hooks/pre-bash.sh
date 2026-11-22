@@ -121,15 +121,17 @@ untracked_files() { (cd "$(repo_root)" 2>/dev/null && git ls-files -z --others -
 # so every tracked file counts as added.
 diff_base=HEAD
 git rev-parse --verify -q HEAD >/dev/null 2>&1 || diff_base=$(git hash-object -t tree /dev/null 2>/dev/null)
+# --no-color: with color.ui=always git colours piped output too, and the scanner
+# and the file-name checks read these diffs as plain text.
 commit_diff() {
-  git diff --cached "$@" 2>/dev/null
-  if $worktree; then git diff "$diff_base" "$@" 2>/dev/null; fi
+  git diff --no-color --cached "$@" 2>/dev/null
+  if $worktree; then git diff --no-color "$diff_base" "$@" 2>/dev/null; fi
   if $untracked; then
     if [ "$1" = "--name-only" ]; then
       untracked_files | tr '\0' '\n'
     else
       (cd "$(repo_root)" 2>/dev/null && untracked_files | while IFS= read -r -d '' f; do
-        git diff --no-index "$@" -- /dev/null "$f" 2>/dev/null
+        git diff --no-color --no-index "$@" -- /dev/null "$f" 2>/dev/null
       done)
     fi
   fi

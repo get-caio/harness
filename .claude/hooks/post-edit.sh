@@ -20,9 +20,11 @@ fi
 gate_on testOnEdit || exit 0
 command -v bun >/dev/null 2>&1 || exit 0
 printf '%s' "$file" | grep -qE '\.(ts|tsx|js|jsx)$' || exit 0
-printf '%s' "$file" | grep -qE '(\.spec\.|\.d\.ts$|config|setup)' && exit 0
-
+# Matched against the file name alone: a directory called `setup-projects` or
+# `config/` above the file must not switch the test run off for everything in it.
 dir=$(dirname "$file"); base=$(basename "$file"); ext="${base##*.}"; name="${base%.*}"
+printf '%s' "$base" | grep -qE '(\.spec\.|\.d\.ts$|config|setup)' && exit 0
+
 if printf '%s' "$base" | grep -qE '\.test\.'; then
   test_file="$file"
 else

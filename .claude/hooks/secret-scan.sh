@@ -5,7 +5,10 @@
 # `password =` (the old pattern, which fired on ordinary code).
 # Test, fixture, mock and seed files are skipped (fake values live there), as is
 # any line marked `gitleaks:allow`.
-added=$(awk '
+# Colour escapes are stripped first: a coloured diff (color.ui=always) starts
+# every header and added line with one, and nothing below would match.
+esc=$(printf '\033')
+added=$(LC_ALL=C sed "s/${esc}\[[0-9;]*[A-Za-z]//g" | awk '
   /^\+\+\+ / { skip = ($0 ~ /(\.(test|spec)\.|__tests__|__mocks__|\/tests?\/|\/e2e\/|fixtures?|mocks?\/|seed|\.example|\.md$|\.lock$|\.snap$)/); next }
   /^\+/ && !skip { print }
 ' | grep -vE '^\+\s*(//|#|\*)' | grep -v 'gitleaks:allow' || true)
