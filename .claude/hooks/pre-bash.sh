@@ -25,8 +25,9 @@ branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || exit 0
 if gate_on prod; then
   prod=$(config_value '.prodBranch'); prod=${prod:-prod}
   [ "$branch" = "$prod" ] && block "You are on '$prod'. Production is human-only — switch to a feature branch."
-  # Matches `prod`, `HEAD:prod`, `+prod` and `refs/heads/prod` as a push target.
-  if $push && unquoted "$cmd" | grep -qE "git( +-C +[^ ]+)? +push([[:space:]][^;&|]*)?([[:space:]:+]|refs/heads/)$prod([[:space:]]|\$|[;&|])"; then
+  # Matches `prod`, `HEAD:prod`, `+prod` and `refs/heads/prod` as a push target,
+  # quoted or not (`git push origin "HEAD:prod"` is the same push).
+  if $push && push_args "$cmd" | grep -qE "git( +-C +[^ ]+)? +push([[:space:]][^;&|]*)?([[:space:]:+]|refs/heads/)$prod([[:space:]]|\$|[;&|])"; then
     block "Cannot push to '$prod'. Production deploys are human-only."
   fi
 fi

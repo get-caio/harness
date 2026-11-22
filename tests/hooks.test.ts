@@ -142,6 +142,26 @@ describe("pre-bash gates", () => {
     ).toBe(0);
   });
 
+  test("quoting the refspec does not get a prod push past the gate", () => {
+    expect(bash('git push origin "HEAD:prod"').code).toBe(2);
+    expect(bash("git push origin 'prod'").code).toBe(2);
+    expect(bash('git push origin HEAD:"prod"').code).toBe(2);
+    expect(bash('git push origin "refs/heads/prod"').code).toBe(2);
+  });
+
+  test("quoted prose next to a real push is still not a prod push", () => {
+    expect(bash('git commit -m "push to prod"').code).toBe(0);
+    expect(
+      bash(
+        'git commit -m "docs: never run git push origin prod" && git push origin feature',
+      ).code,
+    ).toBe(0);
+    expect(bash('git commit -m "prod" && git push origin feature').code).toBe(
+      0,
+    );
+    expect(bash('git push origin "prod-fixes"').code).toBe(0);
+  });
+
   test("does not mistake other branch names for prod", () => {
     expect(bash("git push -u origin feature/product-page").code).toBe(0);
     expect(bash("git push origin prod-fixes").code).toBe(0);
@@ -301,6 +321,45 @@ describe("secret-scan", () => {
         "+++ b/a.sh\n+DATABASE_URL=postgres://app:Sup3rS3cretPw@db.internal/prod\n",
       ),
     ).toBe(1);
+  });
+
+  test("a placeholder word elsewhere on the line does not hide a real key", () => {
+    expect(
+      scan(
+        `+++ b/src/a.ts\n+const apiKey = process.env.STRIPE_KEY || "${FAKE_STRIPE_KEY}";\n`,
+      ),
+    ).toBe(1);
+    expect(
+      scan(
+        `+++ b/src/a.ts\n+const k = "${FAKE_GITHUB_TOKEN}"; // not an example\n`,
+      ),
+    ).toBe(1);
+    expect(
+      scan(
+        `+++ b/src/a.ts\n+const c = { host: "localhost", apiKey: "Zx9Kq2Lm8Vb4Nc7Ht1Rw5Yp3Jd6Fg0Sa" };\n`,
+      ),
+    ).toBe(1);
+  });
+
+  test("placeholder identifiers and local DB hosts stay exempt", () => {
+    expect(
+      scan(
+        '+++ b/src/a.ts\n+const test_secret = "Zx9Kq2Lm8Vb4Nc7Ht1Rw5Yp3Jd6Fg0Sa";\n',
+      ),
+    ).toBe(0);
+    expect(
+      scan(
+        '+++ b/src/a.ts\n+const fakeToken = "Zx9Kq2Lm8Vb4Nc7Ht1Rw5Yp3Jd6Fg0Sa";\n',
+      ),
+    ).toBe(0);
+    expect(
+      scan(
+        "+++ b/a.sh\n+DATABASE_URL=postgres://postgres:postgres@localhost:5432/app\n",
+      ),
+    ).toBe(0);
+    expect(
+      scan('+++ b/src/a.ts\n+  apiKey: "your-api-key-goes-here-0000",\n'),
+    ).toBe(0);
   });
 
   test("ignores tests, fixtures, placeholders, env lookups and allow-marked lines", () => {

@@ -48,5 +48,12 @@ block() { printf '❌ BLOCKED: %s\n' "$1" >&2; exit 2; }
 # never trips a gate.
 unquoted() { printf '%s' "$1" | tr '\n' ' ' | sed -E 's/"[^"]*"//g; s/'"'"'[^'"'"']*'"'"'//g'; }
 
+# For matching a push target: a quoted single token ("HEAD:prod", 'prod') is
+# still an argument, so unwrap it in place. Quoted text with whitespace or a
+# command separator is prose and is dropped, as in unquoted().
+push_args() {
+  printf '%s' "$1" | tr '\n' ' ' | sed -E 's/"([^"'"'"';&|[:space:]]*)"/\1/g; s/'"'"'([^"'"'"';&|[:space:]]*)'"'"'/\1/g; s/"[^"]*"//g; s/'"'"'[^'"'"']*'"'"'//g'
+}
+
 is_git_commit() { unquoted "$1" | grep -qE '(^|[;&|(]|[[:space:]])git( +-C +[^ ]+)? +commit([[:space:]]|$)'; }
 is_git_push() { unquoted "$1" | grep -qE '(^|[;&|(]|[[:space:]])git( +-C +[^ ]+)? +push([[:space:]]|$)'; }

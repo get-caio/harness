@@ -16,7 +16,14 @@ assigned='(api[_-]?key|secret|token|passwd|password|credential|private[_-]?key)[
 dburl='(postgres(ql)?|mysql|mongodb(\+srv)?|redis)://[^:/@[:space:]$<{]+:[^@[:space:]$<{]{8,}@'
 placeholder='(example|placeholder|changeme|your[_-]|xxxx|<[a-z_-]+>|\$\{|process\.env|test[_-]?(key|secret|token)|dummy|fake|sample|localhost|127\.0\.0\.1|user:pass|["'"'"'][a-z]+(-[a-z]+){2,}["'"'"'])'
 
-hits=$(printf '%s\n' "$added" | grep -iE "$known|$assigned|$dburl" | grep -ivE "$placeholder" || true)
+# The placeholder filter applies to the matched credential, not the whole line:
+# `process.env.KEY || "sk_live_…"` is still a hardcoded key. The matched span is
+# widened to the identifier before an assignment (test_secret, fakeToken) and
+# the host after a DB URL (localhost), so those exemptions keep working.
+span="$known|[A-Za-z0-9_-]*$assigned|$dburl[^/[:space:]\"'\`]*"
+nums=$(printf '%s\n' "$added" | grep -oniE "$span" | grep -ivE "$placeholder" | cut -d: -f1 | sort -un | tr '\n' ' ' || true)
+[ -z "$nums" ] && exit 0
+hits=$(printf '%s\n' "$added" | awk -v nums="$nums" 'BEGIN { n = split(nums, a, " "); for (i = 1; i <= n; i++) want[a[i]] = 1 } NR in want')
 [ -z "$hits" ] && exit 0
 printf '%s\n' "$hits" | cut -c1-160 | head -10
 exit 1
