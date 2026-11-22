@@ -214,6 +214,40 @@ describe("pre-bash gates", () => {
     ).toBe(0);
   });
 
+  test("git -C inside quoted prose does not move the hook out of the repo", () => {
+    // An existing directory that is not a harness repo: following it would
+    // find no harness.json and skip every gate.
+    const elsewhere = mkdtempSync(join(tmpdir(), "harness-elsewhere-"));
+    sh("git checkout -qb prod");
+    try {
+      expect(
+        bash(`git commit -m "docs: git -C ${elsewhere} status"`).code,
+      ).toBe(2);
+      expect(
+        bash(`git commit -m 'docs: git -C ${elsewhere} status'`).code,
+      ).toBe(2);
+      expect(
+        bash(`git commit -m 'docs: git -C "${elsewhere}" status'`).code,
+      ).toBe(2);
+      expect(
+        bash(
+          `gh pr create --title "x" --body "run git -C ${elsewhere} status" && git commit -m "x"`,
+        ).code,
+      ).toBe(2);
+      expect(
+        bash(
+          `gh pr create --title "x" --body "run git -C ${elsewhere} status" && git push origin feature`,
+        ).code,
+      ).toBe(2);
+      // A real -C to somewhere else is still followed.
+      expect(bash(`git -C ${elsewhere} commit -m "x"`).code).toBe(0);
+      expect(bash(`git -C "${elsewhere}" commit -m "x"`).code).toBe(0);
+    } finally {
+      sh("git checkout -q main && git branch -qD prod");
+      rmSync(elsewhere, { recursive: true, force: true });
+    }
+  });
+
   test("a message ending in git -C does not hide the push after it", () => {
     expect(
       bash(
@@ -312,12 +346,59 @@ describe("pre-bash gates", () => {
     const staged = [
       'git commit -m "fix -a flag"',
       'git commit -m "document --all"',
-      "git commit -m update && ls -a",
-      "git commit --amend --allow-empty --author=a -m update",
+      'git commit -m "update" && ls -a',
+      'git commit --amend --allow-empty --author=a -m "update"',
     ].map((c) => bash(c).code);
     sh("git checkout -q -- src/auth.ts");
     expect(codes).toEqual([2, 2, 2, 2, 2]);
     expect(staged).toEqual([0, 0, 0, 0]);
+  });
+
+  test("a pathspec, --only or --include commit scans the working tree", () => {
+    // Unstaged credential in a tracked file, empty index: these forms commit
+    // the working-tree version of the named file.
+    writeFileSync(
+      join(repo, "src/auth.ts"),
+      `export const k = "${FAKE_STRIPE_KEY}";\n`,
+    );
+    const codes = [
+      "git commit -m update src/auth.ts",
+      'git commit -m "update" src/auth.ts',
+      'git commit -m "update" -- src/auth.ts',
+      "git commit --only src/auth.ts -m x",
+      'git commit -o src/auth.ts -m "x"',
+      "git commit -i src/auth.ts -m x",
+      'git commit --include src/auth.ts -m "x"',
+      '(git commit -m "update" src/auth.ts)',
+    ].map((c) => bash(c).code);
+    // No pathspec: the index is clean, so nothing is committed or scanned.
+    const staged = [
+      'git commit -m "x"',
+      'git commit -m "mention src/auth.ts"',
+      'git commit -m "x" 2>/dev/null',
+      '(git commit -m "x")',
+      'git commit -m "x" && cat src/auth.ts',
+    ].map((c) => bash(c).code);
+    sh("git checkout -q -- src/auth.ts");
+    expect(codes).toEqual([2, 2, 2, 2, 2, 2, 2, 2]);
+    expect(staged).toEqual([0, 0, 0, 0, 0]);
+  });
+
+  test("a worktree-scanning commit still scans the index", () => {
+    // Credential staged, then removed from the working tree without
+    // re-staging: the index still carries it into the commit.
+    writeFileSync(
+      join(repo, "src/auth.ts"),
+      `export const k = "${FAKE_STRIPE_KEY}";\n`,
+    );
+    sh("git add src/auth.ts && git show HEAD:src/auth.ts > src/auth.ts");
+    const codes = [
+      'git commit -m "update"',
+      "git commit -m update",
+      "git commit -i package.json -m x",
+    ].map((c) => bash(c).code);
+    sh("git reset -q && git checkout -q -- src/auth.ts");
+    expect(codes).toEqual([2, 2, 2]);
   });
 
   test("blocks on real TypeScript errors", () => {

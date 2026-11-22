@@ -45,19 +45,23 @@ fi
 
 $commit || exit 0
 
-# `git commit -a` stages at commit time, so compare against HEAD in that case.
-# The flag can sit anywhere in the arguments (`commit -m msg -a`).
-if commit_stages_all "$cmd"; then
-  diff_args="HEAD"
-else
-  diff_args="--cached"
-fi
+# `git commit -a`, `--only` / `--include` and `git commit <pathspec>` commit
+# working-tree content that is not in the index yet, so those forms are checked
+# against HEAD as well as the index. The flag can sit anywhere in the arguments
+# (`commit -m msg -a`). The index is always included: the worktree test also
+# fires on an unquoted message word, and that commit still takes the index.
+worktree=false
+commit_reads_worktree "$cmd" && worktree=true
+commit_diff() {
+  git diff --cached "$@" 2>/dev/null
+  if $worktree; then git diff HEAD "$@" 2>/dev/null; fi
+}
 
 # --- secrets ---------------------------------------------------------------
 # The built-in scanner is the default: it was tuned against real commit history.
 # Set "secretScanner": "gitleaks" in harness.json to use gitleaks instead.
 if gate_on secrets; then
-  if [ "$(config_value '.secretScanner')" = "gitleaks" ] && command -v gitleaks >/dev/null 2>&1 && [ "$diff_args" = "--cached" ]; then
+  if [ "$(config_value '.secretScanner')" = "gitleaks" ] && command -v gitleaks >/dev/null 2>&1 && ! $worktree; then
     out=$(gitleaks protect --staged --no-banner --redact 2>&1)
     # Block only when gitleaks reports leaks; any other failure is let through.
     if printf '%s' "$out" | grep -qE 'leaks found: [1-9]'; then
@@ -65,7 +69,7 @@ if gate_on secrets; then
       block "gitleaks found secrets in the staged changes. Remove them (or mark a false positive with \`gitleaks:allow\`)."
     fi
   else
-    hits=$(git diff $diff_args --unified=0 2>/dev/null | bash "$(dirname "$0")/secret-scan.sh")
+    hits=$(commit_diff --unified=0 | bash "$(dirname "$0")/secret-scan.sh")
     if [ $? -eq 1 ]; then
       printf '%s\n' "$hits" >&2
       block "These added lines look like real credentials. Move them to env vars (or mark a false positive with \`gitleaks:allow\`)."
@@ -76,7 +80,7 @@ fi
 # --- typecheck -------------------------------------------------------------
 # Blocks only on real compiler errors (`error TS1234`). A crash, an
 # out-of-memory kill or a missing toolchain is reported and let through.
-if gate_on typecheck && git diff $diff_args --name-only 2>/dev/null | grep -qE '\.(ts|tsx)$'; then
+if gate_on typecheck && commit_diff --name-only | grep -qE '\.(ts|tsx)$'; then
   root=$(repo_root); cd "$root" || exit 0
   runner=""
   if [ -f package.json ] && jq -e '.scripts.typecheck' package.json >/dev/null 2>&1; then
