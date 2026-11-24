@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "caio-build-harness",
-      "version": "4.0.0",
+      "version": "4.0.1",
       "description": "CAIO Build Harness \u2014 blocking safety gates, orchestrated sessions, review workflows and domain skills for team projects.",
       "source": "./.claude",
       "tags": ["development", "agents", "team", "full-stack"]
