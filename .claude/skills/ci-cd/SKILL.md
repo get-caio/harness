@@ -37,13 +37,11 @@ on:
     - cron: "17 6 * * *" # nightly full tier; the odd minute avoids the top-of-hour pile-up
   workflow_dispatch:
 
-# A new push to a PR cancels the in-flight run for that PR. Main runs are never cancelled.
+# One run per branch: a newer push cancels the older run, on main too. The newest commit's run tests every
+# commit before it; one run per merge piled up hours of queue on shared runners.
 concurrency:
-  # Pull requests dedupe per branch (a new push cancels the in-flight run). Everything else groups per
-  # commit: with cancel-in-progress off, GitHub still drops a *queued* run when another arrives in the
-  # same group, so clustered merges to main were skipping CI entirely.
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   gate:
